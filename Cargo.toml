@@ -1,0 +1,28 @@
+[package]
+name = "trie-rs"
+version = "0.1.0"
+authors = ["Sho Nakatani <lay.sakura@gmail.com>"]
+description = "High performance LOUDS (Level-Order Unary Degree Sequence) library"
+readme = "README.md"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/laysakura/trie-rs"
+homepage = "https://github.com/laysakura/trie-rs"
+keywords = ["trie", "louds", "succinct"] # up to 5 keywords, each keyword should have <= 20 chars
+categories = ["compression", "data-structures"]
+edition = "2018"
+
+[dependencies]
+louds-rs = "0.1"
+
+[dev-dependencies]
+criterion = "0.2"
+rand = "0.6"
+
+[[bench]]
+name = "bench"
+harness = false
+
+[package.metadata.release]
+tag-prefix = "v"
+pre-release-hook = ["emacs", "CHANGELOG.md"]  # Finally, I found this hook so effective!!
+disable-publish = true

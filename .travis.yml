@@ -1,0 +1,66 @@
+language: rust
+branches:
+  only:
+    - master
+    - /^v[0-9]/  # tag
+cache: cargo
+
+stages:
+  - pr-check-fix
+  - test
+  - doc-bench-deploy
+
+# test stage
+rust:
+  - 1.33.0  # pinned stable Rust release
+  - stable
+  #- beta
+  #- nightly
+os:
+  - linux
+  - osx
+script:
+  - cargo build --release --verbose --all
+  - cargo test --release --verbose --all
+
+jobs:
+  include:
+    - stage: pr-check-fix
+      rust: stable
+      os: linux
+      script: ./ci/pr-check-fix.sh
+
+    - stage: doc-bench-deploy
+      rust: stable
+      os: linux
+
+      # gnuplot for Criterion HTML Report
+      addons:
+        apt:
+          packages:
+            - gnuplot-nox
+
+      script:
+        - cargo doc
+        - cargo bench --all
+        ## Move criterion's HTML report into doc/ dir in order to be uploaded in github.io
+        - rm -rf target/doc/criterion && mv target/criterion target/doc/
+
+      deploy:
+        # GitHub Pages
+        - provider: pages
+          skip_cleanup: true
+          github_token: "$GITHUB_TOKEN"
+          local_dir: target/doc
+          on:
+            branch: master
+        # crates.io
+        - provider: cargo
+          token:
+            secure: ciH/hea7/rPeo/ixEvYHU7PS7XO/Zx6qhMOrkqY7/DIEI7yxakkZGMtevRLSOtCfjejcqRrbAf0loNTAF3UOsreKCTJqxSzslNOHjPPIaUn8VatYeNJh2w//Xzt6hGSMimwwz+DbhmrzVk6Svgv72iqQgNnMWdmhHC19/2Hm4uG8Hif1yxl9ky+rRUx5t0LHp+AS+Zzua8xOZObK1cmH3ZOVQJN3Q9LYNsvMiOSBa7dvGLiF3v4Cq9+H1IdHBgGcePGT8otLHlYp9wlNft9w5Zh94cnEFHPI/LSoJFClv45hsyqN1G7BrY9UYBYzwgJtJYB9S0cnBgIm2Lv6xuU54WoZKn0CS9aw58D2ULIiI3qhNK76hh+9wdkyikFlUYP2qHLjQ1thjX3DrjwUveCVWnyfHsA61sLAfsYj4HWhpofnjLLWfHsHXR9p+njTFGeL/s4dmTQk+UMNF6Dv7f6T5WBIzYlykqJWTqcptp6YZOtP2SQIRlTiu01G9NP3hmDA4KnLoeChmAWy9kxXszK4vekjR2ggQtrz7AJ8o8kNygZoU6B1xbqrIePq3SpYtrb42o80Lm09g1c8lfkFdzSs1ECJdMX8twOSHiaTXmGjFFwijCWEnBGFTcvypSZILIZ10vONC4au1ZYr3AtFXXEOvSFZZviaepl//KyzV1RPIJw=
+          on:
+            tags: true
+
+env:
+  global:
+    secure: fTx01ceRBZ56+lwv95uBkgAFJPhXGpMus9Xe0H5QqtARMylgHRSztYZZj4U2t/uIjcYTUyfeVBUjRWh9t2HQ2+mqsopjMMAiVKxtq8nFYHmJT+4NKLNbeVwNauOB491SmJBvGU3phPMCjd4Vai+Kqy9smXtcrII1TPrJjpxdtgniqddoBP9Fkw37raUUI0HI9cPPYTy74m6ZGV6vnuKBM6a4g0cCumLSg3lsum4MHB+0ofaCdM7nKYqGuo7baOweQSEFpE71tko0QHmKUIgqv69hX6NHUIcjCrStS0+8grzz2/5nvfblw0K48uvbqhl1qakul3kgy4RP5/lb5bioMxEGC/xgAbPHzZk2PjZleKnwV/edHPMl/yAc2bCny4ko6t8CzVIH1bW4nXUTjPnjKGWca+WTUXLeqne4l22SFuCN0pih8A1CKwafXFHt5Dm4CEIzwVtRwdWPbopFhpiE+59dsaLdkipbkjXYhJ/WQMIs6vVHg9rjtG8mOIcSwAXIDLbgGq3DXEbLeGIi9eVSE2N94ok0L6LBEM42c7s1uFo2M5Hn+nohtV3GNKrSgOO+HOtdhePIBmqYneZJE/G3XpaoxZ6/mi1rPx4egx6/HPP/sCmlu2jRsVSF1rfZ3kNm57WyLFvTl/Z1NRnO6YgYIgz74d2C90B6gC4El/W4h6Y=
