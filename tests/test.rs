@@ -1,7 +1,7 @@
 use trie_rs::{Trie, TrieBuilder};
 
 fn build_trie() -> Trie {
-    let builder = TrieBuilder::new();
+    let mut builder = TrieBuilder::new();
     builder.push("a");
     builder.push("app");
     builder.push("apple");
@@ -23,6 +23,7 @@ fn exact_match() {
 
 #[test]
 fn predictive_search() {
+    let empty: Vec<&str> = vec![];
     let trie = build_trie();
     assert_eq!(
         trie.predictive_search("a"),
@@ -34,19 +35,20 @@ fn predictive_search() {
     );
     assert_eq!(trie.predictive_search("appl"), vec!["apple", "application"]);
     assert_eq!(trie.predictive_search("apple"), vec!["apple"]);
-    assert_eq!(trie.predictive_search("appler"), vec![]);
+    assert_eq!(trie.predictive_search("appler"), empty);
     assert_eq!(trie.predictive_search("b"), vec!["better"]);
-    assert_eq!(trie.predictive_search("c"), vec![]);
+    assert_eq!(trie.predictive_search("c"), empty);
 }
 
 #[test]
 fn common_prefix_search() {
+    let empty: Vec<&str> = vec![];
     let trie = build_trie();
     assert_eq!(trie.predictive_search("a"), vec!["a"]);
     assert_eq!(trie.predictive_search("ap"), vec!["a"]);
     assert_eq!(trie.predictive_search("appl"), vec!["a", "app"]);
     assert_eq!(trie.predictive_search("appler"), vec!["apple"]);
-    assert_eq!(trie.predictive_search("bette"), vec![]);
-    assert_eq!(trie.predictive_search("bbetterment"), vec!["better"]);
-    assert_eq!(trie.predictive_search("c"), vec![]);
+    assert_eq!(trie.predictive_search("bette"), empty);
+    assert_eq!(trie.predictive_search("betterment"), vec!["better"]);
+    assert_eq!(trie.predictive_search("c"), empty);
 }
