@@ -28,3 +28,8 @@
 //!
 //! # Features
 //! (TBD)
+
+pub use trie::trie::Trie;
+pub use trie::trie_builder::TrieBuilder;
+
+pub mod trie;
