@@ -1,16 +1,14 @@
+use super::TrieBuilder;
 use crate::Trie;
 
-pub struct TrieBuilder {}
-
-impl TrieBuilder {
+impl<Elm: Eq + Ord + Clone> TrieBuilder<Elm> {
     pub fn new() -> Self {
-        TrieBuilder {}
+        TrieBuilder { words: vec![] }
     }
 
-    // TODO generics
-    pub fn push(&mut self, word: &str) {}
+    pub fn push<Arr: AsRef<[Elm]>>(&mut self, word: Arr) {}
 
-    pub fn build(&self) -> Trie {
-        Trie {}
+    pub fn build(&self) -> Trie<Elm> {
+        Trie { container: vec![] }
     }
 }
