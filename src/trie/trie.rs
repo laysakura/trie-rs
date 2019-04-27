@@ -1,16 +1,16 @@
 use super::Trie;
 
-impl<T: Eq + Ord> Trie<T> {
+impl<Elm: Eq + Ord + Clone> Trie<Elm> {
     // TODO generics
-    pub fn exact_match<U: Into<T>>(&self, query: U) -> bool {
+    pub fn exact_match<Arr: AsRef<[Elm]>>(&self, query: Arr) -> bool {
         true
     }
 
-    pub fn predictive_search<U: Into<T>>(&self, query: U) -> Vec<U> {
+    pub fn predictive_search<Arr: AsRef<[Elm]>>(&self, query: Arr) -> Vec<Arr> {
         vec![]
     }
 
-    pub fn common_prefix_search<U: Into<T>>(&self, query: U) -> Vec<U> {
+    pub fn common_prefix_search<Arr: AsRef<[Elm]>>(&self, query: Arr) -> Vec<Arr> {
         vec![]
     }
 }
