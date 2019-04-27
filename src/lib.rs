@@ -29,7 +29,7 @@
 //! # Features
 //! (TBD)
 
-pub use trie::trie::Trie;
-pub use trie::trie_builder::TrieBuilder;
+pub use trie::Trie;
+pub use trie::TrieBuilder;
 
 pub mod trie;

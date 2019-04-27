@@ -1,6 +1,6 @@
 use trie_rs::{Trie, TrieBuilder};
 
-fn build_trie() -> Trie {
+fn build_trie_str() -> Trie<String> {
     let mut builder = TrieBuilder::new();
     builder.push("a");
     builder.push("app");
@@ -12,7 +12,7 @@ fn build_trie() -> Trie {
 
 #[test]
 fn exact_match() {
-    let trie = build_trie();
+    let trie = build_trie_str();
     assert_eq!(trie.exact_match("a"), true);
     assert_eq!(trie.exact_match("app"), true);
     assert_eq!(trie.exact_match("apple"), true);
@@ -24,7 +24,7 @@ fn exact_match() {
 #[test]
 fn predictive_search() {
     let empty: Vec<&str> = vec![];
-    let trie = build_trie();
+    let trie = build_trie_str();
     assert_eq!(
         trie.predictive_search("a"),
         vec!["a", "app", "apple", "application"]
@@ -43,7 +43,7 @@ fn predictive_search() {
 #[test]
 fn common_prefix_search() {
     let empty: Vec<&str> = vec![];
-    let trie = build_trie();
+    let trie = build_trie_str();
     assert_eq!(trie.predictive_search("a"), vec!["a"]);
     assert_eq!(trie.predictive_search("ap"), vec!["a"]);
     assert_eq!(trie.predictive_search("appl"), vec!["a", "app"]);

@@ -1,16 +1,16 @@
-pub struct Trie {}
+use super::Trie;
 
-impl Trie {
+impl<T: Eq + Ord> Trie<T> {
     // TODO generics
-    pub fn exact_match(&self, query: &str) -> bool {
+    pub fn exact_match<U: Into<T>>(&self, query: U) -> bool {
         true
     }
 
-    pub fn predictive_search(&self, query: &str) -> Vec<&str> {
+    pub fn predictive_search<U: Into<T>>(&self, query: U) -> Vec<U> {
         vec![]
     }
 
-    pub fn common_prefix_search(&self, query: &str) -> Vec<&str> {
+    pub fn common_prefix_search<U: Into<T>>(&self, query: U) -> Vec<U> {
         vec![]
     }
 }
