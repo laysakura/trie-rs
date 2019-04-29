@@ -44,7 +44,7 @@ use std::collections::VecDeque;
 ///                      | n
 ///                    <Node (Stop)>
 /// ```
-struct NaiveTrie<Elm> {
+pub struct NaiveTrie<Elm> {
     /// Sorted by Elm's order.
     children: Vec<Box<NaiveTrie<Elm>>>,
 
@@ -63,14 +63,6 @@ impl<Elm: Eq + Ord + Clone> NaiveTrie<Elm> {
         }
     }
 
-    pub fn make_non_root(label: &Elm, is_terminal: bool) -> Self {
-        Self {
-            children: vec![],
-            label: Some(label.clone()),
-            is_terminal,
-        }
-    }
-
     pub fn push<Arr: AsRef<[Elm]>>(&mut self, word: Arr) {
         let mut trie = self;
         for chr in word.as_ref() {
@@ -82,7 +74,7 @@ impl<Elm: Eq + Ord + Clone> NaiveTrie<Elm> {
                 }
                 Err(i) => {
                     let is_terminal = false; // TODO
-                    let child_trie = Box::new(NaiveTrie::make_non_root(chr, is_terminal));
+                    let child_trie = Box::new(Self::make_non_root(chr, is_terminal));
                     children.insert(i, child_trie);
                     trie = &mut children[i];
                 }
@@ -91,13 +83,20 @@ impl<Elm: Eq + Ord + Clone> NaiveTrie<Elm> {
     }
 
     pub fn bf_iter(&self) -> NaiveTrieBFIter<Elm> {
-        let mut iter = NaiveTrieBFIter::new(self);
-        iter
+        NaiveTrieBFIter::new(self)
+    }
+
+    fn make_non_root(label: &Elm, is_terminal: bool) -> Self {
+        Self {
+            children: vec![],
+            label: Some(label.clone()),
+            is_terminal,
+        }
     }
 }
 
 /// Iterates over NaiveTrie in Breadth-First manner.
-struct NaiveTrieBFIter<'trie, Elm> {
+pub struct NaiveTrieBFIter<'trie, Elm> {
     unvisited: VecDeque<&'trie NaiveTrie<Elm>>,
 }
 
@@ -109,15 +108,25 @@ impl<'trie, Elm> NaiveTrieBFIter<'trie, Elm> {
     }
 }
 
-impl<'trie, Elm> Iterator for NaiveTrieBFIter<'trie, Elm> {
+impl<'trie, Elm: Eq + Ord + Clone> Iterator for NaiveTrieBFIter<'trie, Elm> {
     type Item = &'trie Elm;
     fn next(&mut self) -> Option<Self::Item> {
-        self.unvisited.pop_front().map(|trie| {
-            for child in &trie.children {
-                self.unvisited.push_back(child);
-            }
-            trie.label.as_ref()
-        })?
+        // -> None: All nodes are visited.
+        // -> Some(None): Root node.
+        // -> Some(Some(Elm)): Intermediate or leaf node.
+        let mut next1 = || {
+            self.unvisited.pop_front().map(|trie| {
+                for child in &trie.children {
+                    self.unvisited.push_back(child);
+                }
+                trie.label.as_ref()
+            })
+        };
+
+        next1().map(
+            // skip root node since it does not have label
+            |opt_elm| opt_elm.or_else(|| next1()?),
+        )?
     }
 }
 

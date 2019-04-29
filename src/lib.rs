@@ -32,5 +32,5 @@
 pub use trie::Trie;
 pub use trie::TrieBuilder;
 
-mod internal_data_structure;
+pub mod internal_data_structure; // TODO non pub
 pub mod trie;
