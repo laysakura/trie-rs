@@ -44,26 +44,51 @@ use std::collections::VecDeque;
 ///                      | n
 ///                    <Node (Stop)>
 /// ```
-enum NaiveTrie<Elm> {
-    Root(Node<Elm>),
-    NonRoot(Elm, Node<Elm>),
+struct NaiveTrie<Elm> {
+    /// Sorted by Elm's order.
+    children: Vec<Box<NaiveTrie<Elm>>>,
+
+    /// Only root node is None.
+    label: Option<Elm>,
+
+    is_terminal: bool,
 }
 
-struct Node<Elm> {
-    children: Vec<NaiveTrie<Elm>>,
-    is_stop: bool,
-}
-
-impl<Elm> NaiveTrie<Elm> {
-    pub fn new() -> Self {
-        let root = Node {
+impl<Elm: Eq + Ord + Clone> NaiveTrie<Elm> {
+    pub fn make_root() -> Self {
+        Self {
             children: vec![],
-            is_stop: false,
-        };
-        NaiveTrie::Root(root)
+            label: None,
+            is_terminal: false,
+        }
     }
 
-    pub fn push<Arr: AsRef<[Elm]>>(&mut self, word: Arr) {}
+    pub fn make_non_root(label: &Elm, is_terminal: bool) -> Self {
+        Self {
+            children: vec![],
+            label: Some(label.clone()),
+            is_terminal,
+        }
+    }
+
+    pub fn push<Arr: AsRef<[Elm]>>(&mut self, word: Arr) {
+        let mut trie = self;
+        for chr in word.as_ref() {
+            let children = &mut trie.children;
+            let res = children.binary_search_by_key(&Some(chr), |child| child.label.as_ref());
+            match res {
+                Ok(i) => {
+                    trie = &mut children[i];
+                }
+                Err(i) => {
+                    let is_terminal = false; // TODO
+                    let child_trie = Box::new(NaiveTrie::make_non_root(chr, is_terminal));
+                    children.insert(i, child_trie);
+                    trie = &mut children[i];
+                }
+            }
+        }
+    }
 
     pub fn bf_iter(&self) -> NaiveTrieBFIter<Elm> {
         let mut iter = NaiveTrieBFIter::new(self);
@@ -88,14 +113,10 @@ impl<'trie, Elm> Iterator for NaiveTrieBFIter<'trie, Elm> {
     type Item = &'trie Elm;
     fn next(&mut self) -> Option<Self::Item> {
         self.unvisited.pop_front().map(|trie| {
-            let (elm, node) = match trie {
-                NaiveTrie::Root(n) => (None, n),
-                NaiveTrie::NonRoot(e, n) => (Some(e), n),
-            };
-            for t in &node.children {
-                self.unvisited.push_back(t);
+            for child in &trie.children {
+                self.unvisited.push_back(child);
             }
-            elm
+            trie.label.as_ref()
         })?
     }
 }
@@ -107,7 +128,7 @@ mod tests {
     // TODO parameterized tests
     #[test]
     fn todo() {
-        let mut trie = NaiveTrie::new();
+        let mut trie = NaiveTrie::make_root();
 
         trie.push("a");
         trie.push("an");
