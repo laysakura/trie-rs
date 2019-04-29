@@ -6,7 +6,7 @@ use std::collections::VecDeque;
 /// - a
 /// - app
 /// - apple
-/// - applicatio
+/// - application
 ///
 /// ```text
 /// <Node>
@@ -46,7 +46,7 @@ use std::collections::VecDeque;
 /// ```
 enum NaiveTrie<Elm> {
     Root(Node<Elm>),
-    NoneRoot(Elm, Node<Elm>),
+    NonRoot(Elm, Node<Elm>),
 }
 
 struct Node<Elm> {
@@ -87,7 +87,16 @@ impl<'trie, Elm> NaiveTrieBFIter<'trie, Elm> {
 impl<'trie, Elm> Iterator for NaiveTrieBFIter<'trie, Elm> {
     type Item = &'trie Elm;
     fn next(&mut self) -> Option<Self::Item> {
-        None
+        self.unvisited.pop_front().map(|trie| {
+            let (elm, node) = match trie {
+                NaiveTrie::Root(n) => (None, n),
+                NaiveTrie::NonRoot(e, n) => (Some(e), n),
+            };
+            for t in &node.children {
+                self.unvisited.push_back(t);
+            }
+            elm
+        })?
     }
 }
 
