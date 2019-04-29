@@ -54,6 +54,11 @@ pub struct NaiveTrie<Elm> {
     is_terminal: bool,
 }
 
+/// Iterates over NaiveTrie in Breadth-First manner.
+pub struct NaiveTrieBFIter<'trie, Elm> {
+    unvisited: VecDeque<&'trie NaiveTrie<Elm>>,
+}
+
 impl<Elm: Eq + Ord + Clone> NaiveTrie<Elm> {
     pub fn make_root() -> Self {
         Self {
@@ -93,11 +98,6 @@ impl<Elm: Eq + Ord + Clone> NaiveTrie<Elm> {
             is_terminal,
         }
     }
-}
-
-/// Iterates over NaiveTrie in Breadth-First manner.
-pub struct NaiveTrieBFIter<'trie, Elm> {
-    unvisited: VecDeque<&'trie NaiveTrie<Elm>>,
 }
 
 impl<'trie, Elm> NaiveTrieBFIter<'trie, Elm> {
