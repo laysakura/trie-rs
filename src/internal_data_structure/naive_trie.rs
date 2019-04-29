@@ -109,7 +109,7 @@ impl<'trie, Elm> NaiveTrieBFIter<'trie, Elm> {
 }
 
 impl<'trie, Elm: Eq + Ord + Clone> Iterator for NaiveTrieBFIter<'trie, Elm> {
-    type Item = &'trie Elm;
+    type Item = Elm;
     fn next(&mut self) -> Option<Self::Item> {
         // -> None: All nodes are visited.
         // -> Some(None): Root node.
@@ -119,7 +119,7 @@ impl<'trie, Elm: Eq + Ord + Clone> Iterator for NaiveTrieBFIter<'trie, Elm> {
                 for child in &trie.children {
                     self.unvisited.push_back(child);
                 }
-                trie.label.as_ref()
+                trie.label.clone()
             })
         };
 
@@ -131,24 +131,43 @@ impl<'trie, Elm: Eq + Ord + Clone> Iterator for NaiveTrieBFIter<'trie, Elm> {
 }
 
 #[cfg(test)]
-mod tests {
+mod bf_iter_tests {
     use super::NaiveTrie;
 
-    // TODO parameterized tests
-    #[test]
-    fn todo() {
-        let mut trie = NaiveTrie::make_root();
+    macro_rules! parameterized_tests {
+        ($($name:ident: $value:expr,)*) => {
+        $(
+            #[test]
+            fn $name() {
+                let (words, expected_chars) = $value;
+                let mut trie = NaiveTrie::make_root();
+                for word in words {
+                    trie.push(word);
+                }
+                let chars: Vec<u8> = trie.bf_iter().collect();
+                assert_eq!(chars, expected_chars);
+            }
+        )*
+        }
+    }
 
-        trie.push("a");
-        trie.push("an");
-        trie.push("bad");
-
-        let mut iter = trie.bf_iter();
-        assert_eq!(iter.next(), Some(&('a' as u8)));
-        assert_eq!(iter.next(), Some(&('b' as u8)));
-        assert_eq!(iter.next(), Some(&('n' as u8)));
-        assert_eq!(iter.next(), Some(&('a' as u8)));
-        assert_eq!(iter.next(), Some(&('d' as u8)));
-        assert_eq!(iter.next(), None);
+    parameterized_tests! {
+        t1: (Vec::<&str>::new(), "".as_bytes()),
+        t2: (vec!["a"], "a".as_bytes()),
+        t3: (vec!["a", "a"], "a".as_bytes()),
+        t4: (vec!["a", "an", "bad"], "abnad".as_bytes()),
+        t5: (vec!["a", "bad", "an"], "abnad".as_bytes()),
+        t6: (
+            // 'り' => 227, 130, 138
+            // 'ん' => 227, 130, 147
+            // 'ご' => 227, 129, 148
+            vec!["a", "an", "りんご", "りんりん"],
+            vec!['a' as u8, 227, 'n' as u8, 130, 138, 227, 130, 147, 227, 129, 130, 148, 138, 227, 130, 147],
+        ),
+        t7: (
+            // '🍎' => 240, 159, 141, 142
+            vec!["🍎", "りんご"],
+            vec![227, 240, 130, 159, 138, 141, 227, 142, 130, 147, 227, 129, 148],
+        ),
     }
 }
