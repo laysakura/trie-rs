@@ -1,14 +1,14 @@
 use super::TrieBuilder;
 use crate::Trie;
 
-impl<Elm: Eq + Ord + Clone> TrieBuilder<Elm> {
+impl<Label: Ord + Clone> TrieBuilder<Label> {
     pub fn new() -> Self {
         TrieBuilder { words: vec![] }
     }
 
-    pub fn push<Arr: AsRef<[Elm]>>(&mut self, word: Arr) {}
+    pub fn push<Arr: AsRef<[Label]>>(&mut self, word: Arr) {}
 
-    pub fn build(&self) -> Trie<Elm> {
+    pub fn build(&self) -> Trie<Label> {
         Trie { container: vec![] }
     }
 }
