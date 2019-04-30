@@ -72,12 +72,12 @@ pub enum NaiveTrie<Label> {
     PhantomSibling,
 }
 
-struct NaiveTrieRoot<Label> {
+pub struct NaiveTrieRoot<Label> {
     /// Sorted by Label's order.
     children: Vec<Box<NaiveTrie<Label>>>,
 }
 
-struct NaiveTrieIntermOrLeaf<Label> {
+pub struct NaiveTrieIntermOrLeaf<Label> {
     /// Sorted by Label's order.
     children: Vec<Box<NaiveTrie<Label>>>,
     label: Label,
