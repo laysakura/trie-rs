@@ -59,9 +59,11 @@ pub struct NaiveTrie<Label> {
 
 /// Iterates over NaiveTrie in Breadth-First manner.
 pub struct NaiveTrieBFIter<'trie, Label> {
-    unvisited: VecDeque<&'trie NaiveTrie<Label>>,
+    unvisited: VecDeque<&'trie NodeType<Label>>,
 }
 
-enum LabelOrNull<L> {
+enum NodeType<Label> {
+    Root(NaiveTrie<Label>),
+    IntermOrLeaf(NaiveTrie<Label>),
     Null,
 }

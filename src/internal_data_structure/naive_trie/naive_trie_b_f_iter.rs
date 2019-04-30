@@ -1,25 +1,28 @@
-use super::{NaiveTrie, NaiveTrieBFIter};
+use super::{NaiveTrieBFIter, NodeType};
 use std::collections::VecDeque;
 
-impl<'trie, Elm> NaiveTrieBFIter<'trie, Elm> {
-    pub fn new(iter_start: &'trie NaiveTrie<Elm>) -> Self {
+impl<'trie, Label> NaiveTrieBFIter<'trie, Label> {
+    pub fn new(iter_start: &'trie NodeType<Label>) -> Self {
         let mut unvisited = VecDeque::new();
         unvisited.push_back(iter_start);
         Self { unvisited }
     }
 }
 
-impl<'trie, Elm: Eq + Ord + Clone> Iterator for NaiveTrieBFIter<'trie, Elm> {
-    type Item = Elm;
+impl<'trie, Label: Ord + Clone> Iterator for NaiveTrieBFIter<'trie, Label> {
+    type Item = NodeType<Label>;
+
     fn next(&mut self) -> Option<Self::Item> {
         // -> None: All nodes are visited.
-        // -> Some(None): Root node.
-        // -> Some(Some(Elm)): Intermediate or leaf node.
+        // -> Some(NodeType::Root): Root node.
+        // -> Some(NodeType::IntermOrLeaf): Intermediate or leaf node.
+        // -> Some(NodeType::Null): Marker to represent "all siblings are iterated".
         let mut next1 = || {
             self.unvisited.pop_front().map(|trie| {
                 for child in &trie.children {
                     self.unvisited.push_back(child);
                 }
+                self.unvisited.push_back(Some(Some(LabelOrNull::Null)));
                 trie.label.clone()
             })
         };
