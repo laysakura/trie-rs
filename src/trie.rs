@@ -1,10 +1,20 @@
+use crate::internal_data_structure::naive_trie::NaiveTrie;
+use louds_rs::Louds;
+
 pub mod trie;
 pub mod trie_builder;
 
 pub struct Trie<Label> {
-    container: Vec<Label>, // TODO
+    louds: Louds,
+    
+    /// LoudsNodeNum -> Option<Label>
+    /// 
+    /// 0 -> None
+    /// 1 -> None
+    /// 2.. -> Some
+    labels: Vec<Option<Label>>,
 }
 
 pub struct TrieBuilder<Label> {
-    words: Vec<Label>, // TODO should be tree
+    naive_trie: NaiveTrie<Label>,
 }
