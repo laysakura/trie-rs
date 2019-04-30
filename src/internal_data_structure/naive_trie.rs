@@ -245,6 +245,7 @@ mod bf_iter_tests {
 
                     if let NaiveTrie::IntermOrLeaf(n) = node {
                         assert_eq!(n.label, expected_node.label());
+                        assert_eq!(n.is_terminal, expected_node.is_terminal());
                     }
                 }
             }
@@ -257,32 +258,127 @@ mod bf_iter_tests {
             Vec::<&str>::new(),
             vec![
                 NaiveTrie::make_root(),
+                // parent = root
+                NaiveTrie::PhantomSibling,
             ]
         ),
         t2: (
             vec!["a"],
             vec![
                 NaiveTrie::make_root(),
-                NaiveTrie::make_interm_or_leaf(&('a' as u8), false),
+                // parent = root
+                NaiveTrie::make_interm_or_leaf(&('a' as u8), true),
                 NaiveTrie::PhantomSibling,
+                // parent = a
                 NaiveTrie::PhantomSibling,
             ]
         ),
-        // t3: (vec!["a", "a"], "a".as_bytes()),
-        // t4: (vec!["a", "an", "bad"], "abnad".as_bytes()),
-        // t5: (vec!["a", "bad", "an"], "abnad".as_bytes()),
-        // t6: (
-        //     // 'り' => 227, 130, 138
-        //     // 'ん' => 227, 130, 147
-        //     // 'ご' => 227, 129, 148
-        //     vec!["a", "an", "りんご", "りんりん"],
-        //     vec!['a' as u8, 227, 'n' as u8, 130, 138, 227, 130, 147, 227, 129, 130, 148, 138, 227, 130, 147],
-        // ),
-        // t7: (
-        //     // '🍎' => 240, 159, 141, 142
-        //     vec!["🍎", "りんご"],
-        //     vec![227, 240, 130, 159, 138, 141, 227, 142, 130, 147, 227, 129, 148],
-        // ),
+        t3: (
+            vec!["a", "a"],
+            vec![
+                NaiveTrie::make_root(),
+                // parent = root
+                NaiveTrie::make_interm_or_leaf(&('a' as u8), true),
+                NaiveTrie::PhantomSibling,
+                // parent = a
+                NaiveTrie::PhantomSibling,
+            ]
+        ),
+        t4: (
+            // root
+            //  |-----------------------+-----------------------+
+            //  |                       |                       |
+            //  a (term)                b                       Ph
+            //  |---------+             |-----------------+
+            //  |         |             |                 |
+            //  n (term)  Ph            a                 Ph
+            //  |                       |--------+
+            //  |                       |        |
+            //  Ph                      d (term) Ph
+            //                          |
+            //                          |
+            //                          Ph
+            vec!["a", "bad", "an"],
+            vec![
+                NaiveTrie::make_root(),
+                // parent = root
+                NaiveTrie::make_interm_or_leaf(&('a' as u8), true),
+                NaiveTrie::make_interm_or_leaf(&('b' as u8), false),
+                NaiveTrie::PhantomSibling,
+                // parent = [a]
+                NaiveTrie::make_interm_or_leaf(&('n' as u8), true),
+                NaiveTrie::PhantomSibling,
+                // parent = b
+                NaiveTrie::make_interm_or_leaf(&('a' as u8), false),
+                NaiveTrie::PhantomSibling,
+                // parent = n
+                NaiveTrie::PhantomSibling,
+                // parent = b[a]d
+                NaiveTrie::make_interm_or_leaf(&('d' as u8), true),
+                NaiveTrie::PhantomSibling,
+                // parent = d
+                NaiveTrie::PhantomSibling,
+            ]
+        ),
+        t5: (
+            // 'り' => 227, 130, 138
+            // 'ん' => 227, 130, 147
+            // 'ご' => 227, 129, 148
+            vec!["a", "an", "りんご", "りんりん"],
+            vec![
+                NaiveTrie::make_root(),
+                // parent = root
+                NaiveTrie::make_interm_or_leaf(&('a' as u8), true),
+                NaiveTrie::make_interm_or_leaf(&227, false),
+                NaiveTrie::PhantomSibling,
+                // parent = a
+                NaiveTrie::make_interm_or_leaf(&('n' as u8), true),
+                NaiveTrie::PhantomSibling,
+                // parent = [227] 130 138 (り)
+                NaiveTrie::make_interm_or_leaf(&130, false),
+                NaiveTrie::PhantomSibling,
+                // parent = n
+                NaiveTrie::PhantomSibling,
+                // parent = 227 [130] 138 (り)
+                NaiveTrie::make_interm_or_leaf(&138, false),
+                NaiveTrie::PhantomSibling,
+                // parent = 227 130 [138] (り)
+                NaiveTrie::make_interm_or_leaf(&227, false),
+                NaiveTrie::PhantomSibling,
+                // parent = [227] 130 147 (ん)
+                NaiveTrie::make_interm_or_leaf(&130, false),
+                NaiveTrie::PhantomSibling,
+                // parent = 227 [130] 147 (ん)
+                NaiveTrie::make_interm_or_leaf(&147, false),
+                NaiveTrie::PhantomSibling,
+                // parent = 227 130 [147] (ん)
+                NaiveTrie::make_interm_or_leaf(&227, false),
+                NaiveTrie::PhantomSibling,
+                // parent = [227] _ _ (ご or り)
+                NaiveTrie::make_interm_or_leaf(&129, false),
+                NaiveTrie::make_interm_or_leaf(&130, false),
+                NaiveTrie::PhantomSibling,
+                // parent = 227 [129] 148 (ご)
+                NaiveTrie::make_interm_or_leaf(&148, true),
+                NaiveTrie::PhantomSibling,
+                // parent = 227 [130] 138 (り)
+                NaiveTrie::make_interm_or_leaf(&138, false),
+                NaiveTrie::PhantomSibling,
+                // parent = 227 129 [148] (ご)
+                NaiveTrie::PhantomSibling,
+                // parent = 227 130 [138] (り)
+                NaiveTrie::make_interm_or_leaf(&227, false),
+                NaiveTrie::PhantomSibling,
+                // parent = [227] 130 147 (ん)
+                NaiveTrie::make_interm_or_leaf(&130, false),
+                NaiveTrie::PhantomSibling,
+                // parent = 227 [130] 147 (ん)
+                NaiveTrie::make_interm_or_leaf(&147, true),
+                NaiveTrie::PhantomSibling,
+                // parent = 227 130 [147] (ん)
+                NaiveTrie::PhantomSibling,
+            ]
+        ),
     }
 }
 
