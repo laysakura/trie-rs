@@ -101,7 +101,7 @@ impl<Elm: Eq + Ord + Clone> NaiveTrie<Elm> {
     }
 }
 
-impl<'trie, Elm: Ord + Clone> TrieSearchMethods<Elm> for NaiveTrie<Elm> {
+impl<Elm: Ord + Clone> TrieSearchMethods<Elm> for NaiveTrie<Elm> {
     fn children(&self) -> &Vec<Box<Self>> {
         &self.children
     }
