@@ -3,7 +3,7 @@
 /// - exact_match()
 /// - predictive_search()
 /// - common_prefix_search()
-pub trait TrieSearchMethods<Label: Ord + Clone> {
+pub trait TrieMethods<Label: Ord + Clone> {
     fn exact_match<Arr: AsRef<[Label]>>(&self, query: Arr) -> bool {
         let mut trie = self;
         for (i, chr) in query.as_ref().iter().enumerate() {

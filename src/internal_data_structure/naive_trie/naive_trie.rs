@@ -1,6 +1,6 @@
 use super::naive_trie_b_f_iter::NaiveTrieBFIter;
 use super::{NaiveTrie, NaiveTrieIntermOrLeaf, NaiveTrieRoot};
-use crate::traits::trie_search_methods::TrieSearchMethods;
+use crate::traits::trie_methods::TrieMethods;
 
 impl<'trie, Label: Ord + Clone> NaiveTrie<Label> {
     pub fn make_root() -> Self {
@@ -54,7 +54,7 @@ impl<'trie, Label: Ord + Clone> NaiveTrie<Label> {
     }
 }
 
-impl<Label: Ord + Clone> TrieSearchMethods<Label> for NaiveTrie<Label> {
+impl<Label: Ord + Clone> TrieMethods<Label> for NaiveTrie<Label> {
     /// # Panics
     /// When self is not a Root or IntermOrLeaf
     fn children(&self) -> &Vec<Box<Self>> {
@@ -100,7 +100,7 @@ mod search_tests {
     }
 
     mod exact_match_tests {
-        use crate::traits::trie_search_methods::TrieSearchMethods;
+        use crate::traits::trie_methods::TrieMethods;
 
         macro_rules! parameterized_tests {
             ($($name:ident: $value:expr,)*) => {
@@ -129,7 +129,7 @@ mod search_tests {
     }
 
     mod predictive_search_tests {
-        use crate::traits::trie_search_methods::TrieSearchMethods;
+        use crate::traits::trie_methods::TrieMethods;
 
         macro_rules! parameterized_tests {
             ($($name:ident: $value:expr,)*) => {
@@ -158,7 +158,7 @@ mod search_tests {
     }
 
     mod common_prefix_search_tests {
-        use crate::traits::trie_search_methods::TrieSearchMethods;
+        use crate::traits::trie_methods::TrieMethods;
 
         macro_rules! parameterized_tests {
             ($($name:ident: $value:expr,)*) => {

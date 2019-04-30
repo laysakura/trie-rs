@@ -100,7 +100,7 @@ mod search_tests {
     }
 
     mod exact_match_tests {
-        use crate::traits::trie_search_methods::TrieSearchMethods;
+        use crate::traits::trie_methods::TrieMethods;
 
         macro_rules! parameterized_tests {
             ($($name:ident: $value:expr,)*) => {
@@ -129,7 +129,7 @@ mod search_tests {
     }
 
     mod predictive_search_tests {
-        use crate::traits::trie_search_methods::TrieSearchMethods;
+        use crate::traits::trie_methods::TrieMethods;
 
         macro_rules! parameterized_tests {
             ($($name:ident: $value:expr,)*) => {
@@ -158,7 +158,7 @@ mod search_tests {
     }
 
     mod common_prefix_search_tests {
-        use crate::traits::trie_search_methods::TrieSearchMethods;
+        use crate::traits::trie_methods::TrieMethods;
 
         macro_rules! parameterized_tests {
             ($($name:ident: $value:expr,)*) => {

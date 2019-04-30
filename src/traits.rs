@@ -1,1 +1,1 @@
-pub mod trie_search_methods;
+pub mod trie_methods;
