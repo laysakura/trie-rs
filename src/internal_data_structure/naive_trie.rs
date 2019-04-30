@@ -140,7 +140,7 @@ impl<'trie, Label: Ord + Clone> Iterator for NaiveTrieBFIter<'trie, Label> {
 
         next1().map(
             // skip root node since it does not have label
-            |opt_elm| opt_elm.or_else(|| next1()?),
+            |opt_label| opt_label.or_else(|| next1()?),
         )?
     }
 }

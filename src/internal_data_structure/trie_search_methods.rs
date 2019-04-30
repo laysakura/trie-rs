@@ -61,7 +61,7 @@ pub trait TrieSearchMethods<Label: Ord + Clone> {
 
     fn common_prefix_search<Arr: AsRef<[Label]>>(&self, query: Arr) -> Vec<Vec<Label>> {
         let mut results: Vec<Vec<Label>> = Vec::new();
-        let mut elms_in_path: Vec<Label> = Vec::new();
+        let mut labels_in_path: Vec<Label> = Vec::new();
 
         let mut trie = self;
         for chr in query.as_ref() {
@@ -70,9 +70,9 @@ pub trait TrieSearchMethods<Label: Ord + Clone> {
             match res {
                 Ok(j) => {
                     let child = &children[j];
-                    elms_in_path.push(child.label().unwrap().clone());
+                    labels_in_path.push(child.label().unwrap().clone());
                     if child.is_terminal() {
-                        results.push(elms_in_path.clone());
+                        results.push(labels_in_path.clone());
                     };
                     trie = child;
                 }
