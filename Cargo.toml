@@ -2,7 +2,7 @@
 name = "trie-rs"
 version = "0.1.0"
 authors = ["Sho Nakatani <lay.sakura@gmail.com>"]
-description = "High performance LOUDS (Level-Order Unary Degree Sequence) library"
+description = "Memory efficient trie (prefix tree) library based on LOUDS"
 readme = "README.md"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/laysakura/trie-rs"
@@ -12,7 +12,7 @@ categories = ["compression", "data-structures"]
 edition = "2018"
 
 [dependencies]
-louds-rs = "0.1"
+louds-rs = "0.2"
 
 [dev-dependencies]
 criterion = "0.2"

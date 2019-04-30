@@ -7,12 +7,12 @@ pub mod trie_builder;
 pub struct Trie<Label> {
     louds: Louds,
 
-    /// LoudsNodeNum -> Option<Label>
+    /// LoudsNodeNum -> Option<(Label, bool)>
     ///
     /// 0 -> None
     /// 1 -> None
-    /// 2.. -> Some
-    labels: Vec<Option<Label>>,
+    /// 2.. -> Some(label, is_terminal)
+    label_terminal_vec: Vec<Option<(Label, bool)>>,
 }
 
 pub struct TrieBuilder<Label> {
