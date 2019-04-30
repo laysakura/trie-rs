@@ -189,7 +189,6 @@ mod bf_iter_tests {
 
 #[cfg(test)]
 mod search_tests {
-    use super::super::trie_search_methods::TrieSearchMethods;
     use super::NaiveTrie;
 
     fn build_trie() -> NaiveTrie<u8> {
@@ -203,56 +202,89 @@ mod search_tests {
         trie
     }
 
-    #[test]
-    fn exact_match() {
-        let trie = build_trie();
-        assert_eq!(trie.exact_match("a"), true);
-        assert_eq!(trie.exact_match("app"), true);
-        assert_eq!(trie.exact_match("apple"), true);
-        assert_eq!(trie.exact_match("application"), true);
-        assert_eq!(trie.exact_match("better"), true);
-        assert_eq!(trie.exact_match("アップル🍎"), true);
-        assert_eq!(trie.exact_match("appl"), false);
-        assert_eq!(trie.exact_match("appler"), false);
+    mod exact_match_tests {
+        use crate::internal_data_structure::trie_search_methods::TrieSearchMethods;
+
+        macro_rules! parameterized_tests {
+            ($($name:ident: $value:expr,)*) => {
+            $(
+                #[test]
+                fn $name() {
+                    let (query, expected_match) = $value;
+                    let trie = super::build_trie();
+                    let result = trie.exact_match(query);
+                    assert_eq!(result, expected_match);
+                }
+            )*
+            }
+        }
+
+        parameterized_tests! {
+            t1: ("a", true),
+            t2: ("app", true),
+            t3: ("apple", true),
+            t4: ("application", true),
+            t5: ("better", true),
+            t6: ("アップル🍎", true),
+            t7: ("appl", false),
+            t8: ("appler", false),
+        }
     }
 
-    #[test]
-    fn predictive_search() {
-        let empty: Vec<&str> = vec![];
-        let trie = build_trie();
-        assert_eq!(
-            trie.predictive_search("a"),
-            vec!["a", "app", "apple", "application"]
-        );
-        assert_eq!(
-            trie.predictive_search("app"),
-            vec!["app", "apple", "application"]
-        );
-        assert_eq!(trie.predictive_search("appl"), vec!["apple", "application"]);
-        assert_eq!(trie.predictive_search("apple"), vec!["apple"]);
-        assert_eq!(trie.predictive_search("appler"), empty);
-        assert_eq!(trie.predictive_search("b"), vec!["better"]);
-        assert_eq!(trie.predictive_search("c"), empty);
-        assert_eq!(
-            trie.predictive_search("アップ"),
-            vec!["アップル🍎"]
-        );
+    mod predictive_search_tests {
+        use crate::internal_data_structure::trie_search_methods::TrieSearchMethods;
+
+        macro_rules! parameterized_tests {
+            ($($name:ident: $value:expr,)*) => {
+            $(
+                #[test]
+                fn $name() {
+                    let (query, expected_results) = $value;
+                    let trie = super::build_trie();
+                    let results = trie.predictive_search(query);
+                    assert_eq!(results, expected_results);
+                }
+            )*
+            }
+        }
+
+        parameterized_tests! {
+            t1: ("a", vec!["a", "app", "apple", "application"]),
+            t2: ("app", vec!["app", "apple", "application"]),
+            t3: ("appl", vec!["apple", "application"]),
+            t4: ("apple", vec!["apple"]),
+            t5: ("b", vec!["better"]),
+            t6: ("c", Vec::<&str>::new()),
+            t7: ("アップ", vec!["アップル🍎"]),
+        }
     }
 
-    #[test]
-    fn common_prefix_search() {
-        let empty: Vec<&str> = vec![];
-        let trie = build_trie();
-        assert_eq!(trie.common_prefix_search("a"), vec!["a"]);
-        assert_eq!(trie.common_prefix_search("ap"), vec!["a"]);
-        assert_eq!(trie.common_prefix_search("appl"), vec!["a", "app"]);
-        assert_eq!(trie.common_prefix_search("appler"), vec!["apple"]);
-        assert_eq!(trie.common_prefix_search("bette"), empty);
-        assert_eq!(trie.common_prefix_search("betterment"), vec!["better"]);
-        assert_eq!(trie.common_prefix_search("c"), empty);
-        assert_eq!(
-            trie.common_prefix_search("アップル🍎🍏"),
-            vec!["アップル🍎"]
-        );
+    mod common_prefix_search_tests {
+        use crate::internal_data_structure::trie_search_methods::TrieSearchMethods;
+
+        macro_rules! parameterized_tests {
+            ($($name:ident: $value:expr,)*) => {
+            $(
+                #[test]
+                fn $name() {
+                    let (query, expected_results) = $value;
+                    let trie = super::build_trie();
+                    let results = trie.common_prefix_search(query);
+                    assert_eq!(results, expected_results);
+                }
+            )*
+            }
+        }
+
+        parameterized_tests! {
+            t1: ("a", vec!["a"]),
+            t2: ("ap", vec!["a"]),
+            t3: ("appl", vec!["a", "app"]),
+            t4: ("appler", vec!["apple"]),
+            t5: ("bette", Vec::<&str>::new()),
+            t6: ("betterment", vec!["better"]),
+            t7: ("c", Vec::<&str>::new()),
+            t8: ("アップル🍎🍏", vec!["アップル🍎"]),
+        }
     }
 }
