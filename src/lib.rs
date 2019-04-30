@@ -34,3 +34,4 @@ pub use trie::TrieBuilder;
 
 mod internal_data_structure;
 pub mod trie;
+pub mod traits;
