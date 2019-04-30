@@ -21,6 +21,7 @@ mod string {
         assert_eq!(trie.exact_match("application"), true);
         assert_eq!(trie.exact_match("better"), true);
         assert_eq!(trie.exact_match("アップル🍎"), true);
+        assert_eq!(trie.exact_match("appl"), false);
         assert_eq!(trie.exact_match("appler"), false);
     }
 
@@ -54,7 +55,10 @@ mod string {
         assert_eq!(trie.common_prefix_search("a"), vec!["a"]);
         assert_eq!(trie.common_prefix_search("ap"), vec!["a"]);
         assert_eq!(trie.common_prefix_search("appl"), vec!["a", "app"]);
-        assert_eq!(trie.common_prefix_search("appler"), vec!["apple"]);
+        assert_eq!(
+            trie.common_prefix_search("appler"),
+            vec!["a", "app", "apple"]
+        );
         assert_eq!(trie.common_prefix_search("bette"), empty);
         assert_eq!(trie.common_prefix_search("betterment"), vec!["better"]);
         assert_eq!(trie.common_prefix_search("c"), empty);
