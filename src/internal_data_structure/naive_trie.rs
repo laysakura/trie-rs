@@ -101,19 +101,7 @@ impl<Elm: Eq + Ord + Clone> NaiveTrie<Elm> {
     }
 }
 
-impl<Elm> TrieSearchMethods<Elm> for NaiveTrie<Elm> {
-    fn exact_match<Arr: AsRef<[Elm]>>(&self, query: Arr) -> bool {
-        true
-    }
-
-    fn predictive_search<Arr: AsRef<[Elm]>>(&self, query: Arr) -> Vec<Arr> {
-        vec![]
-    }
-
-    fn common_prefix_search<Arr: AsRef<[Elm]>>(&self, query: Arr) -> Vec<Arr> {
-        vec![]
-    }
-}
+impl<Elm> TrieSearchMethods<Elm> for NaiveTrie<Elm> {}
 
 impl<'trie, Elm> NaiveTrieBFIter<'trie, Elm> {
     pub fn new(iter_start: &'trie NaiveTrie<Elm>) -> Self {
