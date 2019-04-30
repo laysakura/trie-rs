@@ -1,7 +1,8 @@
 use crate::internal_data_structure::naive_trie::NaiveTrie;
 use crate::traits::trie_methods::TrieMethods;
 use crate::{Trie, TrieBuilder};
-use louds_rs::Louds;
+use louds_rs::{Louds, LoudsNodeNum};
+use std::rc::Rc;
 
 impl<Label: Ord + Clone> TrieBuilder<Label> {
     pub fn new() -> Self {
@@ -29,8 +30,9 @@ impl<Label: Ord + Clone> TrieBuilder<Label> {
         }
 
         Trie {
-            louds: Louds::from(louds_bits),
-            label_terminal_vec,
+            current_node_num: LoudsNodeNum::new(1),
+            louds: Rc::new(Louds::from(&louds_bits[..])),
+            label_terminal_vec: Rc::new(label_terminal_vec),
         }
     }
 }
