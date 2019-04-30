@@ -21,6 +21,7 @@ mod string {
         assert_eq!(trie.exact_match("application"), true);
         assert_eq!(trie.exact_match("better"), true);
         assert_eq!(trie.exact_match("アップル🍎"), true);
+        assert_eq!(trie.exact_match("appl"), false);
         assert_eq!(trie.exact_match("appler"), false);
     }
 

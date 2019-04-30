@@ -71,18 +71,18 @@ impl<Elm: Eq + Ord + Clone> NaiveTrie<Elm> {
 
     pub fn push<Arr: AsRef<[Elm]>>(&mut self, word: Arr) {
         let mut trie = self;
-        for chr in word.as_ref() {
+        for (i, chr) in word.as_ref().iter().enumerate() {
             let children = &mut trie.children;
-            let res = children.binary_search_by_key(&Some(chr), |child| child.label.as_ref());
+            let res = children.binary_search_by_key(&Some(chr), |child| child.label());
             match res {
-                Ok(i) => {
-                    trie = &mut children[i];
+                Ok(j) => {
+                    trie = &mut children[j];
                 }
-                Err(i) => {
-                    let is_terminal = false; // TODO
+                Err(j) => {
+                    let is_terminal = i == word.as_ref().len() - 1;
                     let child_trie = Box::new(Self::make_non_root(chr, is_terminal));
-                    children.insert(i, child_trie);
-                    trie = &mut children[i];
+                    children.insert(j, child_trie);
+                    trie = &mut children[j];
                 }
             }
         }
@@ -101,7 +101,19 @@ impl<Elm: Eq + Ord + Clone> NaiveTrie<Elm> {
     }
 }
 
-impl<Elm> TrieSearchMethods<Elm> for NaiveTrie<Elm> {}
+impl<Elm: Ord> TrieSearchMethods<Elm> for NaiveTrie<Elm> {
+    fn children(&self) -> &Vec<Box<Self>> {
+        &self.children
+    }
+
+    fn label(&self) -> Option<&Elm> {
+        self.label.as_ref()
+    }
+
+    fn is_terminal(&self) -> bool {
+        self.is_terminal
+    }
+}
 
 impl<'trie, Elm> NaiveTrieBFIter<'trie, Elm> {
     pub fn new(iter_start: &'trie NaiveTrie<Elm>) -> Self {
@@ -200,6 +212,7 @@ mod search_tests {
         assert_eq!(trie.exact_match("application"), true);
         assert_eq!(trie.exact_match("better"), true);
         assert_eq!(trie.exact_match("アップル🍎"), true);
+        assert_eq!(trie.exact_match("appl"), false);
         assert_eq!(trie.exact_match("appler"), false);
     }
 
