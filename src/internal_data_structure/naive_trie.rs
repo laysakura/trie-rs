@@ -45,15 +45,15 @@ use std::collections::VecDeque;
 ///                                  | n
 ///                                <IntermOrLeaf (Terminate)>
 /// ```
-pub struct NaiveTrie<'trie, Label> {
+pub struct NaiveTrieNode<'trie, Label> {
     /// Sorted by Label's order.
     children: Vec<NodeType<'trie, Label>>,
     is_terminal: bool,
 }
 
 pub enum NodeType<'trie, Label> {
-    Root(&'trie NaiveTrie<'trie, Label>),
-    IntermOrLeaf(&'trie NaiveTrie<'trie, Label>, Label),
+    Root(&'trie NaiveTrieNode<'trie, Label>),
+    IntermOrLeaf(&'trie NaiveTrieNode<'trie, Label>, Label),
 
     /// Used for Breadth-First iteration.
     ///
@@ -74,14 +74,14 @@ pub enum NodeType<'trie, Label> {
     PhantomSibling,
 }
 
-/// Iterates over NaiveTrie in Breadth-First manner.
-pub struct NaiveTrieBFIter<'trie, Label> {
+/// Iterates over NaiveTrieNode in Breadth-First manner.
+pub struct NaiveTrieNodeBFIter<'trie, Label> {
     unvisited: VecDeque<&'trie NodeType<'trie, Label>>,
 }
 
-impl<'trie, Label: Ord + Clone> NaiveTrie<'trie, Label> {
+impl<'trie, Label: Ord + Clone> NaiveTrieNode<'trie, Label> {
     pub fn make_root() -> NodeType<'trie, Label> {
-        NodeType::Root(&NaiveTrie {
+        NodeType::Root(&NaiveTrieNode {
             children: vec![],
             is_terminal: false,
         })
@@ -106,8 +106,8 @@ impl<'trie, Label: Ord + Clone> NaiveTrie<'trie, Label> {
         }
     }
 
-    pub fn bf_iter(&'trie self) -> NaiveTrieBFIter<Label> {
-        NaiveTrieBFIter::new(&NodeType::Root(self))
+    pub fn bf_iter(&'trie self) -> NaiveTrieNodeBFIter<Label> {
+        NaiveTrieNodeBFIter::new(&NodeType::Root(self))
     }
 
     fn make_non_root(label: &Label, is_terminal: bool) -> NodeType<'trie, Label> {
@@ -121,7 +121,7 @@ impl<'trie, Label: Ord + Clone> NaiveTrie<'trie, Label> {
     }
 }
 
-impl<'trie, Label: Ord + Clone> TrieSearchMethods<Label> for NaiveTrie<'trie, Label> {
+impl<'trie, Label: Ord + Clone> TrieSearchMethods<Label> for NaiveTrieNode<'trie, Label> {
     fn children(&self) -> &Vec<NodeType<Label>> {
         &self.children
     }
@@ -135,7 +135,7 @@ impl<'trie, Label: Ord + Clone> TrieSearchMethods<Label> for NaiveTrie<'trie, La
     fn label(&self) -> Label {}
 }
 
-impl<'trie, Label> NaiveTrieBFIter<'trie, Label> {
+impl<'trie, Label> NaiveTrieNodeBFIter<'trie, Label> {
     pub fn new(iter_start: &'trie NodeType<Label>) -> Self {
         let mut unvisited = VecDeque::new();
         unvisited.push_back(iter_start);
@@ -143,7 +143,7 @@ impl<'trie, Label> NaiveTrieBFIter<'trie, Label> {
     }
 }
 
-impl<'trie, Label: Ord + Clone> Iterator for NaiveTrieBFIter<'trie, Label> {
+impl<'trie, Label: Ord + Clone> Iterator for NaiveTrieNodeBFIter<'trie, Label> {
     type Item = &'trie NodeType<'trie, Label>;
 
     /// Returns:
@@ -171,7 +171,7 @@ impl<'trie, Label: Ord + Clone> Iterator for NaiveTrieBFIter<'trie, Label> {
 impl<'trie, Label> NodeType<'trie, Label> {
     /// # Panics
     /// If self is not Root.
-    pub fn root(&'trie self) -> &NaiveTrie<Label> {
+    pub fn root(&'trie self) -> &NaiveTrieNode<Label> {
         match self {
             NodeType::Root(trie) => trie,
             _ => panic!("Unexpected NodeType"),
@@ -180,7 +180,7 @@ impl<'trie, Label> NodeType<'trie, Label> {
 
     /// # Panics
     /// If self is not IntermOrLeaf.
-    pub fn interm_or_leaf(&'trie self) -> (&NaiveTrie<Label>, &Label) {
+    pub fn interm_or_leaf(&'trie self) -> (&NaiveTrieNode<Label>, &Label) {
         match self {
             NodeType::IntermOrLeaf(trie, label) => (trie, label),
             _ => panic!("Unexpected NodeType"),
@@ -190,7 +190,7 @@ impl<'trie, Label> NodeType<'trie, Label> {
 
 #[cfg(test)]
 mod bf_iter_tests {
-    use super::{NaiveTrie, NodeType};
+    use super::{NaiveTrieNode, NodeType};
 
     macro_rules! parameterized_tests {
         ($($name:ident: $value:expr,)*) => {
@@ -198,7 +198,7 @@ mod bf_iter_tests {
             #[test]
             fn $name() {
                 let (words, expected_node_types) = $value;
-                let mut trie = NaiveTrie::make_root().root();
+                let mut trie = NaiveTrieNode::make_root().root();
                 for word in words {
                     trie.push(word);
                 }
@@ -224,14 +224,14 @@ mod bf_iter_tests {
         t1: (
             Vec::<&str>::new(),
             vec![
-                NaiveTrie::make_root(),
+                NaiveTrieNode::make_root(),
             ]
         ),
         t2: (
             vec!["a"],
             vec![
-                NaiveTrie::make_root(),
-                NaiveTrie::make_non_root(&('a' as u8), false),
+                NaiveTrieNode::make_root(),
+                NaiveTrieNode::make_non_root(&('a' as u8), false),
                 NodeType::PhantomSibling,
                 NodeType::PhantomSibling,
             ]
@@ -256,10 +256,10 @@ mod bf_iter_tests {
 
 // #[cfg(test)]
 // mod search_tests {
-//     use super::NaiveTrie;
+//     use super::NaiveTrieNode;
 
-//     fn build_trie<'trie>() -> NaiveTrie<'trie, u8> {
-//         let mut trie = NaiveTrie::make_root();
+//     fn build_trie<'trie>() -> NaiveTrieNode<'trie, u8> {
+//         let mut trie = NaiveTrieNode::make_root();
 //         trie.push("a");
 //         trie.push("app");
 //         trie.push("apple");
