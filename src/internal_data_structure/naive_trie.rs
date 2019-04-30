@@ -1,7 +1,7 @@
 use super::trie_search_methods::TrieSearchMethods;
 use std::collections::VecDeque;
 
-/// Naive trie with ordered Elm sequence in edges.
+/// Naive trie with ordered Label sequence in edges.
 ///
 /// The following naive trie contains these words.
 /// - a
@@ -12,20 +12,20 @@ use std::collections::VecDeque;
 /// ```text
 /// <Node>
 ///   |
-///   | a: Elm
-/// <Node (Stop)>
+///   | a: Label
+/// <Node (Terminate)>
 ///   |
 ///   | p
 /// <Node>
 ///   |
 ///   | p
-/// <Node (Stop)>
+/// <Node (Terminate)>
 ///   |
 ///   | l
 /// <Node>
 ///   |------------------+
 ///   | e                | i
-/// <Node (Stop)>     <Node>
+/// <Node (Terminate)>     <Node>
 ///                      |
 ///                      | c
 ///                   <Node>
@@ -43,24 +43,24 @@ use std::collections::VecDeque;
 ///                    <Node>
 ///                      |
 ///                      | n
-///                    <Node (Stop)>
+///                    <Node (Terminate)>
 /// ```
-pub struct NaiveTrie<Elm> {
-    /// Sorted by Elm's order.
-    children: Vec<Box<NaiveTrie<Elm>>>,
+pub struct NaiveTrie<Label> {
+    /// Sorted by Label's order.
+    children: Vec<Box<NaiveTrie<Label>>>,
 
     /// Only root node is None.
-    label: Option<Elm>,
+    label: Option<Label>,
 
     is_terminal: bool,
 }
 
 /// Iterates over NaiveTrie in Breadth-First manner.
-pub struct NaiveTrieBFIter<'trie, Elm> {
-    unvisited: VecDeque<&'trie NaiveTrie<Elm>>,
+pub struct NaiveTrieBFIter<'trie, Label> {
+    unvisited: VecDeque<&'trie NaiveTrie<Label>>,
 }
 
-impl<Elm: Eq + Ord + Clone> NaiveTrie<Elm> {
+impl<Label: Ord + Clone> NaiveTrie<Label> {
     pub fn make_root() -> Self {
         Self {
             children: vec![],
@@ -69,7 +69,7 @@ impl<Elm: Eq + Ord + Clone> NaiveTrie<Elm> {
         }
     }
 
-    pub fn push<Arr: AsRef<[Elm]>>(&mut self, word: Arr) {
+    pub fn push<Arr: AsRef<[Label]>>(&mut self, word: Arr) {
         let mut trie = self;
         for (i, chr) in word.as_ref().iter().enumerate() {
             let children = &mut trie.children;
@@ -88,11 +88,11 @@ impl<Elm: Eq + Ord + Clone> NaiveTrie<Elm> {
         }
     }
 
-    pub fn bf_iter(&self) -> NaiveTrieBFIter<Elm> {
+    pub fn bf_iter(&self) -> NaiveTrieBFIter<Label> {
         NaiveTrieBFIter::new(self)
     }
 
-    fn make_non_root(label: &Elm, is_terminal: bool) -> Self {
+    fn make_non_root(label: &Label, is_terminal: bool) -> Self {
         Self {
             children: vec![],
             label: Some(label.clone()),
@@ -101,12 +101,12 @@ impl<Elm: Eq + Ord + Clone> NaiveTrie<Elm> {
     }
 }
 
-impl<Elm: Ord + Clone> TrieSearchMethods<Elm> for NaiveTrie<Elm> {
+impl<Label: Ord + Clone> TrieSearchMethods<Label> for NaiveTrie<Label> {
     fn children(&self) -> &Vec<Box<Self>> {
         &self.children
     }
 
-    fn label(&self) -> Option<&Elm> {
+    fn label(&self) -> Option<&Label> {
         self.label.as_ref()
     }
 
@@ -115,20 +115,20 @@ impl<Elm: Ord + Clone> TrieSearchMethods<Elm> for NaiveTrie<Elm> {
     }
 }
 
-impl<'trie, Elm> NaiveTrieBFIter<'trie, Elm> {
-    pub fn new(iter_start: &'trie NaiveTrie<Elm>) -> Self {
+impl<'trie, Label> NaiveTrieBFIter<'trie, Label> {
+    pub fn new(iter_start: &'trie NaiveTrie<Label>) -> Self {
         let mut unvisited = VecDeque::new();
         unvisited.push_back(iter_start);
         Self { unvisited }
     }
 }
 
-impl<'trie, Elm: Eq + Ord + Clone> Iterator for NaiveTrieBFIter<'trie, Elm> {
-    type Item = Elm;
+impl<'trie, Label: Ord + Clone> Iterator for NaiveTrieBFIter<'trie, Label> {
+    type Item = Label;
     fn next(&mut self) -> Option<Self::Item> {
         // -> None: All nodes are visited.
         // -> Some(None): Root node.
-        // -> Some(Some(Elm)): Intermediate or leaf node.
+        // -> Some(Some(Label)): Intermediate or leaf node.
         let mut next1 = || {
             self.unvisited.pop_front().map(|trie| {
                 for child in &trie.children {

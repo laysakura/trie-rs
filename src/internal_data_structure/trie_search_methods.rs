@@ -3,8 +3,8 @@
 /// - exact_match()
 /// - predictive_search()
 /// - common_prefix_search()
-pub trait TrieSearchMethods<Elm: Ord + Clone> {
-    fn exact_match<Arr: AsRef<[Elm]>>(&self, query: Arr) -> bool {
+pub trait TrieSearchMethods<Label: Ord + Clone> {
+    fn exact_match<Arr: AsRef<[Label]>>(&self, query: Arr) -> bool {
         let mut trie = self;
         for (i, chr) in query.as_ref().iter().enumerate() {
             let children = trie.children();
@@ -25,7 +25,7 @@ pub trait TrieSearchMethods<Elm: Ord + Clone> {
 
     /// # Panics
     /// If `query` is empty.
-    fn predictive_search<Arr: AsRef<[Elm]>>(&self, query: Arr) -> Vec<Vec<Elm>> {
+    fn predictive_search<Arr: AsRef<[Label]>>(&self, query: Arr) -> Vec<Vec<Label>> {
         assert!(!query.as_ref().is_empty());
 
         let mut trie = self;
@@ -40,28 +40,28 @@ pub trait TrieSearchMethods<Elm: Ord + Clone> {
             }
         }
 
-        let mut results: Vec<Vec<Elm>> = if trie.is_terminal() {
+        let mut results: Vec<Vec<Label>> = if trie.is_terminal() {
             vec![query.as_ref().to_vec()]
         } else {
             vec![]
         };
-        let all_words_under_node: Vec<Vec<Elm>> = trie
+        let all_words_under_node: Vec<Vec<Label>> = trie
             .children()
             .iter()
             .flat_map(|child| trie.predictive_search(vec![child.label().unwrap().clone()]))
             .collect();
 
         for word in all_words_under_node {
-            let mut result: Vec<Elm> = query.as_ref().to_vec();
+            let mut result: Vec<Label> = query.as_ref().to_vec();
             result.extend(word);
             results.push(result);
         }
         results
     }
 
-    fn common_prefix_search<Arr: AsRef<[Elm]>>(&self, query: Arr) -> Vec<Vec<Elm>> {
-        let mut results: Vec<Vec<Elm>> = Vec::new();
-        let mut elms_in_path: Vec<Elm> = Vec::new();
+    fn common_prefix_search<Arr: AsRef<[Label]>>(&self, query: Arr) -> Vec<Vec<Label>> {
+        let mut results: Vec<Vec<Label>> = Vec::new();
+        let mut elms_in_path: Vec<Label> = Vec::new();
 
         let mut trie = self;
         for chr in query.as_ref() {
@@ -82,11 +82,11 @@ pub trait TrieSearchMethods<Elm: Ord + Clone> {
         results
     }
 
-    /// Sorted by Elm's order.
+    /// Sorted by Label's order.
     fn children(&self) -> &Vec<Box<Self>>;
 
     /// Returns label of node. None for root node.
-    fn label(&self) -> Option<&Elm>;
+    fn label(&self) -> Option<&Label>;
 
     /// Returns whether this node has label of last element.
     fn is_terminal(&self) -> bool;
