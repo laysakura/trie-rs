@@ -1,58 +1,86 @@
-use super::{NaiveTrie, NaiveTrieBFIter};
+use super::naive_trie_b_f_iter::NaiveTrieBFIter;
+use super::{NaiveTrie, NaiveTrieIntermOrLeaf, NaiveTrieRoot};
 use crate::traits::trie_search_methods::TrieSearchMethods;
 
-impl<Elm: Eq + Ord + Clone> NaiveTrie<Elm> {
+impl<'trie, Label: Ord + Clone> NaiveTrie<Label> {
     pub fn make_root() -> Self {
-        Self {
-            children: vec![],
-            label: None,
-            is_terminal: false,
-        }
+        NaiveTrie::Root(Box::new(NaiveTrieRoot { children: vec![] }))
     }
 
-    pub fn push<Arr: AsRef<[Elm]>>(&mut self, word: Arr) {
+    pub fn make_interm_or_leaf(label: &Label, is_terminal: bool) -> Self {
+        NaiveTrie::IntermOrLeaf(Box::new(NaiveTrieIntermOrLeaf {
+            children: vec![],
+            label: label.clone(),
+            is_terminal,
+        }))
+    }
+
+    pub fn push<Arr: AsRef<[Label]>>(&'trie mut self, word: Arr) {
         let mut trie = self;
         for (i, chr) in word.as_ref().iter().enumerate() {
-            let children = &mut trie.children;
-            let res = children.binary_search_by_key(&Some(chr), |child| child.label());
+            let res = {
+                trie.children()
+                    .binary_search_by_key(chr, |child| child.label())
+            };
             match res {
                 Ok(j) => {
-                    trie = &mut children[j];
+                    trie = match trie {
+                        NaiveTrie::Root(node) => &mut node.children[j],
+                        NaiveTrie::IntermOrLeaf(node) => &mut node.children[j],
+                        _ => panic!("Unexpected type"),
+                    };
                 }
                 Err(j) => {
                     let is_terminal = i == word.as_ref().len() - 1;
-                    let child_trie = Box::new(Self::make_non_root(chr, is_terminal));
-                    children.insert(j, child_trie);
-                    trie = &mut children[j];
+                    let child_trie = Box::new(Self::make_interm_or_leaf(chr, is_terminal));
+                    trie = match trie {
+                        NaiveTrie::Root(node) => {
+                            node.children.insert(j, child_trie);
+                            &mut node.children[j]
+                        }
+                        NaiveTrie::IntermOrLeaf(node) => {
+                            node.children.insert(j, child_trie);
+                            &mut node.children[j]
+                        }
+                        _ => panic!("Unexpected type"),
+                    };
                 }
-            }
+            };
         }
     }
 
-    pub fn bf_iter(&self) -> NaiveTrieBFIter<Elm> {
+    pub fn bf_iter(&'trie self) -> NaiveTrieBFIter<Label> {
         NaiveTrieBFIter::new(self)
-    }
-
-    fn make_non_root(label: &Elm, is_terminal: bool) -> Self {
-        Self {
-            children: vec![],
-            label: Some(label.clone()),
-            is_terminal,
-        }
     }
 }
 
-impl<Elm: Ord + Clone> TrieSearchMethods<Elm> for NaiveTrie<Elm> {
+impl<Label: Ord + Clone> TrieSearchMethods<Label> for NaiveTrie<Label> {
+    /// # Panics
+    /// When self is not a Root or IntermOrLeaf
     fn children(&self) -> &Vec<Box<Self>> {
-        &self.children
+        match self {
+            NaiveTrie::Root(node) => &node.children,
+            NaiveTrie::IntermOrLeaf(node) => &node.children,
+            _ => panic!("Unexpected type"),
+        }
     }
 
-    fn label(&self) -> Option<&Elm> {
-        self.label.as_ref()
-    }
-
+    /// # Panics
+    /// If self is not IntermOrLeaf.
     fn is_terminal(&self) -> bool {
-        self.is_terminal
+        match self {
+            NaiveTrie::IntermOrLeaf(node) => node.is_terminal,
+            _ => panic!("Unexpected type"),
+        }
+    }
+
+    /// # Panics
+    /// If self is not IntermOrLeaf.
+    fn label(&self) -> Label {
+        match self {
+            NaiveTrie::IntermOrLeaf(node) => node.label.clone(),
+            _ => panic!("Unexpected type"),
+        }
     }
 }
 

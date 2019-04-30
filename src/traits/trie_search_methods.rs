@@ -1,5 +1,3 @@
-use super::naive_trie::NaiveTrie;
-
 /// Provides trie's search methods:
 ///
 /// - exact_match()
