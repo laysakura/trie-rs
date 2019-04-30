@@ -61,3 +61,7 @@ pub struct NaiveTrie<Label> {
 pub struct NaiveTrieBFIter<'trie, Label> {
     unvisited: VecDeque<&'trie NaiveTrie<Label>>,
 }
+
+enum LabelOrNull<L> {
+    Null,
+}
