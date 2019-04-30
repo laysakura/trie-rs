@@ -101,7 +101,7 @@ impl<Elm: Eq + Ord + Clone> NaiveTrie<Elm> {
     }
 }
 
-impl<Elm: Ord> TrieSearchMethods<Elm> for NaiveTrie<Elm> {
+impl<'trie, Elm: Ord + Clone> TrieSearchMethods<Elm> for NaiveTrie<Elm> {
     fn children(&self) -> &Vec<Box<Self>> {
         &self.children
     }
@@ -270,6 +270,7 @@ mod search_tests {
                     let (query, expected_results) = $value;
                     let trie = super::build_trie();
                     let results = trie.common_prefix_search(query);
+                    let expected_results: Vec<Vec<u8>> = expected_results.iter().map(|s| s.as_bytes().to_vec()).collect();
                     assert_eq!(results, expected_results);
                 }
             )*
@@ -280,7 +281,7 @@ mod search_tests {
             t1: ("a", vec!["a"]),
             t2: ("ap", vec!["a"]),
             t3: ("appl", vec!["a", "app"]),
-            t4: ("appler", vec!["apple"]),
+            t4: ("appler", vec!["a", "app", "apple"]),
             t5: ("bette", Vec::<&str>::new()),
             t6: ("betterment", vec!["better"]),
             t7: ("c", Vec::<&str>::new()),

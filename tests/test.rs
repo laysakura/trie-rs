@@ -55,7 +55,10 @@ mod string {
         assert_eq!(trie.common_prefix_search("a"), vec!["a"]);
         assert_eq!(trie.common_prefix_search("ap"), vec!["a"]);
         assert_eq!(trie.common_prefix_search("appl"), vec!["a", "app"]);
-        assert_eq!(trie.common_prefix_search("appler"), vec!["apple"]);
+        assert_eq!(
+            trie.common_prefix_search("appler"),
+            vec!["a", "app", "apple"]
+        );
         assert_eq!(trie.common_prefix_search("bette"), empty);
         assert_eq!(trie.common_prefix_search("betterment"), vec!["better"]);
         assert_eq!(trie.common_prefix_search("c"), empty);
