@@ -1,5 +1,29 @@
-use super::{NaiveTrieBFIter, NodeType};
+use super::NaiveTrie;
 use std::collections::VecDeque;
+
+/// Iterates over NaiveTrie in Breadth-First manner.
+struct NaiveTrieBFIter<'trie, Label> {
+    unvisited: VecDeque<&'trie NodeType<Label>>,
+}
+
+/// Used for Breadth-First iteration.
+///
+/// ```text
+/// <Root>
+///   |
+///   |------------------+- - - - - - - - +
+///   |                  |                |
+/// <IntermOrLeaf>     <IntermOrLeaf>   <PhantomSibling>
+///   |                  |
+///   .                  +- - - - - - - - +
+///   |                  |                |
+/// <PhantomSibling>   <IntermOrLeaf>   <PhantomSibling>
+/// ```
+enum NodeType<Label> {
+    Root(NaiveTrie<Label>),
+    IntermOrLeaf(NaiveTrie<Label>),
+    PhantomSibling,
+}
 
 impl<'trie, Label> NaiveTrieBFIter<'trie, Label> {
     pub fn new(iter_start: &'trie NodeType<Label>) -> Self {

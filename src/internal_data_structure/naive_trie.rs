@@ -1,5 +1,3 @@
-use std::collections::VecDeque;
-
 pub mod naive_trie;
 pub mod naive_trie_b_f_iter;
 
@@ -55,15 +53,4 @@ pub struct NaiveTrie<Label> {
     label: Option<Label>,
 
     is_terminal: bool,
-}
-
-/// Iterates over NaiveTrie in Breadth-First manner.
-pub struct NaiveTrieBFIter<'trie, Label> {
-    unvisited: VecDeque<&'trie NodeType<Label>>,
-}
-
-enum NodeType<Label> {
-    Root(NaiveTrie<Label>),
-    IntermOrLeaf(NaiveTrie<Label>),
-    Null,
 }
