@@ -5,11 +5,11 @@ impl<Label: Ord + Clone> Trie<Label> {
         true
     }
 
-    pub fn predictive_search<Arr: AsRef<[Label]>>(&self, query: Arr) -> Vec<Arr> {
+    pub fn predictive_search<Arr: AsRef<[Label]>>(&self, query: Arr) -> Vec<Vec<Label>> {
         vec![]
     }
 
-    pub fn common_prefix_search<Arr: AsRef<[Label]>>(&self, query: Arr) -> Vec<Arr> {
+    pub fn common_prefix_search<Arr: AsRef<[Label]>>(&self, query: Arr) -> Vec<Vec<Label>> {
         vec![]
     }
 }
