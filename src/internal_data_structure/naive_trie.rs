@@ -10,48 +10,73 @@ use std::collections::VecDeque;
 /// - application
 ///
 /// ```text
-/// <Node>
+/// <Root>
 ///   |
 ///   | a: Label
-/// <Node (Terminate)>
+/// <IntermOrLeaf (Terminate)>
 ///   |
 ///   | p
-/// <Node>
+/// <IntermOrLeaf>
 ///   |
 ///   | p
-/// <Node (Terminate)>
+/// <IntermOrLeaf (Terminate)>
 ///   |
 ///   | l
-/// <Node>
-///   |------------------+
-///   | e                | i
-/// <Node (Terminate)>     <Node>
-///                      |
-///                      | c
-///                   <Node>
-///                      |
-///                      | a
-///                    <Node>
-///                      |
-///                      | t
-///                    <Node>
-///                      |
-///                      | i
-///                    <Node>
-///                      |
-///                      | o
-///                    <Node>
-///                      |
-///                      | n
-///                    <Node (Terminate)>
+/// <IntermOrLeaf>
+///   |------------------------------+
+///   | e                            | i
+/// <IntermOrLeaf (Terminate)>     <IntermOrLeaf>
+///                                  |
+///                                  | c
+///                               <IntermOrLeaf>
+///                                  |
+///                                  | a
+///                                <IntermOrLeaf>
+///                                  |
+///                                  | t
+///                                <IntermOrLeaf>
+///                                  |
+///                                  | i
+///                                <IntermOrLeaf>
+///                                  |
+///                                  | o
+///                                <IntermOrLeaf>
+///                                  |
+///                                  | n
+///                                <IntermOrLeaf (Terminate)>
 /// ```
-pub struct NaiveTrie<Label> {
+pub enum NaiveTrie<Label> {
+    Root(Box<NaiveTrieRoot<Label>>),
+    IntermOrLeaf(Box<NaiveTrieIntermOrLeaf<Label>>),
+
+    /// Used for Breadth-First iteration.
+    ///
+    /// ```text
+    /// <Root>
+    ///   |
+    ///   |------------------+- - - - - - - - +
+    ///   | a                | i              |
+    /// <IntermOrLeaf>     <IntermOrLeaf>   <PhantomSibling>
+    ///   |                  |
+    ///   .                  +- - - - - - - - +
+    ///   |                  |  n             |
+    /// <PhantomSibling>   <IntermOrLeaf>   <PhantomSibling>
+    /// ```
+    ///
+    /// This trie's BFIter emits:
+    /// `a i <PhantomSibling> <PhantomSibling> n <PhantomSibling>`
+    PhantomSibling,
+}
+
+struct NaiveTrieRoot<Label> {
     /// Sorted by Label's order.
     children: Vec<Box<NaiveTrie<Label>>>,
+}
 
-    /// Only root node is None.
-    label: Option<Label>,
-
+struct NaiveTrieIntermOrLeaf<Label> {
+    /// Sorted by Label's order.
+    children: Vec<Box<NaiveTrie<Label>>>,
+    label: Label,
     is_terminal: bool,
 }
 
@@ -60,58 +85,85 @@ pub struct NaiveTrieBFIter<'trie, Label> {
     unvisited: VecDeque<&'trie NaiveTrie<Label>>,
 }
 
-impl<Label: Ord + Clone> NaiveTrie<Label> {
+impl<'trie, Label: Ord + Clone> NaiveTrie<Label> {
     pub fn make_root() -> Self {
-        Self {
-            children: vec![],
-            label: None,
-            is_terminal: false,
-        }
+        NaiveTrie::Root(Box::new(NaiveTrieRoot { children: vec![] }))
     }
 
-    pub fn push<Arr: AsRef<[Label]>>(&mut self, word: Arr) {
+    fn make_interm_or_leaf(label: &Label, is_terminal: bool) -> Self {
+        NaiveTrie::IntermOrLeaf(Box::new(NaiveTrieIntermOrLeaf {
+            children: vec![],
+            label: label.clone(),
+            is_terminal,
+        }))
+    }
+
+    pub fn push<Arr: AsRef<[Label]>>(&'trie mut self, word: Arr) {
         let mut trie = self;
         for (i, chr) in word.as_ref().iter().enumerate() {
-            let children = &mut trie.children;
-            let res = children.binary_search_by_key(&Some(chr), |child| child.label());
+            let res = {
+                trie.children()
+                    .binary_search_by_key(chr, |child| child.label())
+            };
             match res {
                 Ok(j) => {
-                    trie = &mut children[j];
+                    trie = match trie {
+                        NaiveTrie::Root(node) => &mut node.children[j],
+                        NaiveTrie::IntermOrLeaf(node) => &mut node.children[j],
+                        _ => panic!("Unexpected type"),
+                    };
                 }
                 Err(j) => {
                     let is_terminal = i == word.as_ref().len() - 1;
-                    let child_trie = Box::new(Self::make_non_root(chr, is_terminal));
-                    children.insert(j, child_trie);
-                    trie = &mut children[j];
+                    let child_trie = Box::new(Self::make_interm_or_leaf(chr, is_terminal));
+                    trie = match trie {
+                        NaiveTrie::Root(node) => {
+                            node.children.insert(j, child_trie);
+                            &mut node.children[j]
+                        }
+                        NaiveTrie::IntermOrLeaf(node) => {
+                            node.children.insert(j, child_trie);
+                            &mut node.children[j]
+                        }
+                        _ => panic!("Unexpected type"),
+                    };
                 }
-            }
+            };
         }
     }
 
-    pub fn bf_iter(&self) -> NaiveTrieBFIter<Label> {
+    pub fn bf_iter(&'trie self) -> NaiveTrieBFIter<Label> {
         NaiveTrieBFIter::new(self)
-    }
-
-    fn make_non_root(label: &Label, is_terminal: bool) -> Self {
-        Self {
-            children: vec![],
-            label: Some(label.clone()),
-            is_terminal,
-        }
     }
 }
 
 impl<Label: Ord + Clone> TrieSearchMethods<Label> for NaiveTrie<Label> {
+    /// # Panics
+    /// When self is not a Root or IntermOrLeaf
     fn children(&self) -> &Vec<Box<Self>> {
-        &self.children
+        match self {
+            NaiveTrie::Root(node) => &node.children,
+            NaiveTrie::IntermOrLeaf(node) => &node.children,
+            _ => panic!("Unexpected type"),
+        }
     }
 
-    fn label(&self) -> Option<&Label> {
-        self.label.as_ref()
-    }
-
+    /// # Panics
+    /// If self is not IntermOrLeaf.
     fn is_terminal(&self) -> bool {
-        self.is_terminal
+        match self {
+            NaiveTrie::IntermOrLeaf(node) => node.is_terminal,
+            _ => panic!("Unexpected type"),
+        }
+    }
+
+    /// # Panics
+    /// If self is not IntermOrLeaf.
+    fn label(&self) -> Label {
+        match self {
+            NaiveTrie::IntermOrLeaf(node) => node.label.clone(),
+            _ => panic!("Unexpected type"),
+        }
     }
 }
 
@@ -124,65 +176,208 @@ impl<'trie, Label> NaiveTrieBFIter<'trie, Label> {
 }
 
 impl<'trie, Label: Ord + Clone> Iterator for NaiveTrieBFIter<'trie, Label> {
-    type Item = Label;
-    fn next(&mut self) -> Option<Self::Item> {
-        // -> None: All nodes are visited.
-        // -> Some(None): Root node.
-        // -> Some(Some(Label)): Intermediate or leaf node.
-        let mut next1 = || {
-            self.unvisited.pop_front().map(|trie| {
-                for child in &trie.children {
-                    self.unvisited.push_back(child);
-                }
-                trie.label.clone()
-            })
-        };
+    type Item = &'trie NaiveTrie<Label>;
 
-        next1().map(
-            // skip root node since it does not have label
-            |opt_label| opt_label.or_else(|| next1()?),
-        )?
+    /// Returns:
+    ///
+    /// - None: All nodes are visited.
+    /// - Some(NaiveTrie::Root): Root node.
+    /// - Some(NaiveTrie::IntermOrLeaf): Intermediate or leaf node.
+    /// - Some(NaiveTrie::PhantomSibling): Marker to represent "all siblings are iterated".
+    fn next(&mut self) -> Option<Self::Item> {
+        self.unvisited.pop_front().map(|trie| {
+            match trie {
+                NaiveTrie::Root(_) | NaiveTrie::IntermOrLeaf(_) => {
+                    for child in trie.children() {
+                        self.unvisited.push_back(child);
+                    }
+                    self.unvisited.push_back(&NaiveTrie::PhantomSibling);
+                }
+                NaiveTrie::PhantomSibling => {}
+            };
+            trie
+        })
+    }
+}
+
+impl<'trie, Label> NaiveTrie<Label> {
+    /// # Panics
+    /// If self is not Root.
+    pub fn root(&'trie self) -> &NaiveTrieRoot<Label> {
+        match self {
+            NaiveTrie::Root(node) => node,
+            _ => panic!("Unexpected type"),
+        }
+    }
+
+    /// # Panics
+    /// If self is not IntermOrLeaf.
+    pub fn interm_or_leaf(&'trie self) -> &NaiveTrieIntermOrLeaf<Label> {
+        match self {
+            NaiveTrie::IntermOrLeaf(node) => node,
+            _ => panic!("Unexpected type"),
+        }
     }
 }
 
 #[cfg(test)]
 mod bf_iter_tests {
     use super::NaiveTrie;
+    use crate::internal_data_structure::trie_search_methods::TrieSearchMethods;
 
     macro_rules! parameterized_tests {
         ($($name:ident: $value:expr,)*) => {
         $(
             #[test]
             fn $name() {
-                let (words, expected_chars) = $value;
+                let (words, expected_nodes) = $value;
                 let mut trie = NaiveTrie::make_root();
                 for word in words {
                     trie.push(word);
                 }
-                let chars: Vec<u8> = trie.bf_iter().collect();
-                assert_eq!(chars, expected_chars);
+                let nodes: Vec<&NaiveTrie<u8>> = trie.bf_iter().collect();
+                assert_eq!(nodes.len(), expected_nodes.len());
+                for i in 0..nodes.len() {
+                    let node = nodes[i];
+                    let expected_node = &expected_nodes[i];
+
+                    assert!(std::mem::discriminant(node) == std::mem::discriminant(expected_node));
+
+                    if let NaiveTrie::IntermOrLeaf(n) = node {
+                        assert_eq!(n.label, expected_node.label());
+                        assert_eq!(n.is_terminal, expected_node.is_terminal());
+                    }
+                }
             }
         )*
         }
     }
 
     parameterized_tests! {
-        t1: (Vec::<&str>::new(), "".as_bytes()),
-        t2: (vec!["a"], "a".as_bytes()),
-        t3: (vec!["a", "a"], "a".as_bytes()),
-        t4: (vec!["a", "an", "bad"], "abnad".as_bytes()),
-        t5: (vec!["a", "bad", "an"], "abnad".as_bytes()),
-        t6: (
+        t1: (
+            Vec::<&str>::new(),
+            vec![
+                NaiveTrie::make_root(),
+                // parent = root
+                NaiveTrie::PhantomSibling,
+            ]
+        ),
+        t2: (
+            vec!["a"],
+            vec![
+                NaiveTrie::make_root(),
+                // parent = root
+                NaiveTrie::make_interm_or_leaf(&('a' as u8), true),
+                NaiveTrie::PhantomSibling,
+                // parent = a
+                NaiveTrie::PhantomSibling,
+            ]
+        ),
+        t3: (
+            vec!["a", "a"],
+            vec![
+                NaiveTrie::make_root(),
+                // parent = root
+                NaiveTrie::make_interm_or_leaf(&('a' as u8), true),
+                NaiveTrie::PhantomSibling,
+                // parent = a
+                NaiveTrie::PhantomSibling,
+            ]
+        ),
+        t4: (
+            // root
+            //  |-----------------------+-----------------------+
+            //  |                       |                       |
+            //  a (term)                b                       Ph
+            //  |---------+             |-----------------+
+            //  |         |             |                 |
+            //  n (term)  Ph            a                 Ph
+            //  |                       |--------+
+            //  |                       |        |
+            //  Ph                      d (term) Ph
+            //                          |
+            //                          |
+            //                          Ph
+            vec!["a", "bad", "an"],
+            vec![
+                NaiveTrie::make_root(),
+                // parent = root
+                NaiveTrie::make_interm_or_leaf(&('a' as u8), true),
+                NaiveTrie::make_interm_or_leaf(&('b' as u8), false),
+                NaiveTrie::PhantomSibling,
+                // parent = [a]
+                NaiveTrie::make_interm_or_leaf(&('n' as u8), true),
+                NaiveTrie::PhantomSibling,
+                // parent = b
+                NaiveTrie::make_interm_or_leaf(&('a' as u8), false),
+                NaiveTrie::PhantomSibling,
+                // parent = n
+                NaiveTrie::PhantomSibling,
+                // parent = b[a]d
+                NaiveTrie::make_interm_or_leaf(&('d' as u8), true),
+                NaiveTrie::PhantomSibling,
+                // parent = d
+                NaiveTrie::PhantomSibling,
+            ]
+        ),
+        t5: (
             // 'り' => 227, 130, 138
             // 'ん' => 227, 130, 147
             // 'ご' => 227, 129, 148
             vec!["a", "an", "りんご", "りんりん"],
-            vec!['a' as u8, 227, 'n' as u8, 130, 138, 227, 130, 147, 227, 129, 130, 148, 138, 227, 130, 147],
-        ),
-        t7: (
-            // '🍎' => 240, 159, 141, 142
-            vec!["🍎", "りんご"],
-            vec![227, 240, 130, 159, 138, 141, 227, 142, 130, 147, 227, 129, 148],
+            vec![
+                NaiveTrie::make_root(),
+                // parent = root
+                NaiveTrie::make_interm_or_leaf(&('a' as u8), true),
+                NaiveTrie::make_interm_or_leaf(&227, false),
+                NaiveTrie::PhantomSibling,
+                // parent = a
+                NaiveTrie::make_interm_or_leaf(&('n' as u8), true),
+                NaiveTrie::PhantomSibling,
+                // parent = [227] 130 138 (り)
+                NaiveTrie::make_interm_or_leaf(&130, false),
+                NaiveTrie::PhantomSibling,
+                // parent = n
+                NaiveTrie::PhantomSibling,
+                // parent = 227 [130] 138 (り)
+                NaiveTrie::make_interm_or_leaf(&138, false),
+                NaiveTrie::PhantomSibling,
+                // parent = 227 130 [138] (り)
+                NaiveTrie::make_interm_or_leaf(&227, false),
+                NaiveTrie::PhantomSibling,
+                // parent = [227] 130 147 (ん)
+                NaiveTrie::make_interm_or_leaf(&130, false),
+                NaiveTrie::PhantomSibling,
+                // parent = 227 [130] 147 (ん)
+                NaiveTrie::make_interm_or_leaf(&147, false),
+                NaiveTrie::PhantomSibling,
+                // parent = 227 130 [147] (ん)
+                NaiveTrie::make_interm_or_leaf(&227, false),
+                NaiveTrie::PhantomSibling,
+                // parent = [227] _ _ (ご or り)
+                NaiveTrie::make_interm_or_leaf(&129, false),
+                NaiveTrie::make_interm_or_leaf(&130, false),
+                NaiveTrie::PhantomSibling,
+                // parent = 227 [129] 148 (ご)
+                NaiveTrie::make_interm_or_leaf(&148, true),
+                NaiveTrie::PhantomSibling,
+                // parent = 227 [130] 138 (り)
+                NaiveTrie::make_interm_or_leaf(&138, false),
+                NaiveTrie::PhantomSibling,
+                // parent = 227 129 [148] (ご)
+                NaiveTrie::PhantomSibling,
+                // parent = 227 130 [138] (り)
+                NaiveTrie::make_interm_or_leaf(&227, false),
+                NaiveTrie::PhantomSibling,
+                // parent = [227] 130 147 (ん)
+                NaiveTrie::make_interm_or_leaf(&130, false),
+                NaiveTrie::PhantomSibling,
+                // parent = 227 [130] 147 (ん)
+                NaiveTrie::make_interm_or_leaf(&147, true),
+                NaiveTrie::PhantomSibling,
+                // parent = 227 130 [147] (ん)
+                NaiveTrie::PhantomSibling,
+            ]
         ),
     }
 }

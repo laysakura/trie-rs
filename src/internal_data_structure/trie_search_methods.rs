@@ -1,3 +1,5 @@
+use super::naive_trie::NaiveTrie;
+
 /// Provides trie's search methods:
 ///
 /// - exact_match()
@@ -8,14 +10,14 @@ pub trait TrieSearchMethods<Label: Ord + Clone> {
         let mut trie = self;
         for (i, chr) in query.as_ref().iter().enumerate() {
             let children = trie.children();
-            let res = children.binary_search_by_key(&Some(chr), |child| child.label());
+            let res = children.binary_search_by_key(chr, |child| child.label());
             match res {
                 Ok(j) => {
-                    let child = &children[j];
+                    let mut child = &children[j];
                     if i == query.as_ref().len() - 1 && child.is_terminal() {
                         return true;
                     };
-                    trie = child;
+                    trie = &mut child;
                 }
                 Err(_) => return false,
             }
@@ -33,7 +35,7 @@ pub trait TrieSearchMethods<Label: Ord + Clone> {
         // Consumes query (prefix)
         for chr in query.as_ref() {
             let children = trie.children();
-            let res = children.binary_search_by_key(&Some(chr), |child| child.label());
+            let res = children.binary_search_by_key(chr, |child| child.label());
             match res {
                 Ok(j) => trie = &children[j],
                 Err(_) => return vec![],
@@ -48,7 +50,7 @@ pub trait TrieSearchMethods<Label: Ord + Clone> {
         let all_words_under_node: Vec<Vec<Label>> = trie
             .children()
             .iter()
-            .flat_map(|child| trie.predictive_search(vec![child.label().unwrap().clone()]))
+            .flat_map(|child| trie.predictive_search(vec![child.label()]))
             .collect();
 
         for word in all_words_under_node {
@@ -66,11 +68,11 @@ pub trait TrieSearchMethods<Label: Ord + Clone> {
         let mut trie = self;
         for chr in query.as_ref() {
             let children = trie.children();
-            let res = children.binary_search_by_key(&Some(chr), |child| child.label());
+            let res = children.binary_search_by_key(chr, |child| child.label());
             match res {
                 Ok(j) => {
                     let child = &children[j];
-                    labels_in_path.push(child.label().unwrap().clone());
+                    labels_in_path.push(child.label());
                     if child.is_terminal() {
                         results.push(labels_in_path.clone());
                     };
@@ -85,9 +87,9 @@ pub trait TrieSearchMethods<Label: Ord + Clone> {
     /// Sorted by Label's order.
     fn children(&self) -> &Vec<Box<Self>>;
 
-    /// Returns label of node. None for root node.
-    fn label(&self) -> Option<&Label>;
-
     /// Returns whether this node has label of last element.
     fn is_terminal(&self) -> bool;
+
+    /// Returns label of self's node.
+    fn label(&self) -> Label;
 }
