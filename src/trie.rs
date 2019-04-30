@@ -5,10 +5,9 @@ pub mod trie;
 pub mod trie_builder;
 
 pub struct Trie<Label> {
-    louds: Louds,
-    
+    // louds: Louds,
     /// LoudsNodeNum -> Option<Label>
-    /// 
+    ///
     /// 0 -> None
     /// 1 -> None
     /// 2.. -> Some

@@ -12,6 +12,6 @@ impl<Label: Ord + Clone> TrieBuilder<Label> {
     }
 
     pub fn build(&self) -> Trie<Label> {
-        Trie { container: vec![] }
+        Trie { labels: vec![] }
     }
 }
