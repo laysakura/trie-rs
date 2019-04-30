@@ -1,3 +1,4 @@
+use super::trie_search_methods::TrieSearchMethods;
 use std::collections::VecDeque;
 
 /// Naive trie with ordered Elm sequence in edges.
@@ -100,6 +101,20 @@ impl<Elm: Eq + Ord + Clone> NaiveTrie<Elm> {
     }
 }
 
+impl<Elm> TrieSearchMethods<Elm> for NaiveTrie<Elm> {
+    fn exact_match<Arr: AsRef<[Elm]>>(&self, query: Arr) -> bool {
+        true
+    }
+
+    fn predictive_search<Arr: AsRef<[Elm]>>(&self, query: Arr) -> Vec<Arr> {
+        vec![]
+    }
+
+    fn common_prefix_search<Arr: AsRef<[Elm]>>(&self, query: Arr) -> Vec<Arr> {
+        vec![]
+    }
+}
+
 impl<'trie, Elm> NaiveTrieBFIter<'trie, Elm> {
     pub fn new(iter_start: &'trie NaiveTrie<Elm>) -> Self {
         let mut unvisited = VecDeque::new();
@@ -169,5 +184,74 @@ mod bf_iter_tests {
             vec!["🍎", "りんご"],
             vec![227, 240, 130, 159, 138, 141, 227, 142, 130, 147, 227, 129, 148],
         ),
+    }
+}
+
+#[cfg(test)]
+mod search_tests {
+    use super::super::trie_search_methods::TrieSearchMethods;
+    use super::NaiveTrie;
+
+    fn build_trie() -> NaiveTrie<u8> {
+        let mut trie = NaiveTrie::make_root();
+        trie.push("a");
+        trie.push("app");
+        trie.push("apple");
+        trie.push("better");
+        trie.push("application");
+        trie.push("アップル🍎");
+        trie
+    }
+
+    #[test]
+    fn exact_match() {
+        let trie = build_trie();
+        assert_eq!(trie.exact_match("a"), true);
+        assert_eq!(trie.exact_match("app"), true);
+        assert_eq!(trie.exact_match("apple"), true);
+        assert_eq!(trie.exact_match("application"), true);
+        assert_eq!(trie.exact_match("better"), true);
+        assert_eq!(trie.exact_match("アップル🍎"), true);
+        assert_eq!(trie.exact_match("appler"), false);
+    }
+
+    #[test]
+    fn predictive_search() {
+        let empty: Vec<&str> = vec![];
+        let trie = build_trie();
+        assert_eq!(
+            trie.predictive_search("a"),
+            vec!["a", "app", "apple", "application"]
+        );
+        assert_eq!(
+            trie.predictive_search("app"),
+            vec!["app", "apple", "application"]
+        );
+        assert_eq!(trie.predictive_search("appl"), vec!["apple", "application"]);
+        assert_eq!(trie.predictive_search("apple"), vec!["apple"]);
+        assert_eq!(trie.predictive_search("appler"), empty);
+        assert_eq!(trie.predictive_search("b"), vec!["better"]);
+        assert_eq!(trie.predictive_search("c"), empty);
+        assert_eq!(
+            trie.predictive_search("アップ"),
+            vec!["アップル🍎"]
+        );
+    }
+
+    #[test]
+    fn common_prefix_search() {
+        let empty: Vec<&str> = vec![];
+        let trie = build_trie();
+        assert_eq!(trie.common_prefix_search("a"), vec!["a"]);
+        assert_eq!(trie.common_prefix_search("ap"), vec!["a"]);
+        assert_eq!(trie.common_prefix_search("appl"), vec!["a", "app"]);
+        assert_eq!(trie.common_prefix_search("appler"), vec!["apple"]);
+        assert_eq!(trie.common_prefix_search("bette"), empty);
+        assert_eq!(trie.common_prefix_search("betterment"), vec!["better"]);
+        assert_eq!(trie.common_prefix_search("c"), empty);
+        assert_eq!(
+            trie.common_prefix_search("アップル🍎🍏"),
+            vec!["アップル🍎"]
+        );
     }
 }

@@ -1,7 +1,6 @@
 use super::Trie;
 
 impl<Elm: Eq + Ord + Clone> Trie<Elm> {
-    // TODO generics
     pub fn exact_match<Arr: AsRef<[Elm]>>(&self, query: Arr) -> bool {
         true
     }
