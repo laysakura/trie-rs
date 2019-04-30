@@ -1,4 +1,4 @@
-use super::naive_trie::NodeType;
+use super::naive_trie::NaiveTrie;
 
 /// Provides trie's search methods:
 ///
@@ -13,7 +13,7 @@ pub trait TrieSearchMethods<Label: Ord + Clone> {
             let res = children.binary_search_by_key(chr, |child| child.label());
             match res {
                 Ok(j) => {
-                    let child = children[j];
+                    let mut child = &children[j];
                     if i == query.as_ref().len() - 1 && child.is_terminal() {
                         return true;
                     };
@@ -74,7 +74,7 @@ pub trait TrieSearchMethods<Label: Ord + Clone> {
                     let child = &children[j];
                     labels_in_path.push(child.label());
                     if child.is_terminal() {
-                        results.push(labels_in_path);
+                        results.push(labels_in_path.clone());
                     };
                     trie = child;
                 }
@@ -85,7 +85,7 @@ pub trait TrieSearchMethods<Label: Ord + Clone> {
     }
 
     /// Sorted by Label's order.
-    fn children(&self) -> &Vec<&Self>;
+    fn children(&self) -> &Vec<Box<Self>>;
 
     /// Returns whether this node has label of last element.
     fn is_terminal(&self) -> bool;
