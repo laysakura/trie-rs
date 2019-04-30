@@ -242,6 +242,7 @@ mod search_tests {
                     let (query, expected_results) = $value;
                     let trie = super::build_trie();
                     let results = trie.predictive_search(query);
+                    let expected_results: Vec<Vec<u8>> = expected_results.iter().map(|s| s.as_bytes().to_vec()).collect();
                     assert_eq!(results, expected_results);
                 }
             )*

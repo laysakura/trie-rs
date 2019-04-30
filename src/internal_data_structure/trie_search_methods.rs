@@ -23,8 +23,40 @@ pub trait TrieSearchMethods<Elm: Ord + Clone> {
         false
     }
 
-    fn predictive_search<Arr: AsRef<[Elm]>>(&self, query: Arr) -> Vec<Arr> {
-        vec![]
+    /// # Panics
+    /// If `query` is empty.
+    fn predictive_search<Arr: AsRef<[Elm]>>(&self, query: Arr) -> Vec<Vec<Elm>> {
+        assert!(!query.as_ref().is_empty());
+
+        let mut trie = self;
+
+        // Consumes query (prefix)
+        for chr in query.as_ref() {
+            let children = trie.children();
+            let res = children.binary_search_by_key(&Some(chr), |child| child.label());
+            match res {
+                Ok(j) => trie = &children[j],
+                Err(_) => return vec![],
+            }
+        }
+
+        let mut results: Vec<Vec<Elm>> = if trie.is_terminal() {
+            vec![query.as_ref().to_vec()]
+        } else {
+            vec![]
+        };
+        let all_words_under_node: Vec<Vec<Elm>> = trie
+            .children()
+            .iter()
+            .flat_map(|child| trie.predictive_search(vec![child.label().unwrap().clone()]))
+            .collect();
+
+        for word in all_words_under_node {
+            let mut result: Vec<Elm> = query.as_ref().to_vec();
+            result.extend(word);
+            results.push(result);
+        }
+        results
     }
 
     fn common_prefix_search<Arr: AsRef<[Elm]>>(&self, query: Arr) -> Vec<Vec<Elm>> {
