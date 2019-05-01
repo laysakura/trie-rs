@@ -10,14 +10,28 @@ pub struct Trie<Label> {
 
     louds: Rc<Louds>,
 
-    /// LoudsNodeNum -> Option<(Label, bool)>
+    /// LoudsNodeNum -> Option<TrieLabel>
     ///
     /// 0 -> None
     /// 1 -> None
-    /// 2.. -> Some(label, is_terminal)
-    label_terminal_vec: Rc<Vec<Option<(Label, bool)>>>,
+    /// 2.. -> Some(trie_label)
+    trie_labels: Rc<Vec<Option<TrieLabel<Label>>>>,
+
+    /// LoudsNodeNum -> Option<Trie>
+    ///
+    /// 0 -> None
+    /// 1 -> None
+    /// 2.. -> Some(trie)
+    ///
+    /// Necessary to implement children() -> Vec<Box<Trie>>
+    tries: Rc<Vec<Option<Box<Trie<Label>>>>>,
 }
 
 pub struct TrieBuilder<Label> {
     naive_trie: NaiveTrie<Label>,
+}
+
+struct TrieLabel<Label> {
+    label: Label,
+    is_terminal: bool,
 }

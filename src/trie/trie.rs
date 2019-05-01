@@ -8,22 +8,19 @@ impl<Label: Ord + Clone> TrieMethods<Label> for Trie<Label> {
             .parent_to_children(&self.current_node_num)
             .iter()
             .map(|child_index| {
-                Box::new(Self {
-                    current_node_num: self.louds.index_to_node_num(child_index),
-                    louds: self.louds.clone(),
-                    label_terminal_vec: self.label_terminal_vec.clone(),
-                })
+                let child_node_num = self.louds.index_to_node_num(child_index);
+                self.tries[child_node_num.value() as usize].unwrap()
             })
             .collect()
     }
 
     fn is_terminal(&self) -> bool {
-        self.label_terminal_vec[self.current_node_num.value() as usize].map_or(false, |lt| lt.1)
+        self.trie_nodes[self.current_node_num.value() as usize].map_or(false, |t| t.is_terminal)
     }
 
     /// # Panics
     /// If self.current_node_num points to 0, 1, or out-of-bound.
     fn label(&self) -> Label {
-        self.label_terminal_vec[self.current_node_num.value() as usize].unwrap().0
+        self.trie_nodes[self.current_node_num.value() as usize].unwrap().label
     }
 }
