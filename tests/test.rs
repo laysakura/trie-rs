@@ -13,6 +13,8 @@ mod string {
     }
 
     mod exact_match_tests {
+        use trie_rs::traits::trie_methods::TrieMethods;
+
         macro_rules! parameterized_tests {
             ($($name:ident: $value:expr,)*) => {
             $(
@@ -40,6 +42,8 @@ mod string {
     }
 
     mod predictive_search_tests {
+        use trie_rs::traits::trie_methods::TrieMethods;
+
         macro_rules! parameterized_tests {
             ($($name:ident: $value:expr,)*) => {
             $(
@@ -67,6 +71,8 @@ mod string {
     }
 
     mod common_prefix_search_tests {
+        use trie_rs::traits::trie_methods::TrieMethods;
+
         macro_rules! parameterized_tests {
             ($($name:ident: $value:expr,)*) => {
             $(

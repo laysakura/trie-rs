@@ -83,7 +83,7 @@ pub trait TrieMethods<Label: Ord + Clone> {
     }
 
     /// Sorted by Label's order.
-    fn children(&self) -> &Vec<Box<Self>>;
+    fn children(&self) -> &[Box<Self>];
 
     /// Returns whether this node has label of last element.
     fn is_terminal(&self) -> bool;

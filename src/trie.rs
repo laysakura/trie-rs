@@ -16,15 +16,14 @@ pub struct Trie<Label> {
     /// 1 -> None
     /// 2.. -> Some(trie_label)
     trie_labels: Rc<Vec<Option<TrieLabel<Label>>>>,
-
-    /// LoudsNodeNum -> Option<Trie>
-    ///
-    /// 0 -> None
-    /// 1 -> None
-    /// 2.. -> Some(trie)
-    ///
-    /// Necessary to implement children() -> Vec<Box<Trie>>
-    tries: Rc<Vec<Option<Box<Trie<Label>>>>>,
+    // /// LoudsNodeNum -> Option<Trie>
+    // ///
+    // /// 0 -> None
+    // /// 1 -> None
+    // /// 2.. -> Some(trie)
+    // ///
+    // /// Necessary to implement children() -> &[Box<Trie>]
+    // tries: Rc<Vec<Option<Box<Trie<Label>>>>>,
 }
 
 pub struct TrieBuilder<Label> {

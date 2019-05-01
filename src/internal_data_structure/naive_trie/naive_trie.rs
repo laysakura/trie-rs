@@ -57,7 +57,7 @@ impl<'trie, Label: Ord + Clone> NaiveTrie<Label> {
 impl<Label: Ord + Clone> TrieMethods<Label> for NaiveTrie<Label> {
     /// # Panics
     /// When self is not a Root or IntermOrLeaf
-    fn children(&self) -> &Vec<Box<Self>> {
+    fn children(&self) -> &[Box<Self>] {
         match self {
             NaiveTrie::Root(node) => &node.children,
             NaiveTrie::IntermOrLeaf(node) => &node.children,
