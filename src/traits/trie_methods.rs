@@ -11,11 +11,11 @@ pub trait TrieMethods<Label: Ord + Clone> {
             let res = children.binary_search_by_key(chr, |child| child.label());
             match res {
                 Ok(j) => {
-                    let mut child = &children[j];
+                    let child = &children[j];
                     if i == query.as_ref().len() - 1 && child.is_terminal() {
                         return true;
                     };
-                    trie = &mut child;
+                    trie = &child;
                 }
                 Err(_) => return false,
             }
