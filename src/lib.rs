@@ -1,4 +1,4 @@
-//! High performance LOUDS (Level-Order Unary Degree Sequence) library.
+//! Memory efficient trie (prefix tree) library based on LOUDS.
 //!
 //! [Master API Docs](https://laysakura.github.io/trie-rs/trie_rs/)
 //! |
