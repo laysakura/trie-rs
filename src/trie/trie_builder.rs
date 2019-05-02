@@ -17,7 +17,7 @@ impl<Label: Ord + Clone> TrieBuilder<Label> {
     }
 
     pub fn build(&self) -> Trie<Label> {
-        let mut louds_bits: Vec<bool> = vec![true];
+        let mut louds_bits: Vec<bool> = vec![true, false];
         let mut trie_labels: Vec<Option<TrieLabel<Label>>> = vec![None, None];
         for node in self.naive_trie.bf_iter() {
             match node {
@@ -34,13 +34,8 @@ impl<Label: Ord + Clone> TrieBuilder<Label> {
                 }
             }
         }
-        let louds = Rc::new(Louds::from(&louds_bits[..]));
-        let trie_labels = Rc::new(trie_labels);
+        let louds = Louds::from(&louds_bits[..]);
 
-        Trie {
-            current_node_num: LoudsNodeNum(1),
-            louds: louds.clone(),
-            trie_labels: trie_labels.clone(),
-        }
+        Trie { louds, trie_labels }
     }
 }

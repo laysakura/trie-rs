@@ -1,3 +1,5 @@
+// TODO Remove this trait. Implementation of searches totally differs between NaiveTrie and Trie.
+
 /// Provides trie's search methods:
 ///
 /// - exact_match()
