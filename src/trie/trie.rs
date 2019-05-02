@@ -16,14 +16,14 @@ impl<Label: Ord + Clone> TrieMethods<Label> for Trie<Label> {
     }
 
     fn is_terminal(&self) -> bool {
-        let trie_label = &self.trie_labels[self.current_node_num.value() as usize];
+        let trie_label = &self.trie_labels[self.current_node_num.0 as usize];
         trie_label.as_ref().map_or(false, |t| t.is_terminal)
     }
 
     /// # Panics
     /// If self.current_node_num points to 0, 1, or out-of-bound.
     fn label(&self) -> Label {
-        let trie_label = &self.trie_labels[self.current_node_num.value() as usize];
+        let trie_label = &self.trie_labels[self.current_node_num.0 as usize];
         trie_label.as_ref().unwrap().label.clone()
     }
 }

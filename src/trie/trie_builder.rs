@@ -40,7 +40,7 @@ impl<Label: Ord + Clone> TrieBuilder<Label> {
 
         // create tries.
         let mut root = Box::new(Trie {
-            current_node_num: LoudsNodeNum::new(1),
+            current_node_num: LoudsNodeNum(1),
             children: vec![],
             louds: louds.clone(),
             trie_labels: trie_labels.clone(),
@@ -54,7 +54,7 @@ impl<Label: Ord + Clone> TrieBuilder<Label> {
                 NaiveTrie::IntermOrLeaf(_) => {
                     // child node
                     let child = Box::new(Trie {
-                        current_node_num: LoudsNodeNum::new(current_node_num),
+                        current_node_num: LoudsNodeNum(current_node_num),
                         children: vec![],
                         louds: louds.clone(),
                         trie_labels: trie_labels.clone(),
