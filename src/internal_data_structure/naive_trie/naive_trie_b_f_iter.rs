@@ -1,5 +1,4 @@
 use super::NaiveTrie;
-use crate::traits::trie_methods::TrieMethods;
 use std::collections::VecDeque;
 
 /// Iterates over NaiveTrie in Breadth-First manner.
@@ -43,7 +42,6 @@ impl<'trie, Label: Ord + Clone> Iterator for NaiveTrieBFIter<'trie, Label> {
 #[cfg(test)]
 mod bf_iter_tests {
     use super::NaiveTrie;
-    use crate::traits::trie_methods::TrieMethods;
 
     macro_rules! parameterized_tests {
         ($($name:ident: $value:expr,)*) => {
