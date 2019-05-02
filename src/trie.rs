@@ -1,5 +1,5 @@
 use crate::internal_data_structure::naive_trie::NaiveTrie;
-use louds_rs::{Louds, LoudsNodeNum};
+use louds_rs::Louds;
 
 pub mod trie;
 pub mod trie_builder;
