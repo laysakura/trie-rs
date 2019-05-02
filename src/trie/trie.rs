@@ -67,6 +67,30 @@ impl<Label: Ord + Clone> Trie<Label> {
         results
     }
 
+    pub fn common_prefix_search<Arr: AsRef<[Label]>>(&self, query: Arr) -> Vec<Vec<Label>> {
+        let mut results: Vec<Vec<Label>> = Vec::new();
+        let mut labels_in_path: Vec<Label> = Vec::new();
+
+        let mut cur_node_num = LoudsNodeNum(1);
+
+        for chr in query.as_ref() {
+            let children_node_nums = self.children_node_nums(cur_node_num);
+            let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
+            match res {
+                Ok(j) => {
+                    let child_node_num = children_node_nums[j];
+                    labels_in_path.push(self.label(child_node_num));
+                    if self.is_terminal(child_node_num) {
+                        results.push(labels_in_path.clone());
+                    };
+                    cur_node_num = child_node_num;
+                }
+                Err(_) => break,
+            }
+        }
+        results
+    }
+
     fn children_node_nums(&self, node_num: LoudsNodeNum) -> Vec<LoudsNodeNum> {
         self.louds
             .parent_to_children(&node_num)
@@ -168,31 +192,31 @@ mod search_tests {
         }
     }
 
-    // mod common_prefix_search_tests {
-    //     macro_rules! parameterized_tests {
-    //         ($($name:ident: $value:expr,)*) => {
-    //         $(
-    //             #[test]
-    //             fn $name() {
-    //                 let (query, expected_results) = $value;
-    //                 let trie = super::build_trie();
-    //                 let results = trie.common_prefix_search(query);
-    //                 let expected_results: Vec<Vec<u8>> = expected_results.iter().map(|s| s.as_bytes().to_vec()).collect();
-    //                 assert_eq!(results, expected_results);
-    //             }
-    //         )*
-    //         }
-    //     }
+    mod common_prefix_search_tests {
+        macro_rules! parameterized_tests {
+            ($($name:ident: $value:expr,)*) => {
+            $(
+                #[test]
+                fn $name() {
+                    let (query, expected_results) = $value;
+                    let trie = super::build_trie();
+                    let results = trie.common_prefix_search(query);
+                    let expected_results: Vec<Vec<u8>> = expected_results.iter().map(|s| s.as_bytes().to_vec()).collect();
+                    assert_eq!(results, expected_results);
+                }
+            )*
+            }
+        }
 
-    //     parameterized_tests! {
-    //         t1: ("a", vec!["a"]),
-    //         t2: ("ap", vec!["a"]),
-    //         t3: ("appl", vec!["a", "app"]),
-    //         t4: ("appler", vec!["a", "app", "apple"]),
-    //         t5: ("bette", Vec::<&str>::new()),
-    //         t6: ("betterment", vec!["better"]),
-    //         t7: ("c", Vec::<&str>::new()),
-    //         t8: ("アップル🍎🍏", vec!["アップル🍎"]),
-    //     }
-    // }
+        parameterized_tests! {
+            t1: ("a", vec!["a"]),
+            t2: ("ap", vec!["a"]),
+            t3: ("appl", vec!["a", "app"]),
+            t4: ("appler", vec!["a", "app", "apple"]),
+            t5: ("bette", Vec::<&str>::new()),
+            t6: ("betterment", vec!["better"]),
+            t7: ("c", Vec::<&str>::new()),
+            t8: ("アップル🍎🍏", vec!["アップル🍎"]),
+        }
+    }
 }
