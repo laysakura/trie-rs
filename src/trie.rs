@@ -8,9 +8,6 @@ pub mod trie_builder;
 pub struct Trie<Label> {
     current_node_num: LoudsNodeNum,
 
-    /// Necessary to implement children() -> &[Box<Trie>]
-    children: Vec<Box<Trie<Label>>>,
-
     louds: Rc<Louds>,
 
     /// LoudsNodeNum -> Option<TrieLabel>
