@@ -6,8 +6,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v0.1.1]
+Only internal data type change.
+
 ## [v0.1.0]
 Initial release.
 
-[Unreleased]: https://github.com/laysakura/trie-rs/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/laysakura/trie-rs/compare/v0.1.1...HEAD
+[v0.1.1]: https://github.com/laysakura/trie-rs/compare/v0.1.0...v0.1.1
 [v0.1.0]: https://github.com/laysakura/trie-rs/compare/699e53d...v0.1.0
