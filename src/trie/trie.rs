@@ -108,18 +108,11 @@ impl<Label: Ord + Clone> Trie<Label> {
     }
 
     fn label(&self, node_num: LoudsNodeNum) -> Label {
-        self.trie_labels[node_num.0 as usize]
-            .as_ref()
-            .unwrap()
-            .label
-            .clone()
+        self.trie_labels[(node_num.0 - 2) as usize].label.clone()
     }
 
     fn is_terminal(&self, node_num: LoudsNodeNum) -> bool {
-        self.trie_labels[node_num.0 as usize]
-            .as_ref()
-            .unwrap()
-            .is_terminal
+        self.trie_labels[(node_num.0 - 2) as usize].is_terminal
     }
 }
 
