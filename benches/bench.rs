@@ -39,12 +39,17 @@ mod trie {
             let repo_root = env::var("REPO_ROOT").expect("REPO_ROOT environment variable must be set.");
             let edict2_path = format!("{}/benches/edict.furigana", repo_root);
             println!("Reading dictionary file from: {}", edict2_path);
+
+            let mut n_words = 0;
             for result in BufReader::new(File::open(edict2_path).unwrap()).lines() {
                 let l = result.unwrap();
                 builder.push(l);
+                n_words += 1;
             }
+            println!("Read {} words", n_words);
+
             builder.build()
-            // TODO print heap usage
+            // TODO print memory footprint compared to original `edict.furigana` file
         };
     }
 
