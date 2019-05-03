@@ -48,12 +48,39 @@ mod trie {
         };
     }
 
+    pub fn exact_match(_: &mut Criterion) {
+        let times = 100;
+
+        super::c().bench_function(
+            &format!(
+                "[{}] Trie::exact_match() {} times",
+                super::git_hash(),
+                times
+            ),
+            move |b| {
+                b.iter_batched(
+                    || &TRIE_EDICT,
+                    |trie| {
+                        // iter_batched() does not properly time `routine` time when `setup` time is far longer than `routine` time.
+                        // Tested function takes too short compared to build(). So loop many times.
+                        let result = trie.exact_match("すしをにぎる");
+                        for _ in 0..(times - 1) {
+                            trie.exact_match("すしをにぎる");
+                        }
+                        assert_eq!(result, true);
+                    },
+                    BatchSize::SmallInput,
+                )
+            },
+        );
+    }
+
     pub fn predictive_search(_: &mut Criterion) {
         let times = 100;
 
         super::c().bench_function(
             &format!(
-                "[{}] Trie::predictive_match() {} times",
+                "[{}] Trie::predictive_search() {} times",
                 super::git_hash(),
                 times
             ),
@@ -92,5 +119,5 @@ mod trie {
     }
 }
 
-criterion_group!(benches, trie::predictive_search);
+criterion_group!(benches, trie::exact_match, trie::predictive_search);
 criterion_main!(benches);
