@@ -12,11 +12,12 @@ categories = ["compression", "data-structures"]
 edition = "2018"
 
 [dependencies]
-louds-rs = "0.3"
+louds-rs = "0.4"
 
 [dev-dependencies]
 criterion = "0.2"
 rand = "0.6"
+lazy_static = "1.3"
 
 [[bench]]
 name = "bench"

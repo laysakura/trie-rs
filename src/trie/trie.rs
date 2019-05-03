@@ -93,9 +93,9 @@ impl<Label: Ord + Clone> Trie<Label> {
 
     fn children_node_nums(&self, node_num: LoudsNodeNum) -> Vec<LoudsNodeNum> {
         self.louds
-            .parent_to_children(&node_num)
+            .parent_to_children(node_num)
             .iter()
-            .map(|child_idx| self.louds.index_to_node_num(child_idx))
+            .map(|child_idx| self.louds.index_to_node_num(*child_idx))
             .collect()
     }
 
