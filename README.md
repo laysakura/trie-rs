@@ -96,7 +96,7 @@ In the above `Usage Overview` example, we used `Label=u8, Arr=&str`.
 
 Here shows other `Label` and `Arr` type examples.
 
-#### `Label = &str, Arr = Vec<&str>`
+#### `Label=&str, Arr=Vec<&str>`
 Say `Label` is English words and `Arr` is English phrases.
 
 ```rust
@@ -126,8 +126,8 @@ assert_eq!(
 );
 ```
 
-#### `Label = u8, Arr = [u8; n]`
-Say `Label` is a digit in pi (= 3.14...) and Arr is a window to separate pi's digit by 10.
+#### `Label=u8, Arr=[u8; n]`
+Say `Label` is a digit in Pi (= 3.14...) and Arr is a window to separate pi's digit by 10.
 
 ```rust
 use trie_rs::TrieBuilder;
