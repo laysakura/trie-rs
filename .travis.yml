@@ -42,7 +42,7 @@ jobs:
 
       script:
         - cargo doc
-        - cargo bench --all
+        - REPO_ROOT=`pwd` cargo bench --all
         ## Move criterion's HTML report into doc/ dir in order to be uploaded in github.io
         - rm -rf target/doc/criterion && mv target/criterion target/doc/
 
