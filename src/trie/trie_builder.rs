@@ -15,16 +15,16 @@ impl<Label: Ord + Clone> TrieBuilder<Label> {
 
     pub fn build(&self) -> Trie<Label> {
         let mut louds_bits: Vec<bool> = vec![true, false];
-        let mut trie_labels: Vec<Option<TrieLabel<Label>>> = vec![None, None];
+        let mut trie_labels: Vec<TrieLabel<Label>> = vec![];
         for node in self.naive_trie.bf_iter() {
             match node {
                 NaiveTrie::Root(_) => {}
                 NaiveTrie::IntermOrLeaf(_) => {
                     louds_bits.push(true);
-                    trie_labels.push(Some(TrieLabel {
+                    trie_labels.push(TrieLabel {
                         label: node.label(),
                         is_terminal: node.is_terminal(),
-                    }));
+                    });
                 }
                 NaiveTrie::PhantomSibling => {
                     louds_bits.push(false);

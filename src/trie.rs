@@ -7,12 +7,8 @@ pub mod trie_builder;
 pub struct Trie<Label> {
     louds: Louds,
 
-    /// LoudsNodeNum -> Option<TrieLabel>
-    ///
-    /// 0 -> None
-    /// 1 -> None
-    /// 2.. -> Some(trie_label)
-    trie_labels: Vec<Option<TrieLabel<Label>>>,
+    /// (LoudsNodeNum - 2) -> TrieLabel
+    trie_labels: Vec<TrieLabel<Label>>,
 }
 
 pub struct TrieBuilder<Label> {
