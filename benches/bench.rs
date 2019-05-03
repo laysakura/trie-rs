@@ -117,7 +117,44 @@ mod trie {
             },
         );
     }
+
+    pub fn common_prefix_search(_: &mut Criterion) {
+        let times = 100;
+
+        super::c().bench_function(
+            &format!(
+                "[{}] Trie::common_prefix_search() {} times",
+                super::git_hash(),
+                times
+            ),
+            move |b| {
+                b.iter_batched(
+                    || &TRIE_EDICT,
+                    |trie| {
+                        // iter_batched() does not properly time `routine` time when `setup` time is far longer than `routine` time.
+                        // Tested function takes too short compared to build(). So loop many times.
+                        let results_in_u8s = trie.common_prefix_search("すしをにぎる");
+                        for _ in 0..(times - 1) {
+                            trie.common_prefix_search("すしをにぎる");
+                        }
+
+                        let results_in_str: Vec<&str> = results_in_u8s
+                            .iter()
+                            .map(|u8s| str::from_utf8(u8s).unwrap())
+                            .collect();
+                        assert_eq!(results_in_str, vec!["す", "すし", "すしをにぎる"]);
+                    },
+                    BatchSize::SmallInput,
+                )
+            },
+        );
+    }
 }
 
-criterion_group!(benches, trie::exact_match, trie::predictive_search);
+criterion_group!(
+    benches,
+    trie::exact_match,
+    trie::predictive_search,
+    trie::common_prefix_search
+);
 criterion_main!(benches);
