@@ -1,6 +1,6 @@
 [package]
 name = "trie-rs"
-version = "0.0.1"
+version = "0.1.0"
 authors = ["Sho Nakatani <lay.sakura@gmail.com>"]
 description = "Memory efficient trie (prefix tree) library based on LOUDS"
 readme = "README.md"
