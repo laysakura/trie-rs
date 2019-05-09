@@ -1,0 +1,11 @@
+group,function,value,sample_time_nanos,iteration_count
+[f147c67] Trie::common_prefix_search() 100 times,,,90759448.0,14
+[f147c67] Trie::common_prefix_search() 100 times,,,183302825.0,28
+[f147c67] Trie::common_prefix_search() 100 times,,,274235675.0,42
+[f147c67] Trie::common_prefix_search() 100 times,,,367699196.0,56
+[f147c67] Trie::common_prefix_search() 100 times,,,453248848.0,70
+[f147c67] Trie::common_prefix_search() 100 times,,,545745066.0,84
+[f147c67] Trie::common_prefix_search() 100 times,,,648969060.0,98
+[f147c67] Trie::common_prefix_search() 100 times,,,735388988.0,112
+[f147c67] Trie::common_prefix_search() 100 times,,,821781602.0,126
+[f147c67] Trie::common_prefix_search() 100 times,,,916665416.0,140

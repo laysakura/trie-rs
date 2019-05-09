@@ -1,0 +1,11 @@
+group,function,value,sample_time_nanos,iteration_count
+[f147c67] Trie::predictive_search() 100 times,,,105676340.0,5
+[f147c67] Trie::predictive_search() 100 times,,,213085256.0,10
+[f147c67] Trie::predictive_search() 100 times,,,316669359.0,15
+[f147c67] Trie::predictive_search() 100 times,,,421743733.0,20
+[f147c67] Trie::predictive_search() 100 times,,,535449396.0,25
+[f147c67] Trie::predictive_search() 100 times,,,637355834.0,30
+[f147c67] Trie::predictive_search() 100 times,,,747135170.0,35
+[f147c67] Trie::predictive_search() 100 times,,,864030394.0,40
+[f147c67] Trie::predictive_search() 100 times,,,955910808.0,45
+[f147c67] Trie::predictive_search() 100 times,,,1071124094.0,50

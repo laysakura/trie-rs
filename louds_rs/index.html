@@ -1,0 +1,118 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="API documentation for the Rust `louds_rs` crate."><meta name="keywords" content="rust, rustlang, rust-lang, louds_rs"><title>louds_rs - Rust</title><link rel="stylesheet" type="text/css" href="../normalize.css"><link rel="stylesheet" type="text/css" href="../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../dark.css"><link rel="stylesheet" type="text/css" href="../light.css" id="themeStyle"><script src="../storage.js"></script><noscript><link rel="stylesheet" href="../noscript.css"></noscript><link rel="shortcut icon" href="../favicon.ico"><style type="text/css">#crate-search{background-image:url("../down-arrow.svg");}</style></head><body class="rustdoc mod"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu">&#9776;</div><a href='../louds_rs/index.html'><img src='../rust-logo.png' alt='logo' width='100'></a><p class='location'>Crate louds_rs</p><div class="sidebar-elems"><a id='all-types' href='all.html'><p>See all louds_rs's items</p></a><div class="block items"><ul><li><a href="#reexports">Re-exports</a></li><li><a href="#modules">Modules</a></li></ul></div><p class='location'></p><script>window.sidebarCurrent = {name: 'louds_rs', ty: 'mod', relpath: '../'};</script></div></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!"><img src="../brush.svg" width="18" alt="Pick another theme!"></button><div id="theme-choices"></div></div><script src="../theme.js"></script><nav class="sub"><form class="search-form js-only"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><a id="settings-menu" href="../settings.html"><img src="../wheel.svg" width="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><h1 class='fqn'><span class='out-of-band'><span id='render-detail'><a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class='inner'>&#x2212;</span>]</a></span><a class='srclink' href='../src/louds_rs/lib.rs.html#1-140' title='goto source code'>[src]</a></span><span class='in-band'>Crate <a class="mod" href=''>louds_rs</a></span></h1><div class='docblock'><p>High performance LOUDS (Level-Order Unary Degree Sequence) library.</p>
+<p><a href="https://laysakura.github.io/louds-rs/louds_rs/">Master API Docs</a>
+|
+<a href="https://docs.rs/crate/louds-rs">Released API Docs</a>
+|
+<a href="https://laysakura.github.io/louds-rs/criterion/report/">Benchmark Results</a>
+|
+<a href="https://github.com/laysakura/louds-rs/blob/master/CHANGELOG.md">Changelog</a></p>
+<p><a href="https://travis-ci.com/laysakura/louds-rs"><img src="https://travis-ci.com/laysakura/louds-rs.svg?branch=master" alt="Build Status" /></a>
+<a href="https://crates.io/crates/louds-rs"><img src="https://img.shields.io/crates/v/louds-rs.svg" alt="Crates.io" /></a>
+<a href="https://github.com/laysakura/louds-rs#rust-version-supports"><img src="https://img.shields.io/badge/rustc-1.33+-lightgray.svg" alt="Minimum rustc version" /></a>
+<a href="https://github.com/laysakura/louds-rs/blob/master/LICENSE-MIT"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" /></a>
+<a href="https://github.com/laysakura/louds-rs/blob/master/LICENSE-APACHE"><img src="https://img.shields.io/badge/license-Apache_2.0-blue.svg" alt="License: Apache 2.0" /></a></p>
+<h1 id="quickstart" class="section-header"><a href="#quickstart">Quickstart</a></h1>
+<p>To use louds-rs, add the following to your <code>Cargo.toml</code> file:</p>
+<pre><code class="language-toml">[dependencies]
+louds-rs = &quot;0.1&quot;  # NOTE: Replace to latest minor version.
+</code></pre>
+<h2 id="usage-overview" class="section-header"><a href="#usage-overview">Usage Overview</a></h2>
+<p>Say we want to hold the following tree structure in minimum length of bits.</p>
+<pre><code class="language-text">(1)
+ |
+ |---+---+
+ |   |   |
+(2) (3) (4)
+ |       |
+ |       |---+-----+
+ |       |   |     |
+(5)     (6) (7)   (8)
+             |     |
+             |     |----+
+             |     |    |
+            (9)   (10) (11)
+</code></pre>
+<p>This tree has NodeNum (node number of 1-origin, assigned from left node to right &amp; top to bottom) and edges.
+With LOUDS, this tree is represented as the following LBS (LOUDS Bit String).</p>
+<pre><code class="language-text">NodeNum       | 0 (virtual root) | 1          | 2    | 3 | 4          | 5 | 6 | 7    | 8       | 9 | 10 | 11 |
+LBS           | 1  0             | 1  1  1  0 | 1  0 | 0 | 1  1  1  0 | 0 | 0 | 1  0 | 1  1  0 | 0 | 0  | 0  |
+Child NodeNum | 1  -             | 2  3  4  - | 5  - | - | 6  7  8  - | - | - | 9  - | 10 11 - | - | -  | -  |
+Index         | 0  1             | 2  3  4  5 | 6  7 | 8 | 9  10 11 12| 13| 14| 15 16| 17 18 19| 20| 21 | 22 |
+</code></pre>
+<p>The same tree is represented as follows using index.</p>
+<pre><code class="language-text">&lt;0&gt;
+ |
+ |---+---+
+ |   |   |
+&lt;2&gt; &lt;3&gt; &lt;4&gt;
+ |       |
+ |       |---+-----+
+ |       |   |     |
+&lt;6&gt;     &lt;9&gt; &lt;10&gt;  &lt;11&gt;
+             |     |
+             |     |----+
+             |     |    |
+            &lt;15&gt;  &lt;17&gt; &lt;18&gt;
+</code></pre>
+<p>Then, create this tree structure with <code>Louds</code> and call operations to it.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">louds_rs</span>::{<span class="ident">Louds</span>, <span class="ident">LoudsIndex</span>, <span class="ident">LoudsNodeNum</span>};
+
+<span class="comment">// Construct from LBS.</span>
+<span class="kw">let</span> <span class="ident">s</span> <span class="op">=</span> <span class="string">&quot;10_1110_10_0_1110_0_0_10_110_0_0_0&quot;</span>;
+<span class="kw">let</span> <span class="ident">louds</span> <span class="op">=</span> <span class="ident">Louds</span>::<span class="ident">from</span>(<span class="ident">s</span>);
+
+<span class="comment">// LoudsNodeNum &lt;-&gt; LoudsIndex</span>
+<span class="kw">let</span> <span class="ident">node8</span> <span class="op">=</span> <span class="ident">LoudsNodeNum</span>(<span class="number">8</span>);
+<span class="kw">let</span> <span class="ident">index11</span> <span class="op">=</span> <span class="ident">louds</span>.<span class="ident">node_num_to_index</span>(<span class="ident">node8</span>);
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">louds</span>.<span class="ident">index_to_node_num</span>(<span class="ident">index11</span>), <span class="ident">node8</span>);
+
+<span class="comment">// Search for children.</span>
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">louds</span>.<span class="ident">parent_to_children</span>(<span class="ident">node8</span>), <span class="macro">vec</span><span class="macro">!</span>(<span class="ident">LoudsIndex</span>(<span class="number">17</span>), <span class="ident">LoudsIndex</span>(<span class="number">18</span>)));
+
+<span class="comment">// Search for parent.</span>
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">louds</span>.<span class="ident">child_to_parent</span>(<span class="ident">index11</span>), <span class="ident">LoudsNodeNum</span>(<span class="number">4</span>));</pre></div>
+<h2 id="constructors" class="section-header"><a href="#constructors">Constructors</a></h2>
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">louds_rs</span>::<span class="ident">Louds</span>;
+
+<span class="comment">// Most human-friendly way: Louds::from::&lt;&amp;str&gt;()</span>
+<span class="kw">let</span> <span class="ident">louds1</span> <span class="op">=</span> <span class="ident">Louds</span>::<span class="ident">from</span>(<span class="string">&quot;10_1110_10_0_1110_0_0_10_110_0_0_0&quot;</span>);
+
+<span class="comment">// Simple way: Louds::from::&lt;&amp;[bool]&gt;()</span>
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">arr</span> <span class="op">=</span> <span class="macro">vec</span><span class="macro">!</span>[
+    <span class="bool-val">true</span>, <span class="bool-val">false</span>,
+    <span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="bool-val">false</span>,
+    <span class="bool-val">true</span>, <span class="bool-val">false</span>,
+    <span class="bool-val">false</span>,
+    <span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="bool-val">false</span>,
+    <span class="bool-val">false</span>,
+    <span class="bool-val">false</span>,
+    <span class="bool-val">true</span>, <span class="bool-val">false</span>,
+    <span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="bool-val">false</span>,
+    <span class="bool-val">false</span>,
+    <span class="bool-val">false</span>,
+    <span class="bool-val">false</span>,
+];
+<span class="kw">let</span> <span class="ident">louds2</span> <span class="op">=</span> <span class="ident">Louds</span>::<span class="ident">from</span>(<span class="kw-2">&amp;</span><span class="ident">arr</span>[..]);</pre></div>
+<h1 id="features" class="section-header"><a href="#features">Features</a></h1>
+<ul>
+<li><strong>Arbitrary length support with minimum working memory</strong>: louds-rs provides virtually <em>arbitrary size</em> of LOUDS. It is carefully designed to use as small memory space as possible.</li>
+<li><strong>Based on <a href="https://crates.io/crates/fid-rs">fid-rs</a></strong>, which is fast, parallelized, and memory efficient. It provides fast construction (<code>Louds::from()</code>).</li>
+<li><strong>Latest benchmark results are always accessible</strong>: louds-rs is continuously benchmarked in Travis CI using <a href="https://crates.io/crates/criterion">Criterion.rs</a>. Graphical benchmark results are published <a href="https://laysakura.github.io/louds-rs/criterion/report/">here</a>.</li>
+</ul>
+<h2 id="complexity" class="section-header"><a href="#complexity">Complexity</a></h2>
+<p>When the number of nodes in the tree represented as LOUDS is <em>N</em>:</p>
+<table><thead><tr><th> Operation </th><th> Time-complexity </th><th> Space-complexity </th></tr></thead><tbody>
+<tr><td> <a href="https://laysakura.github.io/louds-rs/louds_rs/louds/struct.Louds.html#implementations">Louds::from::&lt;&amp;str&gt;()</a> </td><td> <em>O(N)</em> </td><td> <em>N + o(N)</em> </td></tr>
+<tr><td> <a href="https://laysakura.github.io/louds-rs/louds_rs/louds/struct.Louds.html#implementations">Louds::from::&lt;&amp;[bool]&gt;()</a> </td><td> <em>O(N)</em> </td><td> <em>N + o(N)</em> </td></tr>
+<tr><td> <a href="https://laysakura.github.io/louds-rs/louds_rs/louds/struct.Louds.html#method.node_num_to_index">node_num_to_index()</a> </td><td> <em>O()</em> </td><td> <em>N + o(N)</em> </td></tr>
+<tr><td> <a href="https://laysakura.github.io/louds-rs/louds_rs/louds/struct.Louds.html#method.index_to_node_num">index_to_node_num()</a> </td><td> <em>O(1)</em> </td><td> <em>O(1)</em> </td></tr>
+<tr><td> <a href="https://laysakura.github.io/louds-rs/louds_rs/louds/struct.Louds.html#method.child_to_parent">child_to_parent()</a> </td><td> <em>O(1)</em> </td><td> <em>O(1)</em> </td></tr>
+<tr><td> <a href="https://laysakura.github.io/louds-rs/louds_rs/louds/struct.Louds.html#method.parent_to_children">parent_to_children()</a> </td><td> <em>O( max(log N, <u>max num of children a node has</u>) )</em> </td><td> <em>O( max(log N, <u>max num of children a node has</u>) )</em> </td></tr>
+</tbody></table>
+<p>(<code>node_num_to_index()</code> and <code>child_to_parent()</code> use <a href="https://laysakura.github.io/fid-rs/fid_rs/fid/struct.Fid.html#method.select">Fid::select()</a>. <code>index_to_node_num()</code> and <code>parent_to_children()</code> use <a href="https://laysakura.github.io/fid-rs/fid_rs/fid/struct.Fid.html#method.rank">rank()</a>).</p>
+</div><h2 id='reexports' class='section-header'><a href="#reexports">Re-exports</a></h2>
+<table><tr><td><code>pub use louds::<a class="struct" href="../louds_rs/louds/struct.Louds.html" title="struct louds_rs::louds::Louds">Louds</a>;</code></td></tr><tr><td><code>pub use louds::<a class="struct" href="../louds_rs/louds/struct.LoudsIndex.html" title="struct louds_rs::louds::LoudsIndex">LoudsIndex</a>;</code></td></tr><tr><td><code>pub use louds::<a class="struct" href="../louds_rs/louds/struct.LoudsNodeNum.html" title="struct louds_rs::louds::LoudsNodeNum">LoudsNodeNum</a>;</code></td></tr></table><h2 id='modules' class='section-header'><a href="#modules">Modules</a></h2>
+<table><tr class='module-item'><td><a class="mod" href="louds/index.html" title='louds_rs::louds mod'>louds</a></td><td class='docblock-short'></td></tr></table></section><section id="search" class="content hidden"></section><section class="footer"></section><aside id="help" class="hidden"><div><h1 class="hidden">Help</h1><div class="shortcuts"><h2>Keyboard Shortcuts</h2><dl><dt><kbd>?</kbd></dt><dd>Show this help dialog</dd><dt><kbd>S</kbd></dt><dd>Focus the search field</dd><dt><kbd>↑</kbd></dt><dd>Move up in search results</dd><dt><kbd>↓</kbd></dt><dd>Move down in search results</dd><dt><kbd>↹</kbd></dt><dd>Switch tab</dd><dt><kbd>&#9166;</kbd></dt><dd>Go to active search result</dd><dt><kbd>+</kbd></dt><dd>Expand all sections</dd><dt><kbd>-</kbd></dt><dd>Collapse all sections</dd></dl></div><div class="infos"><h2>Search Tricks</h2><p>Prefix searches with a type followed by a colon (e.g., <code>fn:</code>) to restrict the search to a given type.</p><p>Accepted types are: <code>fn</code>, <code>mod</code>, <code>struct</code>, <code>enum</code>, <code>trait</code>, <code>type</code>, <code>macro</code>, and <code>const</code>.</p><p>Search functions by type signature (e.g., <code>vec -> usize</code> or <code>* -> vec</code>)</p><p>Search multiple things at once by splitting your query with comma (e.g., <code>str,u8</code> or <code>String,struct:Vec,test</code>)</p></div></div></aside><script>window.rootPath = "../";window.currentCrate = "louds_rs";</script><script src="../aliases.js"></script><script src="../main.js"></script><script defer src="../search-index.js"></script></body></html>

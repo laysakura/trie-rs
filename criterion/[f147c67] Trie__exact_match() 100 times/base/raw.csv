@@ -1,0 +1,11 @@
+group,function,value,sample_time_nanos,iteration_count
+[f147c67] Trie::exact_match() 100 times,,,34227102.0,5
+[f147c67] Trie::exact_match() 100 times,,,65933632.0,10
+[f147c67] Trie::exact_match() 100 times,,,99603199.0,15
+[f147c67] Trie::exact_match() 100 times,,,134097639.0,20
+[f147c67] Trie::exact_match() 100 times,,,163442599.0,25
+[f147c67] Trie::exact_match() 100 times,,,198482432.0,30
+[f147c67] Trie::exact_match() 100 times,,,229745055.0,35
+[f147c67] Trie::exact_match() 100 times,,,263200570.0,40
+[f147c67] Trie::exact_match() 100 times,,,298878153.0,45
+[f147c67] Trie::exact_match() 100 times,,,332166940.0,50
