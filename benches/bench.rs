@@ -154,12 +154,40 @@ mod trie {
             },
         );
     }
+    pub fn common_prefix_match(_: &mut Criterion) {
+        let times = 100;
+
+        super::c().bench_function(
+            &format!(
+                "[{}] Trie::common_prefix_match() {} times",
+                super::git_hash(),
+                times
+            ),
+            move |b| {
+                b.iter_batched(
+                    || &TRIE_EDICT,
+                    |trie| {
+                        // iter_batched() does not properly time `routine` time when `setup` time is far longer than `routine` time.
+                        // Tested function takes too short compared to build(). So loop many times.
+                        let result = trie.common_prefix_match("すしをにぎる");
+                        for _ in 0..(times - 1) {
+                            trie.common_prefix_match("すしをにぎる");
+                        }
+
+                        assert_eq!(result, true);
+                    },
+                    BatchSize::SmallInput,
+                )
+            },
+        );
+    }
 }
 
 criterion_group!(
     benches,
     trie::exact_match,
     trie::predictive_search,
-    trie::common_prefix_search
+    trie::common_prefix_search,
+    trie::common_prefix_match
 );
 criterion_main!(benches);
