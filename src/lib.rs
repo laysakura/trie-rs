@@ -77,6 +77,9 @@
 //!         "すしや",
 //!     ]  // Sorted by `Vec<u8>`'s order
 //! );
+//!
+//! // common_prefix_match(): Check if there's at least one word with `query` prefix.
+//! assert_eq!(trie.common_prefix_match("すしや"), true);
 //! ```
 //!
 //! ## Using with Various Data Types
@@ -122,6 +125,10 @@
 //!     trie.common_prefix_search(vec!["a", "woman", "on", "the", "beach"]),
 //!     vec![vec!["a", "woman"], vec!["a", "woman", "on", "the", "beach"]],
 //! );
+//! assert_eq!(
+//!     trie.common_prefix_match(vec!["a", "woman", "on", "the", "beach"]),
+//!     true,
+//! );
 //! ```
 //!
 //! ### `Label=u8, Arr=[u8; n]`
@@ -160,6 +167,10 @@
 //! assert_eq!(
 //!     trie.common_prefix_search([1, 4, 1, 5, 9, 2, 6, 5, 3, 5]),
 //!     vec![[1, 4, 1, 5, 9, 2, 6, 5, 3, 5]],
+//! );
+//! assert_eq!(
+//!     trie.common_prefix_match([1, 4, 1, 5, 9, 2, 6, 5, 3, 5]),
+//!     true,
 //! );
 //! ```
 //!
