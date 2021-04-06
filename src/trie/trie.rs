@@ -67,6 +67,26 @@ impl<Label: Ord + Clone> Trie<Label> {
         results
     }
 
+    pub fn common_prefix_match<Arr: AsRef<[Label]>>(&self, query: Arr) -> bool {
+        let mut cur_node_num = LoudsNodeNum(1);
+
+        for chr in query.as_ref() {
+            let children_node_nums = self.children_node_nums(cur_node_num);
+            let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
+            match res {
+                Ok(j) => {
+                    let child_node_num = children_node_nums[j];
+                    if self.is_terminal(child_node_num) {
+                        return true;
+                    };
+                    cur_node_num = child_node_num;
+                }
+                Err(_) => break,
+            }
+        }
+        false
+    }
+
     pub fn common_prefix_search<Arr: AsRef<[Label]>>(&self, query: Arr) -> Vec<Vec<Label>> {
         let mut results: Vec<Vec<Label>> = Vec::new();
         let mut labels_in_path: Vec<Label> = Vec::new();
