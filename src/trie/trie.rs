@@ -23,6 +23,48 @@ impl<K: Ord + Clone, V: Clone> Trie<K, V> {
         false
     }
 
+    pub fn get<Key: AsRef<[K]>>(&self, query: Key) -> Option<&V> {
+        let mut cur_node_num = LoudsNodeNum(1);
+
+        for (i, chr) in query.as_ref().iter().enumerate() {
+            let children_node_nums = self.children_node_nums(cur_node_num);
+            let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
+
+            match res {
+                Ok(j) => {
+                    let child_node_num = children_node_nums[j];
+                    if i == query.as_ref().len() - 1 && self.is_terminal(child_node_num) {
+                        return Some(&self.trie_labels[child_node_num.0 as usize - 2].value);
+                    };
+                    cur_node_num = child_node_num;
+                }
+                Err(_) => return None,
+            }
+        }
+        None
+    }
+
+    pub fn get_mut<Key: AsRef<[K]>>(&mut self, query: Key) -> Option<&mut V> {
+        let mut cur_node_num = LoudsNodeNum(1);
+
+        for (i, chr) in query.as_ref().iter().enumerate() {
+            let children_node_nums = self.children_node_nums(cur_node_num);
+            let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
+
+            match res {
+                Ok(j) => {
+                    let child_node_num = children_node_nums[j];
+                    if i == query.as_ref().len() - 1 && self.is_terminal(child_node_num) {
+                        return Some(&mut self.trie_labels[child_node_num.0 as usize - 2].value);
+                    };
+                    cur_node_num = child_node_num;
+                }
+                Err(_) => return None,
+            }
+        }
+        None
+    }
+
     /// # Panics
     /// If `query` is empty.
     pub fn predictive_search<Arr: AsRef<[K]>>(&self, query: Arr) -> Vec<Vec<K>> {
@@ -173,6 +215,20 @@ mod search_tests {
         assert_eq!(result[1].1, "random_value_2".to_string());
         assert_eq!(result[2].0, b"apple".to_vec());
         assert_eq!(result[2].1, "random_value_3".to_string());
+    }
+
+    #[test]
+    fn test_get_mut() {
+        let mut trie = build_trie();
+        let result = trie.get_mut("apple");
+        assert_eq!(result.unwrap(), &mut "random_value_3".to_string());
+    }
+
+    #[test]
+    fn test_get() {
+        let trie = build_trie();
+        let result = trie.get("better");
+        assert_eq!(result.unwrap(), &"random_value_4".to_string());
     }
 
     mod exact_match_tests {
