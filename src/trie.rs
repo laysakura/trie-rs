@@ -11,6 +11,7 @@ pub struct Trie<K, V> {
     trie_labels: Vec<TrieLabel<K, V>>,
 }
 
+#[derive(Debug, Clone)]
 pub struct TrieBuilder<K, V> {
     naive_trie: NaiveTrie<K, V>,
 }

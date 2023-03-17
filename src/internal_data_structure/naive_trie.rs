@@ -45,6 +45,7 @@ pub mod naive_trie_b_f_iter;
 ///                                  | n
 ///                                <IntermOrLeaf (Terminate)>
 /// ```
+#[derive(Debug, Clone)]
 pub enum NaiveTrie<K, V> {
     Root(NaiveTrieRoot<K, V>),
     IntermOrLeaf(Box<NaiveTrieIntermOrLeaf<K, V>>),
@@ -72,11 +73,13 @@ pub enum NaiveTrie<K, V> {
     PhantomSibling,
 }
 
+#[derive(Debug, Clone)]
 pub struct NaiveTrieRoot<K, V> {
     /// Sorted by Label's order.
     children: Vec<NaiveTrie<K, V>>,
 }
 
+#[derive(Debug, Clone)]
 pub struct NaiveTrieIntermOrLeaf<K, V> {
     /// Sorted by Label's order.
     children: Vec<NaiveTrie<K, V>>,
