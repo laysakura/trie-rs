@@ -45,9 +45,9 @@ pub mod naive_trie_b_f_iter;
 ///                                  | n
 ///                                <IntermOrLeaf (Terminate)>
 /// ```
-pub enum NaiveTrie<Label> {
-    Root(Box<NaiveTrieRoot<Label>>),
-    IntermOrLeaf(Box<NaiveTrieIntermOrLeaf<Label>>),
+pub enum NaiveTrie<K, V> {
+    Root(NaiveTrieRoot<K, V>),
+    IntermOrLeaf(Box<NaiveTrieIntermOrLeaf<K, V>>),
 
     /// Used for Breadth-First iteration.
     ///
@@ -72,14 +72,15 @@ pub enum NaiveTrie<Label> {
     PhantomSibling,
 }
 
-pub struct NaiveTrieRoot<Label> {
+pub struct NaiveTrieRoot<K, V> {
     /// Sorted by Label's order.
-    children: Vec<Box<NaiveTrie<Label>>>,
+    children: Vec<NaiveTrie<K, V>>,
 }
 
-pub struct NaiveTrieIntermOrLeaf<Label> {
+pub struct NaiveTrieIntermOrLeaf<K, V> {
     /// Sorted by Label's order.
-    children: Vec<Box<NaiveTrie<Label>>>,
-    label: Label,
+    children: Vec<NaiveTrie<K, V>>,
+    key: K,
+    value: V,
     is_terminal: bool,
 }
