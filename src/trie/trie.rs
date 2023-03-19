@@ -65,6 +65,24 @@ impl<K: Ord + Clone, V: Clone> Trie<K, V> {
         None
     }
 
+    pub fn set<Key: AsRef<[K]>>(&mut self, query: Key, value: V) {
+        let mut cur_node_num = LoudsNodeNum(1);
+
+        for (i, chr) in query.as_ref().iter().enumerate() {
+            let children_node_nums = self.children_node_nums(cur_node_num);
+            let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
+
+            if let Ok(j) = res {
+                let child_node_num = children_node_nums[j];
+                if i == query.as_ref().len() - 1 {
+                    self.trie_labels[child_node_num.0 as usize - 2].value = value;
+                    return;
+                };
+                cur_node_num = child_node_num;
+            }
+        }
+    }
+
     /// # Panics
     /// If `query` is empty.
     pub fn predictive_search<Arr: AsRef<[K]>>(&self, query: Arr) -> Vec<Vec<K>> {
@@ -229,6 +247,20 @@ mod search_tests {
         let trie = build_trie();
         let result = trie.get("better");
         assert_eq!(result.unwrap(), &"random_value_4".to_string());
+    }
+
+    #[test]
+    fn test_set_multiple() {
+        let mut builder = TrieBuilder::new();
+        let mut contents = vec!["1", "2", "3", "4"];
+        builder.push("a", vec!["x", "y"]);
+        builder.push("axe", contents.clone());
+        contents.push("5");
+        let mut trie = builder.build();
+        trie.set("axe", contents);
+        assert_eq!(trie.get("a").unwrap(), &vec!["x", "y"]);
+        assert_eq!(trie.get("ax"), None);
+        assert_eq!(trie.get("axe").unwrap(), &vec!["1", "2", "3", "4", "5"]);
     }
 
     mod exact_match_tests {
