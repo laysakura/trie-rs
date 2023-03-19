@@ -1,8 +1,8 @@
 use super::Trie;
 use louds_rs::LoudsNodeNum;
 
-impl<Label: Ord + Clone> Trie<Label> {
-    pub fn exact_match<Arr: AsRef<[Label]>>(&self, query: Arr) -> bool {
+impl<K: Ord + Clone, V: Clone> Trie<K, V> {
+    pub fn exact_match<Key: AsRef<[K]>>(&self, query: Key) -> bool {
         let mut cur_node_num = LoudsNodeNum(1);
 
         for (i, chr) in query.as_ref().iter().enumerate() {
@@ -23,16 +23,76 @@ impl<Label: Ord + Clone> Trie<Label> {
         false
     }
 
+    pub fn get<Key: AsRef<[K]>>(&self, query: Key) -> Option<&V> {
+        let mut cur_node_num = LoudsNodeNum(1);
+
+        for (i, chr) in query.as_ref().iter().enumerate() {
+            let children_node_nums = self.children_node_nums(cur_node_num);
+            let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
+
+            match res {
+                Ok(j) => {
+                    let child_node_num = children_node_nums[j];
+                    if i == query.as_ref().len() - 1 && self.is_terminal(child_node_num) {
+                        return Some(&self.trie_labels[child_node_num.0 as usize - 2].value);
+                    };
+                    cur_node_num = child_node_num;
+                }
+                Err(_) => return None,
+            }
+        }
+        None
+    }
+
+    pub fn get_mut<Key: AsRef<[K]>>(&mut self, query: Key) -> Option<&mut V> {
+        let mut cur_node_num = LoudsNodeNum(1);
+
+        for (i, chr) in query.as_ref().iter().enumerate() {
+            let children_node_nums = self.children_node_nums(cur_node_num);
+            let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
+
+            match res {
+                Ok(j) => {
+                    let child_node_num = children_node_nums[j];
+                    if i == query.as_ref().len() - 1 && self.is_terminal(child_node_num) {
+                        return Some(&mut self.trie_labels[child_node_num.0 as usize - 2].value);
+                    };
+                    cur_node_num = child_node_num;
+                }
+                Err(_) => return None,
+            }
+        }
+        None
+    }
+
+    pub fn set<Key: AsRef<[K]>>(&mut self, query: Key, value: V) {
+        let mut cur_node_num = LoudsNodeNum(1);
+
+        for (i, chr) in query.as_ref().iter().enumerate() {
+            let children_node_nums = self.children_node_nums(cur_node_num);
+            let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
+
+            if let Ok(j) = res {
+                let child_node_num = children_node_nums[j];
+                if i == query.as_ref().len() - 1 {
+                    self.trie_labels[child_node_num.0 as usize - 2].value = value;
+                    return;
+                };
+                cur_node_num = child_node_num;
+            }
+        }
+    }
+
     /// # Panics
     /// If `query` is empty.
-    pub fn predictive_search<Arr: AsRef<[Label]>>(&self, query: Arr) -> Vec<Vec<Label>> {
+    pub fn predictive_search<Arr: AsRef<[K]>>(&self, query: Arr) -> Vec<Vec<K>> {
         self.rec_predictive_search(query, LoudsNodeNum(1))
     }
-    fn rec_predictive_search<Arr: AsRef<[Label]>>(
+    fn rec_predictive_search<Arr: AsRef<[K]>>(
         &self,
         query: Arr,
         node_num: LoudsNodeNum,
-    ) -> Vec<Vec<Label>> {
+    ) -> Vec<Vec<K>> {
         assert!(!query.as_ref().is_empty());
         let mut cur_node_num = node_num;
 
@@ -51,7 +111,7 @@ impl<Label: Ord + Clone> Trie<Label> {
         } else {
             vec![]
         };
-        let all_words_under_cur: Vec<Vec<Label>> = self
+        let all_words_under_cur: Vec<Vec<K>> = self
             .children_node_nums(cur_node_num)
             .iter()
             .flat_map(|child_node_num| {
@@ -60,16 +120,16 @@ impl<Label: Ord + Clone> Trie<Label> {
             .collect();
 
         for word in all_words_under_cur {
-            let mut result: Vec<Label> = query.as_ref().to_vec();
+            let mut result: Vec<K> = query.as_ref().to_vec();
             result.extend(word);
             results.push(result);
         }
         results
     }
 
-    pub fn common_prefix_search<Arr: AsRef<[Label]>>(&self, query: Arr) -> Vec<Vec<Label>> {
-        let mut results: Vec<Vec<Label>> = Vec::new();
-        let mut labels_in_path: Vec<Label> = Vec::new();
+    pub fn common_prefix_search<Key: AsRef<[K]>>(&self, query: Key) -> Vec<Vec<K>> {
+        let mut results: Vec<Vec<K>> = Vec::new();
+        let mut labels_in_path: Vec<K> = Vec::new();
 
         let mut cur_node_num = LoudsNodeNum(1);
 
@@ -91,6 +151,33 @@ impl<Label: Ord + Clone> Trie<Label> {
         results
     }
 
+    pub fn common_prefix_search_with_values<Key: AsRef<[K]>>(
+        &self,
+        query: Key,
+    ) -> Vec<(Vec<K>, V)> {
+        let mut results: Vec<(Vec<K>, V)> = Vec::new();
+        let mut labels_in_path: Vec<K> = Vec::new();
+
+        let mut cur_node_num = LoudsNodeNum(1);
+
+        for chr in query.as_ref() {
+            let children_node_nums = self.children_node_nums(cur_node_num);
+            let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
+            match res {
+                Ok(j) => {
+                    let child_node_num = children_node_nums[j];
+                    labels_in_path.push(self.label(child_node_num));
+                    if self.is_terminal(child_node_num) {
+                        results.push((labels_in_path.clone(), self.value(child_node_num)));
+                    };
+                    cur_node_num = child_node_num;
+                }
+                Err(_) => break,
+            }
+        }
+        results
+    }
+
     fn children_node_nums(&self, node_num: LoudsNodeNum) -> Vec<LoudsNodeNum> {
         self.louds
             .parent_to_children(node_num)
@@ -101,14 +188,18 @@ impl<Label: Ord + Clone> Trie<Label> {
 
     fn bin_search_by_children_labels(
         &self,
-        query: &Label,
+        query: &K,
         children_node_nums: &[LoudsNodeNum],
     ) -> Result<usize, usize> {
         children_node_nums.binary_search_by_key(query, |child_node_num| self.label(*child_node_num))
     }
 
-    fn label(&self, node_num: LoudsNodeNum) -> Label {
-        self.trie_labels[(node_num.0 - 2) as usize].label.clone()
+    fn label(&self, node_num: LoudsNodeNum) -> K {
+        self.trie_labels[(node_num.0 - 2) as usize].key.clone()
+    }
+
+    fn value(&self, node_num: LoudsNodeNum) -> V {
+        self.trie_labels[(node_num.0 - 2) as usize].value.clone()
     }
 
     fn is_terminal(&self, node_num: LoudsNodeNum) -> bool {
@@ -120,15 +211,56 @@ impl<Label: Ord + Clone> Trie<Label> {
 mod search_tests {
     use crate::{Trie, TrieBuilder};
 
-    fn build_trie() -> Trie<u8> {
+    fn build_trie() -> Trie<u8, String> {
         let mut builder = TrieBuilder::new();
-        builder.push("a");
-        builder.push("app");
-        builder.push("apple");
-        builder.push("better");
-        builder.push("application");
-        builder.push("アップル🍎");
+        builder.push("a", "random_value_1".to_string());
+        builder.push("app", "random_value_2".to_string());
+        builder.push("apple", "random_value_3".to_string());
+        builder.push("better", "random_value_4".to_string());
+        builder.push("application", "random_value_5".to_string());
+        builder.push("アップル🍎", "random_value_6".to_string());
         builder.build()
+    }
+
+    #[test]
+    fn test_common_prefix_with_values_search() {
+        let trie = build_trie();
+        let result = trie.common_prefix_search_with_values("apple");
+        assert_eq!(result.len(), 3);
+        assert_eq!(result[0].0, b"a".to_vec());
+        assert_eq!(result[0].1, "random_value_1".to_string());
+        assert_eq!(result[1].0, b"app".to_vec());
+        assert_eq!(result[1].1, "random_value_2".to_string());
+        assert_eq!(result[2].0, b"apple".to_vec());
+        assert_eq!(result[2].1, "random_value_3".to_string());
+    }
+
+    #[test]
+    fn test_get_mut() {
+        let mut trie = build_trie();
+        let result = trie.get_mut("apple");
+        assert_eq!(result.unwrap(), &mut "random_value_3".to_string());
+    }
+
+    #[test]
+    fn test_get() {
+        let trie = build_trie();
+        let result = trie.get("better");
+        assert_eq!(result.unwrap(), &"random_value_4".to_string());
+    }
+
+    #[test]
+    fn test_set_multiple() {
+        let mut builder = TrieBuilder::new();
+        let mut contents = vec!["1", "2", "3", "4"];
+        builder.push("a", vec!["x", "y"]);
+        builder.push("axe", contents.clone());
+        contents.push("5");
+        let mut trie = builder.build();
+        trie.set("axe", contents);
+        assert_eq!(trie.get("a").unwrap(), &vec!["x", "y"]);
+        assert_eq!(trie.get("ax"), None);
+        assert_eq!(trie.get("axe").unwrap(), &vec!["1", "2", "3", "4", "5"]);
     }
 
     mod exact_match_tests {
