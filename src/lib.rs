@@ -1,19 +1,6 @@
-//! Memory efficient trie (prefix tree) library based on LOUDS.
+//! KV capable prefix trie library based on LOUDS.
 //!
-//! [Master API Docs](https://laysakura.github.io/trie-rs/trie_rs/)
-//! |
-//! [Released API Docs](https://docs.rs/crate/trie-rs)
-//! |
-//! [Benchmark Results](https://laysakura.github.io/trie-rs/criterion/report/)
-//! |
-//! [Changelog](https://github.com/laysakura/trie-rs/blob/master/CHANGELOG.md)
-//!
-//! [![Build Status](https://travis-ci.com/laysakura/trie-rs.svg?branch=master)](https://travis-ci.com/laysakura/trie-rs)
-//! [![Crates.io Version](https://img.shields.io/crates/v/trie-rs.svg)](https://crates.io/crates/trie-rs)
-//! [![Crates.io Downloads](https://img.shields.io/crates/d/trie-rs.svg)](https://crates.io/crates/trie-rs)
-//! [![Minimum rustc version](https://img.shields.io/badge/rustc-1.33+-lightgray.svg)](https://github.com/laysakura/trie-rs#rust-version-supports)
-//! [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/laysakura/trie-rs/blob/master/LICENSE-MIT)
-//! [![License: Apache 2.0](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](https://github.com/laysakura/trie-rs/blob/master/LICENSE-APACHE)
+//! This is a fork of https://laysakura.github.io/trie-rs/trie_rs.
 //!
 //! # Quickstart
 //!
@@ -39,7 +26,7 @@
 //! builder.push("すし", 7);  // Word `push`ed twice is just ignored.
 //! builder.push("🍣", 8);
 //!
-//! let trie = builder.build();
+//! let mut trie = builder.build();
 //!
 //! // exact_match(): Find a word exactly match to query.
 //! assert_eq!(trie.exact_match("すし"), true);
@@ -77,6 +64,29 @@
 //!         "すしや",
 //!     ]  // Sorted by `Vec<u8>`'s order
 //! );
+//!
+//! // common_prefix_search_with_value(): Find words which is included in `query`'s prefix and return their values.
+//! let results_in_u8s: Vec<(Vec<u8>, u8)> = trie.common_prefix_search_with_values("すしや");
+//! let results_in_str: Vec<(&str, u8)> = results_in_u8s
+//!    .iter()
+//!    .map(|(u8s, v)| (str::from_utf8(u8s).unwrap(), *v))
+//!    .collect();
+//!
+//!    assert_eq!(
+//!    results_in_str,
+//!    vec![
+//!    ("すし", 1),
+//!    ("すしや", 2),
+//!    ]  // Sorted by `Vec<u8>`'s order
+//!    );
+//!
+//! // get_value(): Get value of a word.
+//! assert_eq!(trie.get("すし"), Some(&1));
+//!
+//! // set value in a built trie.
+//! trie.set("すし", 9);
+//! assert_eq!(trie.get("すし"), Some(&9));
+//!
 //! ```
 //!
 //! ## Using with Various Data Types

@@ -1,21 +1,8 @@
 # trie-rs
 
-Memory efficient trie (prefix tree) library based on LOUDS.
+KV capable prefix trie library based on LOUDS.
 
-[Master API Docs](https://laysakura.github.io/trie-rs/trie_rs/)
-|
-[Released API Docs](https://docs.rs/crate/trie-rs)
-|
-[Benchmark Results](https://laysakura.github.io/trie-rs/criterion/report/)
-|
-[Changelog](https://github.com/laysakura/trie-rs/blob/master/CHANGELOG.md)
-
-[![Build Status](https://travis-ci.com/laysakura/trie-rs.svg?branch=master)](https://travis-ci.com/laysakura/trie-rs)
-[![Crates.io Version](https://img.shields.io/crates/v/trie-rs.svg)](https://crates.io/crates/trie-rs)
-[![Crates.io Downloads](https://img.shields.io/crates/d/trie-rs.svg)](https://crates.io/crates/trie-rs)
-[![Minimum rustc version](https://img.shields.io/badge/rustc-1.33+-lightgray.svg)](https://github.com/laysakura/trie-rs#rust-version-supports)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/laysakura/trie-rs/blob/master/LICENSE-MIT)
-[![License: Apache 2.0](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](https://github.com/laysakura/trie-rs/blob/master/LICENSE-APACHE)
+This is a fork of https://laysakura.github.io/trie-rs/trie_rs.
 
 ## Quickstart
 
@@ -32,16 +19,16 @@ use std::str;
 use trie_rs::TrieBuilder;
 
 let mut builder = TrieBuilder::new();  // Inferred `TrieBuilder<u8>` automatically
-builder.push("すし");
-builder.push("すしや");
-builder.push("すしだね");
-builder.push("すしづめ");
-builder.push("すしめし");
-builder.push("すしをにぎる");
-builder.push("すし");  // Word `push`ed twice is just ignored.
-builder.push("🍣");
+builder.push("すし", 1);
+builder.push("すしや", 2);
+builder.push("すしだね", 3);
+builder.push("すしづめ", 4);
+builder.push("すしめし", 5);
+builder.push("すしをにぎる", 6);
+builder.push("すし", 7);  // Word `push`ed twice is just ignored.
+builder.push("🍣", 8);
 
-let trie = builder.build();
+let mut trie = builder.build();
 
 // exact_match(): Find a word exactly match to query.
 assert_eq!(trie.exact_match("すし"), true);
@@ -79,6 +66,29 @@ assert_eq!(
         "すしや",
     ]  // Sorted by `Vec<u8>`'s order
 );
+
+// common_prefix_search_with_value(): Find words which is included in `query`'s prefix and return their values.
+let results_in_u8s: Vec<(Vec<u8>, u8)> = trie.common_prefix_search_with_values("すしや");
+let results_in_str: Vec<(&str, u8)> = results_in_u8s
+   .iter()
+   .map(|(u8s, v)| (str::from_utf8(u8s).unwrap(), *v))
+   .collect();
+
+   assert_eq!(
+   results_in_str,
+   vec![
+   ("すし", 1),
+   ("すしや", 2),
+   ]  // Sorted by `Vec<u8>`'s order
+   );
+
+// get_value(): Get value of a word.
+assert_eq!(trie.get("すし"), Some(&1));
+
+// set value in a built trie.
+trie.set("すし", 9);
+assert_eq!(trie.get("すし"), Some(&9));
+
 ```
 
 ### Using with Various Data Types
@@ -103,9 +113,9 @@ Say `Label` is English words and `Arr` is English phrases.
 use trie_rs::TrieBuilder;
 
 let mut builder = TrieBuilder::new();
-builder.push(vec!["a", "woman"]);
-builder.push(vec!["a", "woman", "on", "the", "beach"]);
-builder.push(vec!["a", "woman", "on", "the", "run"]);
+builder.push(vec!["a", "woman"], 0 );
+builder.push(vec!["a", "woman", "on", "the", "beach"], 1);
+builder.push(vec!["a", "woman", "on", "the", "run"], 2);
 
 let trie = builder.build();
 
@@ -132,22 +142,22 @@ Say `Label` is a digit in Pi (= 3.14...) and Arr is a window to separate pi's di
 ```rust
 use trie_rs::TrieBuilder;
 
-let mut builder = TrieBuilder::<u8>::new(); // Pi = 3.14...
+let mut builder = TrieBuilder::<u8, u8>::new(); // Pi = 3.14...
 
-builder.push([1, 4, 1, 5, 9, 2, 6, 5, 3, 5]);
-builder.push([8, 9, 7, 9, 3, 2, 3, 8, 4, 6]);
-builder.push([2, 6, 4, 3, 3, 8, 3, 2, 7, 9]);
-builder.push([6, 9, 3, 9, 9, 3, 7, 5, 1, 0]);
-builder.push([5, 8, 2, 0, 9, 7, 4, 9, 4, 4]);
-builder.push([5, 9, 2, 3, 0, 7, 8, 1, 6, 4]);
-builder.push([0, 6, 2, 8, 6, 2, 0, 8, 9, 9]);
-builder.push([8, 6, 2, 8, 0, 3, 4, 8, 2, 5]);
-builder.push([3, 4, 2, 1, 1, 7, 0, 6, 7, 9]);
-builder.push([8, 2, 1, 4, 8, 0, 8, 6, 5, 1]);
-builder.push([3, 2, 8, 2, 3, 0, 6, 6, 4, 7]);
-builder.push([0, 9, 3, 8, 4, 4, 6, 0, 9, 5]);
-builder.push([5, 0, 5, 8, 2, 2, 3, 1, 7, 2]);
-builder.push([5, 3, 5, 9, 4, 0, 8, 1, 2, 8]);
+builder.push([1, 4, 1, 5, 9, 2, 6, 5, 3, 5], 1);
+builder.push([8, 9, 7, 9, 3, 2, 3, 8, 4, 6], 2);
+builder.push([2, 6, 4, 3, 3, 8, 3, 2, 7, 9], 3);
+builder.push([6, 9, 3, 9, 9, 3, 7, 5, 1, 0], 4);
+builder.push([5, 8, 2, 0, 9, 7, 4, 9, 4, 4], 5);
+builder.push([5, 9, 2, 3, 0, 7, 8, 1, 6, 4], 6);
+builder.push([0, 6, 2, 8, 6, 2, 0, 8, 9, 9], 7);
+builder.push([8, 6, 2, 8, 0, 3, 4, 8, 2, 5], 8);
+builder.push([3, 4, 2, 1, 1, 7, 0, 6, 7, 9], 9);
+builder.push([8, 2, 1, 4, 8, 0, 8, 6, 5, 1], 10);
+builder.push([3, 2, 8, 2, 3, 0, 6, 6, 4, 7], 11);
+builder.push([0, 9, 3, 8, 4, 4, 6, 0, 9, 5], 12);
+builder.push([5, 0, 5, 8, 2, 2, 3, 1, 7, 2], 13);
+builder.push([5, 3, 5, 9, 4, 0, 8, 1, 2, 8], 14);
 
 let trie = builder.build();
 
