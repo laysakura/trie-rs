@@ -1,12 +1,12 @@
 [package]
 name = "trie-rs"
-version = "0.1.2-alpha.0"
-authors = ["Sho Nakatani <lay.sakura@gmail.com>"]
-description = "Memory efficient trie (prefix tree) library based on LOUDS"
+version = "0.1.1"
+authors = ["Sudarsan Reddy <sudar.theone@gmail.com>"]
+description = "KV capable prefix trie library based on LOUDS."
 readme = "README.md"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/laysakura/trie-rs"
-homepage = "https://github.com/laysakura/trie-rs"
+repository = "https://github.com/sudarshan-reddy/kv-trie-rs"
+homepage = "https://github.com/sudarshan-reddy/kv-trie-rs"
 keywords = ["trie", "louds", "succinct"] # up to 5 keywords, each keyword should have <= 20 chars
 categories = ["compression", "data-structures"]
 edition = "2021"
@@ -25,5 +25,4 @@ harness = false
 
 [package.metadata.release]
 tag-prefix = "v"
-pre-release-hook = ["emacs", "CHANGELOG.md"]  # Finally, I found this hook so effective!!
 disable-publish = true
