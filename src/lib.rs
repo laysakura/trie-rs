@@ -14,7 +14,7 @@
 //! ## Usage Overview
 //! ```rust
 //! use std::str;
-//! use trie_rs::TrieBuilder;
+//! use kv_trie_rs::TrieBuilder;
 //!
 //! let mut builder = TrieBuilder::new();  // Inferred `TrieBuilder<u8>` automatically
 //! builder.push("すし", 1);
@@ -23,7 +23,7 @@
 //! builder.push("すしづめ", 4);
 //! builder.push("すしめし", 5);
 //! builder.push("すしをにぎる", 6);
-//! builder.push("すし", 7);  // Word `push`ed twice is just ignored.
+//! builder.push("すし", 7);  // Word `push`ed twice is over-written.
 //! builder.push("🍣", 8);
 //!
 //! let mut trie = builder.build();
@@ -75,13 +75,13 @@
 //!    assert_eq!(
 //!    results_in_str,
 //!    vec![
-//!    ("すし", 1),
+//!    ("すし", 7),
 //!    ("すしや", 2),
 //!    ]  // Sorted by `Vec<u8>`'s order
 //!    );
 //!
 //! // get_value(): Get value of a word.
-//! assert_eq!(trie.get("すし"), Some(&1));
+//! assert_eq!(trie.get("すし"), Some(&7));
 //!
 //! // set value in a built trie.
 //! trie.set("すし", 9);
@@ -108,7 +108,7 @@
 //! Say `Label` is English words and `Arr` is English phrases.
 //!
 //! ```rust
-//! use trie_rs::TrieBuilder;
+//! use kv_trie_rs::TrieBuilder;
 //!
 //! let mut builder = TrieBuilder::new();
 //! builder.push(vec!["a", "woman"], 0 );
@@ -138,7 +138,7 @@
 //! Say `Label` is a digit in Pi (= 3.14...) and Arr is a window to separate pi's digit by 10.
 //!
 //! ```rust
-//! use trie_rs::TrieBuilder;
+//! use kv_trie_rs::TrieBuilder;
 //!
 //! let mut builder = TrieBuilder::<u8, u8>::new(); // Pi = 3.14...
 //!

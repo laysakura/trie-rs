@@ -1,6 +1,6 @@
 [package]
 name = "kv-trie-rs"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Sudarsan Reddy <sudar.theone@gmail.com>"]
 description = "KV capable prefix trie library based on LOUDS."
 readme = "README.md"
@@ -15,7 +15,7 @@ edition = "2021"
 louds-rs = "0.4"
 
 [dev-dependencies]
-criterion = "0.2"
+criterion = "0.4.0"
 rand = "0.6"
 lazy_static = "1.3"
 

@@ -34,7 +34,11 @@ impl<K: Ord + Clone, V: Clone> Trie<K, V> {
                 Ok(j) => {
                     let child_node_num = children_node_nums[j];
                     if i == query.as_ref().len() - 1 && self.is_terminal(child_node_num) {
-                        return Some(&self.trie_labels[child_node_num.0 as usize - 2].value);
+                        let value_opts = &self.trie_labels[child_node_num.0 as usize - 2].value;
+                        return match value_opts {
+                            Some(value) => Some(value),
+                            None => None,
+                        };
                     };
                     cur_node_num = child_node_num;
                 }
@@ -55,11 +59,17 @@ impl<K: Ord + Clone, V: Clone> Trie<K, V> {
                 Ok(j) => {
                     let child_node_num = children_node_nums[j];
                     if i == query.as_ref().len() - 1 && self.is_terminal(child_node_num) {
-                        return Some(&mut self.trie_labels[child_node_num.0 as usize - 2].value);
+                        let value_opts = &mut self.trie_labels[child_node_num.0 as usize - 2].value;
+                        return match value_opts {
+                            Some(ref mut value) => Some(value),
+                            None => None,
+                        };
                     };
                     cur_node_num = child_node_num;
                 }
-                Err(_) => return None,
+                Err(_) => {
+                    return None;
+                }
             }
         }
         None
@@ -75,7 +85,7 @@ impl<K: Ord + Clone, V: Clone> Trie<K, V> {
             if let Ok(j) = res {
                 let child_node_num = children_node_nums[j];
                 if i == query.as_ref().len() - 1 {
-                    self.trie_labels[child_node_num.0 as usize - 2].value = value;
+                    self.trie_labels[child_node_num.0 as usize - 2].value = Some(value);
                     return;
                 };
                 cur_node_num = child_node_num;
@@ -168,7 +178,10 @@ impl<K: Ord + Clone, V: Clone> Trie<K, V> {
                     let child_node_num = children_node_nums[j];
                     labels_in_path.push(self.label(child_node_num));
                     if self.is_terminal(child_node_num) {
-                        results.push((labels_in_path.clone(), self.value(child_node_num)));
+                        match self.value(child_node_num) {
+                            Some(value) => results.push((labels_in_path.clone(), value)),
+                            None => panic!("Trie is inconsistent"),
+                        }
                     };
                     cur_node_num = child_node_num;
                 }
@@ -198,7 +211,7 @@ impl<K: Ord + Clone, V: Clone> Trie<K, V> {
         self.trie_labels[(node_num.0 - 2) as usize].key.clone()
     }
 
-    fn value(&self, node_num: LoudsNodeNum) -> V {
+    fn value(&self, node_num: LoudsNodeNum) -> Option<V> {
         self.trie_labels[(node_num.0 - 2) as usize].value.clone()
     }
 
@@ -222,6 +235,16 @@ mod search_tests {
         builder.build()
     }
 
+    fn build_trie_mut() -> Trie<u8, String> {
+        let mut builder = TrieBuilder::new();
+        builder.push("a", "random_value_1".to_string());
+        builder.push("a", "".to_string());
+        builder.push("app", "random_value_2".to_string());
+        builder.push("app", "random_value_3".to_string());
+        builder.push("apple", "random_value_4".to_string());
+        builder.build()
+    }
+
     #[test]
     fn test_common_prefix_with_values_search() {
         let trie = build_trie();
@@ -237,8 +260,12 @@ mod search_tests {
 
     #[test]
     fn test_get_mut() {
-        let mut trie = build_trie();
+        let mut trie = build_trie_mut();
+        let result = trie.get_mut("a");
+        assert_eq!(result.unwrap(), &mut "".to_string());
         let result = trie.get_mut("apple");
+        assert_eq!(result.unwrap(), &mut "random_value_4".to_string());
+        let result = trie.get_mut("app");
         assert_eq!(result.unwrap(), &mut "random_value_3".to_string());
     }
 

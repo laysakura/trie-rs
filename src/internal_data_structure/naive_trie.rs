@@ -84,6 +84,6 @@ pub struct NaiveTrieIntermOrLeaf<K, V> {
     /// Sorted by Label's order.
     children: Vec<NaiveTrie<K, V>>,
     key: K,
-    value: V,
+    value: Option<V>,
     is_terminal: bool,
 }

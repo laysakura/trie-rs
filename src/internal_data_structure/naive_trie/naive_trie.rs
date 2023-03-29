@@ -7,6 +7,7 @@ impl<'trie, K: Ord + Clone, V: Clone> NaiveTrie<K, V> {
     }
 
     pub fn make_interm_or_leaf(key: &K, value: V, is_terminal: bool) -> Self {
+        let value = if is_terminal { Some(value) } else { None };
         NaiveTrie::IntermOrLeaf(Box::new(NaiveTrieIntermOrLeaf {
             children: vec![],
             key: key.clone(),
@@ -22,16 +23,27 @@ impl<'trie, K: Ord + Clone, V: Clone> NaiveTrie<K, V> {
                 trie.children()
                     .binary_search_by_key(chr, |child| child.label())
             };
+
+            let is_terminal = i == key.as_ref().len() - 1;
             match res {
                 Ok(j) => {
-                    trie = match trie {
+                    let new_trie = match trie {
                         NaiveTrie::Root(node) => &mut node.children[j],
                         NaiveTrie::IntermOrLeaf(node) => &mut node.children[j],
                         _ => panic!("Unexpected type"),
                     };
+                    if is_terminal {
+                        match new_trie {
+                            NaiveTrie::IntermOrLeaf(node) => {
+                                node.value = Some(value.clone());
+                                node.is_terminal = true;
+                            }
+                            _ => panic!("Unexpected type"),
+                        }
+                    }
+                    trie = new_trie;
                 }
                 Err(j) => {
-                    let is_terminal = i == key.as_ref().len() - 1;
                     let child_trie = Self::make_interm_or_leaf(chr, value.clone(), is_terminal);
                     trie = match trie {
                         NaiveTrie::Root(node) => {
@@ -79,7 +91,7 @@ impl<'trie, K: Ord + Clone, V: Clone> NaiveTrie<K, V> {
         }
     }
 
-    pub fn value(&self) -> V {
+    pub fn value(&self) -> Option<V> {
         match self {
             NaiveTrie::IntermOrLeaf(node) => node.value.clone(),
             _ => panic!("Unexpected type"),

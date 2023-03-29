@@ -18,6 +18,6 @@ pub struct TrieBuilder<K, V> {
 
 struct TrieLabel<K, V> {
     key: K,
-    value: V,
+    value: Option<V>,
     is_terminal: bool,
 }
