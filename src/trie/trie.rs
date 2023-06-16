@@ -25,15 +25,8 @@ impl<Label: Ord + Clone> Trie<Label> {
 
     /// # Panics
     /// If `query` is empty.
+    /// Builds a sorted Vec of keys starting with `query` by performing a preorder traversal
     pub fn predictive_search<Arr: AsRef<[Label]>>(&self, query: Arr) -> Vec<Vec<Label>> {
-        self.predictive_search_inner(query)
-    }
-
-    /// builds a set of keys starting with `query` by performing a preorder traversal
-    fn predictive_search_inner<Arr: AsRef<[Label]>>(
-        &self,
-        query: Arr
-    ) -> Vec<Vec<Label>> {
         assert!(!query.as_ref().is_empty());
         let mut cur_node_num = LoudsNodeNum(1);
 
