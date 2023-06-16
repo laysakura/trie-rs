@@ -26,15 +26,16 @@ impl<Label: Ord + Clone> Trie<Label> {
     /// # Panics
     /// If `query` is empty.
     pub fn predictive_search<Arr: AsRef<[Label]>>(&self, query: Arr) -> Vec<Vec<Label>> {
-        self.rec_predictive_search(query, LoudsNodeNum(1))
+        self.predictive_search_inner(query)
     }
-    fn rec_predictive_search<Arr: AsRef<[Label]>>(
+
+    /// builds a set of keys starting with `query` by performing a preorder traversal
+    fn predictive_search_inner<Arr: AsRef<[Label]>>(
         &self,
-        query: Arr,
-        node_num: LoudsNodeNum,
+        query: Arr
     ) -> Vec<Vec<Label>> {
         assert!(!query.as_ref().is_empty());
-        let mut cur_node_num = node_num;
+        let mut cur_node_num = LoudsNodeNum(1);
 
         // Consumes query (prefix)
         for chr in query.as_ref() {
@@ -46,23 +47,20 @@ impl<Label: Ord + Clone> Trie<Label> {
             }
         }
 
-        let mut results = if self.is_terminal(cur_node_num) {
-            vec![query.as_ref().to_vec()]
-        } else {
-            vec![]
-        };
-        let all_words_under_cur: Vec<Vec<Label>> = self
-            .children_node_nums(cur_node_num)
-            .iter()
-            .flat_map(|child_node_num| {
-                self.rec_predictive_search(vec![self.label(*child_node_num)], cur_node_num)
-            })
-            .collect();
-
-        for word in all_words_under_cur {
-            let mut result: Vec<Label> = query.as_ref().to_vec();
-            result.extend(word);
-            results.push(result);
+        let mut results = vec![];
+        let mut stack = vec![];
+        stack.push((cur_node_num, query.as_ref().to_vec()));
+        while !stack.is_empty() {
+            let (parent_node, parent_path) = stack.pop().unwrap();
+            for child_node in self.children_node_nums(parent_node).iter().rev() {
+                let child_label = self.label(*child_node);
+                let mut child_path = parent_path.clone();
+                child_path.push(child_label);
+                stack.push((*child_node, child_path))
+            }
+            if self.is_terminal(parent_node) {
+                results.push(parent_path);
+            }
         }
         results
     }
