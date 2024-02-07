@@ -12,6 +12,7 @@ categories = ["compression", "data-structures"]
 edition = "2018"
 
 [dependencies]
+derivative = "2.2.0"
 louds-rs = "0.4"
 
 [dev-dependencies]
