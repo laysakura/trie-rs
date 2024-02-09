@@ -28,29 +28,6 @@ impl<Label: Ord + Clone> Trie<Label> {
         None
     }
 
-    pub fn is_prefix<Arr: AsRef<[Label]>>(&self, query: Arr) -> bool {
-        let mut cur_node_num = LoudsNodeNum(1);
-
-        for (i, chr) in query.as_ref().iter().enumerate() {
-            let children_node_nums = self.children_node_nums(cur_node_num);
-            let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
-
-            match res {
-                Ok(j) => {
-                    let child_node_num = children_node_nums[j];
-                    if i == query.as_ref().len() - 1 && self.is_terminal(child_node_num) {
-                        // This is a terminal. Is it also a prefix?
-                        return !self.children_node_nums(child_node_num).is_empty();
-                        // return Some(child_node_num);
-                    };
-                    cur_node_num = child_node_num;
-                }
-                Err(_) => return None,
-            }
-        }
-        None
-    }
-
     /// Return true if [query] is a prefix.
     ///
     /// Note: A prefix may be an exact match or not, and an exact match may be a
