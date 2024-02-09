@@ -33,21 +33,13 @@ impl<Label: Ord + Clone> Trie<Label> {
         for (i, chr) in query.as_ref().iter().enumerate() {
             let children_node_nums = self.children_node_nums(cur_node_num);
             let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
-
             match res {
-                Ok(j) => {
-                    let child_node_num = children_node_nums[j];
-                    if i == query.as_ref().len() - 1 && self.is_terminal(child_node_num) {
-                        // This is a terminal. Is it also a prefix?
-                        return !self.children_node_nums(child_node_num).is_empty();
-                        // return Some(child_node_num);
-                    };
-                    cur_node_num = child_node_num;
-                }
+                Ok(j) => cur_node_num = children_node_nums[j],
                 Err(_) => return false,
             }
         }
-        true
+        // Are there more nodes after our query?
+        !self.children_node_nums(cur_node_num).is_empty()
     }
 
     /// # Panics
@@ -214,6 +206,9 @@ mod search_tests {
             t7: ("appl", true),
             t8: ("appler", false),
             t9: ("アップル", true),
+            t10: ("ed", false),
+            t11: ("e", false),
+            t12: ("", true),
         }
     }
 

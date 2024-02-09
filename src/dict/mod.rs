@@ -1,61 +1,69 @@
 use crate::{Trie as OldTrie, TrieBuilder as OldTrieBuilder};
 use derivative::Derivative;
 
+/// Instead of a label, we use key value pair that only implements Eq and Ord
+/// for its key.
 #[derive(Derivative, Clone, Debug)]
 #[derivative(Eq, Ord, PartialEq, PartialOrd)]
 struct KeyValue<K,V>(K,
                      #[derivative(PartialEq="ignore")]
-                     // #[derivative(Eq="ignore")]
                      #[derivative(PartialOrd="ignore")]
                      #[derivative(Ord="ignore")]
                      Option<V>);
 
 
 
-pub struct Trie<K,V>(OldTrie<KeyValue<K,V>>);
-pub struct TrieBuilder<K,V>(OldTrieBuilder<KeyValue<K,V>>);
-
-impl<K: Clone + std::fmt::Debug, V: Clone + std::fmt::Debug> Trie<K,V> where KeyValue<K,V>: Ord + Clone {
+/// A trie where each key has an associated value. Each entry has an associated value.
+pub struct Trie<K,V> {
+    inner: OldTrie<KeyValue<K,V>>
+}
+/// A trie builder with a key and value.
+pub struct TrieBuilder<K,V> {
+    inner: OldTrieBuilder<KeyValue<K,V>>
+}
+#[allow(private_bounds)]
+impl<K: Clone, V: Clone> Trie<K,V> where KeyValue<K,V>: Ord + Clone {
     pub fn exact_match<Arr: AsRef<[K]>>(&self, query: Arr) -> Option<V> {
         let q: Vec<KeyValue<K,V>> = query.as_ref().iter().map(|x: &K| KeyValue(x.clone(), None)).collect();
-        self.0.exact_match_node(q).and_then(|n| self.0.label(n).1)
+        self.inner.exact_match_node(q).and_then(|n| self.inner.label(n).1)
     }
 
     pub fn is_prefix<Arr: AsRef<[K]>>(&self, query: Arr) -> bool {
         let q: Vec<KeyValue<K,V>> = query.as_ref().iter().map(|x: &K| KeyValue(x.clone(), None)).collect();
-        self.0.is_prefix(q)
+        self.inner.is_prefix(q)
     }
 
     pub fn predictive_search<Arr: AsRef<[K]>>(&self, query: Arr) -> Vec<(Vec<K>, V)> {
         let q: Vec<KeyValue<K,V>> = query.as_ref().iter().map(|x: &K| KeyValue(x.clone(), None)).collect();
-        self.0.predictive_search(q).into_iter().map(|v| Self::strip(v)).collect()
+        self.inner.predictive_search(q).into_iter().map(|v| Self::strip(v)).collect()
     }
 
     pub fn common_prefix_search<Arr: AsRef<[K]>>(&self, query: Arr) -> Vec<(Vec<K>, V)> {
         let q: Vec<KeyValue<K,V>> = query.as_ref().iter().map(|x: &K| KeyValue(x.clone(), None)).collect();
-        self.0.common_prefix_search(q).into_iter().map(|v| Self::strip(v)).collect()
+        self.inner.common_prefix_search(q).into_iter().map(|v| Self::strip(v)).collect()
     }
 
     fn strip(mut word: Vec<KeyValue<K,V>>) -> (Vec<K>, V) {
-        let value = word.last_mut().unwrap().1.clone().map(|x| x.clone()).unwrap();
+        let value = word.last_mut().expect("word should have length > 0").1.clone().expect("Terminal node should have value");
         (word.into_iter().map(|x| x.0).collect(), value)
     }
 }
 
-impl<K: Clone + std::fmt::Debug, V: Clone + std::fmt::Debug> TrieBuilder<K,V> where KeyValue<K,V>: Ord + Clone {
+#[allow(private_bounds)]
+impl<K: Clone, V: Clone> TrieBuilder<K,V> where KeyValue<K,V>: Ord + Clone {
 
     pub fn new() -> Self {
-        Self(OldTrieBuilder::new())
+        Self { inner: OldTrieBuilder::new() }
     }
 
     pub fn push<Arr: AsRef<[K]>>(&mut self, word: Arr, value: V) {
         let mut v: Vec<KeyValue<K,V>> = word.as_ref().iter().map(|x: &K| KeyValue(x.clone(), None)).collect();
         v.last_mut().unwrap().1 = Some(value);
-        self.0.push(v);
+        self.inner.push(v);
     }
 
     pub fn build(&self) -> Trie<K,V> {
-        Trie(self.0.build())
+        Trie { inner: self.inner.build() }
     }
 }
 
