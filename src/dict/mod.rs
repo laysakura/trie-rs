@@ -1,3 +1,4 @@
+//! A "dictionary" trie, it stores a value with each entry.
 use crate::{Trie as OldTrie, TrieBuilder as OldTrieBuilder};
 use derivative::Derivative;
 
@@ -23,21 +24,32 @@ pub struct TrieBuilder<K,V> {
 }
 #[allow(private_bounds)]
 impl<K: Clone, V: Clone> Trie<K,V> where KeyValue<K,V>: Ord + Clone {
+
+    /// Return `Some(value)` if query is a key.
     pub fn exact_match<Arr: AsRef<[K]>>(&self, query: Arr) -> Option<V> {
         let q: Vec<KeyValue<K,V>> = query.as_ref().iter().map(|x: &K| KeyValue(x.clone(), None)).collect();
         self.inner.exact_match_node(q).and_then(|n| self.inner.label(n).1)
     }
 
+    /// Return true if `query` is a prefix.
+    ///
+    /// Note: A prefix may be an exact match or not, and an exact match may be a
+    /// prefix or not.
     pub fn is_prefix<Arr: AsRef<[K]>>(&self, query: Arr) -> bool {
         let q: Vec<KeyValue<K,V>> = query.as_ref().iter().map(|x: &K| KeyValue(x.clone(), None)).collect();
         self.inner.is_prefix(q)
     }
 
+    /// Return all keys and values that match `query`.
+    ///
+    /// # Panics
+    /// If `query` is empty.
     pub fn predictive_search<Arr: AsRef<[K]>>(&self, query: Arr) -> Vec<(Vec<K>, V)> {
         let q: Vec<KeyValue<K,V>> = query.as_ref().iter().map(|x: &K| KeyValue(x.clone(), None)).collect();
         self.inner.predictive_search(q).into_iter().map(|v| Self::strip(v)).collect()
     }
 
+    /// Return the common prefixes and their associated values.
     pub fn common_prefix_search<Arr: AsRef<[K]>>(&self, query: Arr) -> Vec<(Vec<K>, V)> {
         let q: Vec<KeyValue<K,V>> = query.as_ref().iter().map(|x: &K| KeyValue(x.clone(), None)).collect();
         self.inner.common_prefix_search(q).into_iter().map(|v| Self::strip(v)).collect()
@@ -52,16 +64,19 @@ impl<K: Clone, V: Clone> Trie<K,V> where KeyValue<K,V>: Ord + Clone {
 #[allow(private_bounds)]
 impl<K: Clone, V: Clone> TrieBuilder<K,V> where KeyValue<K,V>: Ord + Clone {
 
+    /// Return a [TrieBuilder].
     pub fn new() -> Self {
         Self { inner: OldTrieBuilder::new() }
     }
 
-    pub fn push<Arr: AsRef<[K]>>(&mut self, word: Arr, value: V) {
-        let mut v: Vec<KeyValue<K,V>> = word.as_ref().iter().map(|x: &K| KeyValue(x.clone(), None)).collect();
+    /// Add a key and value.
+    pub fn push<Arr: AsRef<[K]>>(&mut self, key: Arr, value: V) {
+        let mut v: Vec<KeyValue<K,V>> = key.as_ref().iter().map(|x: &K| KeyValue(x.clone(), None)).collect();
         v.last_mut().unwrap().1 = Some(value);
         self.inner.push(v);
     }
 
+    /// Build a [Trie].
     pub fn build(&self) -> Trie<K,V> {
         Trie { inner: self.inner.build() }
     }
