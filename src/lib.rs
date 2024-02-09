@@ -1,3 +1,4 @@
+#![forbid(missing_docs)]
 //! Memory efficient trie (prefix tree) library based on LOUDS.
 //!
 //! [Master API Docs](https://laysakura.github.io/trie-rs/trie_rs/)
@@ -184,5 +185,5 @@ pub use trie::Trie;
 pub use trie::TrieBuilder;
 
 mod internal_data_structure;
-pub mod trie;
+mod trie;
 pub mod dict;

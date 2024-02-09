@@ -2,6 +2,7 @@ use super::Trie;
 use louds_rs::LoudsNodeNum;
 
 impl<Label: Ord + Clone> Trie<Label> {
+    /// Return true if [query] is an exact match.
     pub fn exact_match<Arr: AsRef<[Label]>>(&self, query: Arr) -> bool {
         self.exact_match_node(query).is_some()
     }
@@ -27,10 +28,14 @@ impl<Label: Ord + Clone> Trie<Label> {
         None
     }
 
+    /// Return true if [query] is a prefix.
+    ///
+    /// Note: A prefix may be an exact match or not, and an exact match may be a
+    /// prefix or not.
     pub fn is_prefix<Arr: AsRef<[Label]>>(&self, query: Arr) -> bool {
         let mut cur_node_num = LoudsNodeNum(1);
 
-        for (i, chr) in query.as_ref().iter().enumerate() {
+        for chr in query.as_ref().iter() {
             let children_node_nums = self.children_node_nums(cur_node_num);
             let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
             match res {
@@ -39,14 +44,17 @@ impl<Label: Ord + Clone> Trie<Label> {
             }
         }
         // Are there more nodes after our query?
-        !self.children_node_nums(cur_node_num).is_empty()
+        self.has_children_node_nums(cur_node_num)
     }
 
+    /// Return all entries that match [query].
+    ///
     /// # Panics
     /// If `query` is empty.
     pub fn predictive_search<Arr: AsRef<[Label]>>(&self, query: Arr) -> Vec<Vec<Label>> {
         self.rec_predictive_search(query, LoudsNodeNum(1))
     }
+
     fn rec_predictive_search<Arr: AsRef<[Label]>>(
         &self,
         query: Arr,
@@ -90,6 +98,7 @@ impl<Label: Ord + Clone> Trie<Label> {
         results
     }
 
+    /// Return the common prefixes.
     pub fn common_prefix_search<Arr: AsRef<[Label]>>(&self, query: Arr) -> Vec<Vec<Label>> {
         let mut results: Vec<Vec<Label>> = Vec::new();
         let mut labels_in_path: Vec<Label> = Vec::new();
@@ -112,6 +121,12 @@ impl<Label: Ord + Clone> Trie<Label> {
             }
         }
         results
+    }
+
+    fn has_children_node_nums(&self, node_num: LoudsNodeNum) -> bool {
+        !self.louds
+            .parent_to_children(node_num)
+            .is_empty()
     }
 
     fn children_node_nums(&self, node_num: LoudsNodeNum) -> Vec<LoudsNodeNum> {
