@@ -1,4 +1,4 @@
-//! A trie map that stores a key and value.
+//! A trie map stores a value with each word or key.
 use crate::{Trie as OldTrie, TrieBuilder as OldTrieBuilder};
 use derivative::Derivative;
 
@@ -55,6 +55,7 @@ impl<K: Clone, V: Clone> Trie<K,V> where KeyValue<K,V>: Ord + Clone {
         self.inner.common_prefix_search(q).into_iter().map(|v| Self::strip(v)).collect()
     }
 
+    /// Given a list of `KeyValue`s take the last value and return only the keys.
     fn strip(mut word: Vec<KeyValue<K,V>>) -> (Vec<K>, V) {
         let value = word.last_mut().expect("word should have length > 0").1.clone().expect("Terminal node should have value");
         (word.into_iter().map(|x| x.0).collect(), value)
