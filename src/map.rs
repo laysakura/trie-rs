@@ -1,4 +1,4 @@
-//! A "dictionary" trie, it stores a value with each entry.
+//! A trie map that stores a key and value.
 use crate::{Trie as OldTrie, TrieBuilder as OldTrieBuilder};
 use derivative::Derivative;
 
