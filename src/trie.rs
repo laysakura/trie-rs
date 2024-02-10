@@ -4,6 +4,7 @@ use louds_rs::Louds;
 pub mod trie;
 pub mod trie_builder;
 
+/// A trie for sequences of the type `Label`.
 pub struct Trie<Label> {
     louds: Louds,
 
@@ -11,6 +12,7 @@ pub struct Trie<Label> {
     trie_labels: Vec<TrieLabel<Label>>,
 }
 
+/// A trie builder for [Trie].
 pub struct TrieBuilder<Label> {
     naive_trie: NaiveTrie<Label>,
 }

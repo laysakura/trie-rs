@@ -2,7 +2,12 @@ use super::Trie;
 use louds_rs::LoudsNodeNum;
 
 impl<Label: Ord + Clone> Trie<Label> {
+    /// Return true if [query] is an exact match.
     pub fn exact_match<Arr: AsRef<[Label]>>(&self, query: Arr) -> bool {
+        self.exact_match_node(query).is_some()
+    }
+
+    pub(crate) fn exact_match_node<Arr: AsRef<[Label]>>(&self, query: Arr) -> Option<LoudsNodeNum> {
         let mut cur_node_num = LoudsNodeNum(1);
 
         for (i, chr) in query.as_ref().iter().enumerate() {
@@ -13,21 +18,43 @@ impl<Label: Ord + Clone> Trie<Label> {
                 Ok(j) => {
                     let child_node_num = children_node_nums[j];
                     if i == query.as_ref().len() - 1 && self.is_terminal(child_node_num) {
-                        return true;
+                        return Some(child_node_num);
                     };
                     cur_node_num = child_node_num;
                 }
+                Err(_) => return None,
+            }
+        }
+        None
+    }
+
+    /// Return true if [query] is a prefix.
+    ///
+    /// Note: A prefix may be an exact match or not, and an exact match may be a
+    /// prefix or not.
+    pub fn is_prefix<Arr: AsRef<[Label]>>(&self, query: Arr) -> bool {
+        let mut cur_node_num = LoudsNodeNum(1);
+
+        for chr in query.as_ref().iter() {
+            let children_node_nums = self.children_node_nums(cur_node_num);
+            let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
+            match res {
+                Ok(j) => cur_node_num = children_node_nums[j],
                 Err(_) => return false,
             }
         }
-        false
+        // Are there more nodes after our query?
+        self.has_children_node_nums(cur_node_num)
     }
 
+    /// Return all entries that match [query].
+    ///
     /// # Panics
     /// If `query` is empty.
     pub fn predictive_search<Arr: AsRef<[Label]>>(&self, query: Arr) -> Vec<Vec<Label>> {
         self.rec_predictive_search(query, LoudsNodeNum(1))
     }
+
     fn rec_predictive_search<Arr: AsRef<[Label]>>(
         &self,
         query: Arr,
@@ -47,7 +74,11 @@ impl<Label: Ord + Clone> Trie<Label> {
         }
 
         let mut results = if self.is_terminal(cur_node_num) {
-            vec![query.as_ref().to_vec()]
+            let mut v = query.as_ref().to_vec();
+            // Copy the last label from the tree for dict::trie's sake. This
+            // will copy its value.
+            *v.last_mut().unwrap() = self.label(cur_node_num);
+            vec![v]
         } else {
             vec![]
         };
@@ -67,6 +98,7 @@ impl<Label: Ord + Clone> Trie<Label> {
         results
     }
 
+    /// Return the common prefixes.
     pub fn common_prefix_search<Arr: AsRef<[Label]>>(&self, query: Arr) -> Vec<Vec<Label>> {
         let mut results: Vec<Vec<Label>> = Vec::new();
         let mut labels_in_path: Vec<Label> = Vec::new();
@@ -91,6 +123,12 @@ impl<Label: Ord + Clone> Trie<Label> {
         results
     }
 
+    fn has_children_node_nums(&self, node_num: LoudsNodeNum) -> bool {
+        !self.louds
+            .parent_to_children(node_num)
+            .is_empty()
+    }
+
     fn children_node_nums(&self, node_num: LoudsNodeNum) -> Vec<LoudsNodeNum> {
         self.louds
             .parent_to_children(node_num)
@@ -107,7 +145,7 @@ impl<Label: Ord + Clone> Trie<Label> {
         children_node_nums.binary_search_by_key(query, |child_node_num| self.label(*child_node_num))
     }
 
-    fn label(&self, node_num: LoudsNodeNum) -> Label {
+    pub(crate) fn label(&self, node_num: LoudsNodeNum) -> Label {
         self.trie_labels[(node_num.0 - 2) as usize].label.clone()
     }
 
@@ -155,6 +193,37 @@ mod search_tests {
             t6: ("アップル🍎", true),
             t7: ("appl", false),
             t8: ("appler", false),
+        }
+    }
+
+    mod is_prefix_tests {
+        macro_rules! parameterized_tests {
+            ($($name:ident: $value:expr,)*) => {
+            $(
+                #[test]
+                fn $name() {
+                    let (query, expected_match) = $value;
+                    let trie = super::build_trie();
+                    let result = trie.is_prefix(query);
+                    assert_eq!(result, expected_match);
+                }
+            )*
+            }
+        }
+
+        parameterized_tests! {
+            t1: ("a", true),
+            t2: ("app", true),
+            t3: ("apple", false),
+            t4: ("application", false),
+            t5: ("better", false),
+            t6: ("アップル🍎", false),
+            t7: ("appl", true),
+            t8: ("appler", false),
+            t9: ("アップル", true),
+            t10: ("ed", false),
+            t11: ("e", false),
+            t12: ("", true),
         }
     }
 
