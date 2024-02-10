@@ -1,4 +1,5 @@
-//! Memory efficient trie (prefix tree) library based on LOUDS.
+#![forbid(missing_docs)]
+//! Memory efficient trie (prefix tree) and map library based on LOUDS.
 //!
 //! [Master API Docs](https://laysakura.github.io/trie-rs/trie_rs/)
 //! |
@@ -163,6 +164,32 @@
 //! );
 //! ```
 //!
+//! ## Trie Map Usage
+//!
+//! To store a value with each word, use `trie_rs::map::{Trie, TrieBuilder}`.
+//!
+//! ```rust
+//! use std::str;
+//! use trie_rs::map::TrieBuilder;
+//!
+//! let mut builder = TrieBuilder::new();  // Inferred `TrieBuilder<u8, u8>` automatically
+//! builder.push("すし", 0);
+//! builder.push("すしや", 1);
+//! builder.push("すしだね", 2);
+//! builder.push("すしづめ", 3);
+//! builder.push("すしめし", 4);
+//! builder.push("すしをにぎる", 5);
+//! builder.push("すし", 6);  // Word `push`ed twice is just ignored.
+//! builder.push("🍣", 7);
+//!
+//! let trie = builder.build();
+//!
+//! // exact_match(): Find a word exactly match to query.
+//! assert_eq!(trie.exact_match("すし"), Some(0));
+//! assert_eq!(trie.exact_match("🍣"), Some(7));
+//! assert_eq!(trie.exact_match("🍜"), None);
+//! ```
+//!
 //! # Features
 //! - **Generic type support**: As the above examples show, trie-rs can be used for searching not only UTF-8 string but also other data types.
 //! - **Based on [louds-rs](https://crates.io/crates/louds-rs)**, which is fast, parallelized, and memory efficient.
@@ -184,4 +211,5 @@ pub use trie::Trie;
 pub use trie::TrieBuilder;
 
 mod internal_data_structure;
-pub mod trie;
+mod trie;
+pub mod map;

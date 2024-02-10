@@ -1,8 +1,8 @@
 [package]
 name = "trie-rs"
 version = "0.2.0"
-authors = ["Sho Nakatani <lay.sakura@gmail.com>"]
-description = "Memory efficient trie (prefix tree) library based on LOUDS"
+authors = ["Sho Nakatani <lay.sakura@gmail.com>", "Shane Celis <shane.celis@gmail.com>"]
+description = "Memory efficient trie (prefix tree) and map library based on LOUDS"
 readme = "README.md"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/laysakura/trie-rs"
@@ -12,6 +12,7 @@ categories = ["compression", "data-structures"]
 edition = "2018"
 
 [dependencies]
+derivative = "2.2.0"
 louds-rs = "0.4"
 
 [dev-dependencies]
