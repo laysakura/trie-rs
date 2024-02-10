@@ -6,12 +6,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v0.2.0]
+
+- feat: Add trie_rs::map::{Trie, TrieBuilder} ([#20](https://github.com/laysakura/trie-rs/pull/20))
+
 ## [v0.1.1]
 Only internal data type change.
 
 ## [v0.1.0]
 Initial release.
 
-[Unreleased]: https://github.com/laysakura/trie-rs/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/laysakura/trie-rs/compare/v0.2.0...HEAD
+[v0.2.0]: <https://github.com/laysakura/trie-rs/compare/v0.1.1...v0.2.0>
 [v0.1.1]: https://github.com/laysakura/trie-rs/compare/v0.1.0...v0.1.1
 [v0.1.0]: https://github.com/laysakura/trie-rs/compare/699e53d...v0.1.0
