@@ -25,5 +25,3 @@ harness = false
 
 [package.metadata.release]
 tag-prefix = "v"
-pre-release-hook = ["emacs", "CHANGELOG.md"]  # Finally, I found this hook so effective!!
-disable-publish = true
