@@ -1,6 +1,7 @@
 //! A trie map stores a value with each word.
 use crate::{Trie as OldTrie, TrieBuilder as OldTrieBuilder};
 use derivative::Derivative;
+use std::cmp::Ordering;
 
 /// Instead of a label, we use key value pair that only implements Eq and Ord
 /// for its key.
@@ -12,7 +13,17 @@ struct KeyValue<K,V>(K,
                      #[derivative(Ord="ignore")]
                      Option<V>);
 
+impl<K: PartialEq,V> PartialEq<K> for KeyValue<K, V> {
+    fn eq(&self, other: &K) -> bool {
+        self.0.eq(other)
+    }
+}
 
+impl<K: PartialOrd,V> PartialOrd<K> for KeyValue<K, V> {
+    fn partial_cmp(&self, other: &K) -> Option<Ordering> {
+        self.0.partial_cmp(other)
+    }
+}
 
 /// A trie where each key has an associated value. Each entry has an associated value.
 pub struct Trie<K,V> {
@@ -23,12 +34,12 @@ pub struct TrieBuilder<K,V> {
     inner: OldTrieBuilder<KeyValue<K,V>>
 }
 #[allow(private_bounds)]
-impl<K: Clone, V: Clone> Trie<K,V> where KeyValue<K,V>: Ord + Clone {
+impl<K: Clone + Ord, V: Clone> Trie<K,V> where KeyValue<K,V>: Ord + Clone {
 
     /// Return `Some(value)` if query is a key.
     pub fn exact_match<Arr: AsRef<[K]>>(&self, query: Arr) -> Option<V> {
-        let q: Vec<KeyValue<K,V>> = query.as_ref().iter().map(|x: &K| KeyValue(x.clone(), None)).collect();
-        self.inner.exact_match_node(q).and_then(|n| self.inner.label(n).1)
+        // let q: Vec<KeyValue<K,V>> = query.as_ref().iter().map(|x: &K| KeyValue(x.clone(), None)).collect();
+        self.inner.exact_match_node::<K>(query).and_then(|n| self.inner.label(n).1)
     }
 
     /// Return true if `query` is a prefix.
@@ -36,8 +47,8 @@ impl<K: Clone, V: Clone> Trie<K,V> where KeyValue<K,V>: Ord + Clone {
     /// Note: A prefix may be an exact match or not, and an exact match may be a
     /// prefix or not.
     pub fn is_prefix<Arr: AsRef<[K]>>(&self, query: Arr) -> bool {
-        let q: Vec<KeyValue<K,V>> = query.as_ref().iter().map(|x: &K| KeyValue(x.clone(), None)).collect();
-        self.inner.is_prefix(q)
+        // let q: Vec<KeyValue<K,V>> = query.as_ref().iter().map(|x: &K| KeyValue(x.clone(), None)).collect();
+        self.inner.is_prefix::<K>(query)
     }
 
     /// Return all keys and values that match `query`.

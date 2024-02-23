@@ -3,11 +3,13 @@ use louds_rs::LoudsNodeNum;
 
 impl<Label: Ord + Clone> Trie<Label> {
     /// Return true if [query] is an exact match.
-    pub fn exact_match<Arr: AsRef<[Label]>>(&self, query: Arr) -> bool {
+    pub fn exact_match<L>(&self, query: impl AsRef<[L]>) -> bool
+    where Label: PartialOrd<L> {
         self.exact_match_node(query).is_some()
     }
 
-    pub(crate) fn exact_match_node<Arr: AsRef<[Label]>>(&self, query: Arr) -> Option<LoudsNodeNum> {
+    pub(crate) fn exact_match_node<L>(&self, query: impl AsRef<[L]>) -> Option<LoudsNodeNum>
+        where Label: PartialOrd<L> {
         let mut cur_node_num = LoudsNodeNum(1);
 
         for (i, chr) in query.as_ref().iter().enumerate() {
@@ -32,7 +34,8 @@ impl<Label: Ord + Clone> Trie<Label> {
     ///
     /// Note: A prefix may be an exact match or not, and an exact match may be a
     /// prefix or not.
-    pub fn is_prefix<Arr: AsRef<[Label]>>(&self, query: Arr) -> bool {
+    pub fn is_prefix<L>(&self, query: impl AsRef<[L]>) -> bool
+    where Label: PartialOrd<L> {
         let mut cur_node_num = LoudsNodeNum(1);
 
         for chr in query.as_ref().iter() {
@@ -55,13 +58,15 @@ impl<Label: Ord + Clone> Trie<Label> {
         self.rec_predictive_search(query, LoudsNodeNum(1))
     }
 
-    fn rec_predictive_search<Arr: AsRef<[Label]>>(
+    fn rec_predictive_search<L>(
         &self,
-        query: Arr,
+        query: impl AsRef<[L]>,
         node_num: LoudsNodeNum,
-    ) -> Vec<Vec<Label>> {
+    ) -> Vec<Vec<Label>>
+    where Label: PartialOrd<L> {
         assert!(!query.as_ref().is_empty());
         let mut cur_node_num = node_num;
+        let mut result = Vec::new();
 
         // Consumes query (prefix)
         for chr in query.as_ref() {
@@ -71,14 +76,11 @@ impl<Label: Ord + Clone> Trie<Label> {
                 Ok(i) => cur_node_num = children_node_nums[i],
                 Err(_) => return vec![],
             }
+            result.push(self.label(cur_node_num).clone());
         }
 
-        let mut results = if self.is_terminal(cur_node_num) {
-            let mut v = query.as_ref().to_vec();
-            // Copy the last label from the tree for dict::trie's sake. This
-            // will copy its value.
-            *v.last_mut().unwrap() = self.label(cur_node_num);
-            vec![v]
+        let mut results: Vec<Vec<Label>> = if self.is_terminal(cur_node_num) {
+            vec![result.clone()]
         } else {
             vec![]
         };
@@ -91,7 +93,7 @@ impl<Label: Ord + Clone> Trie<Label> {
             .collect();
 
         for word in all_words_under_cur {
-            let mut result: Vec<Label> = query.as_ref().to_vec();
+            let mut result = result.clone();
             result.extend(word);
             results.push(result);
         }
@@ -137,12 +139,14 @@ impl<Label: Ord + Clone> Trie<Label> {
             .collect()
     }
 
-    fn bin_search_by_children_labels(
+    fn bin_search_by_children_labels<L>(
         &self,
-        query: &Label,
+        query: &L,
         children_node_nums: &[LoudsNodeNum],
-    ) -> Result<usize, usize> {
-        children_node_nums.binary_search_by_key(query, |child_node_num| self.label(*child_node_num))
+    ) -> Result<usize, usize>
+        where Label: PartialOrd<L> {
+        // children_node_nums.binary_search_by_key(query, |child_node_num| self.label(*child_node_num))
+        children_node_nums.binary_search_by(|child_node_num| self.label(*child_node_num).partial_cmp(query).unwrap())
     }
 
     pub(crate) fn label(&self, node_num: LoudsNodeNum) -> Label {
