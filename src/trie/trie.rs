@@ -1,5 +1,5 @@
 use super::Trie;
-use louds_rs::LoudsNodeNum;
+use louds_rs::{self, LoudsNodeNum, LoudsIndex, ChildNodeIter};
 
 impl<Label: Ord + Clone> Trie<Label> {
     /// Return true if [query] is an exact match.
@@ -13,7 +13,8 @@ impl<Label: Ord + Clone> Trie<Label> {
         let mut cur_node_num = LoudsNodeNum(1);
 
         for (i, chr) in query.as_ref().iter().enumerate() {
-            let children_node_nums = self.children_node_nums(cur_node_num);
+            let children_node_nums: Vec<LoudsNodeNum> = self.children_node_nums(cur_node_num)
+                                                            .collect();
             let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
 
             match res {
@@ -39,7 +40,8 @@ impl<Label: Ord + Clone> Trie<Label> {
         let mut cur_node_num = LoudsNodeNum(1);
 
         for chr in query.as_ref().iter() {
-            let children_node_nums = self.children_node_nums(cur_node_num);
+            let children_node_nums: Vec<_> = self.children_node_nums(cur_node_num)
+                                                 .collect();
             let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
             match res {
                 Ok(j) => cur_node_num = children_node_nums[j],
@@ -70,7 +72,8 @@ impl<Label: Ord + Clone> Trie<Label> {
 
         // Consumes query (prefix)
         for chr in query.as_ref() {
-            let children_node_nums = self.children_node_nums(cur_node_num);
+            let children_node_nums: Vec<_> = self.children_node_nums(cur_node_num)
+                .collect();
             let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
             match res {
                 Ok(i) => cur_node_num = children_node_nums[i],
@@ -86,9 +89,8 @@ impl<Label: Ord + Clone> Trie<Label> {
         };
         let all_words_under_cur: Vec<Vec<Label>> = self
             .children_node_nums(cur_node_num)
-            .iter()
             .flat_map(|child_node_num| {
-                self.rec_predictive_search(vec![self.label(*child_node_num)], cur_node_num)
+                self.rec_predictive_search(vec![self.label(child_node_num)], cur_node_num)
             })
             .collect();
 
@@ -108,7 +110,8 @@ impl<Label: Ord + Clone> Trie<Label> {
         let mut cur_node_num = LoudsNodeNum(1);
 
         for chr in query.as_ref() {
-            let children_node_nums = self.children_node_nums(cur_node_num);
+            let children_node_nums: Vec<_> = self.children_node_nums(cur_node_num)
+                .collect();
             let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
             match res {
                 Ok(j) => {
@@ -126,17 +129,16 @@ impl<Label: Ord + Clone> Trie<Label> {
     }
 
     fn has_children_node_nums(&self, node_num: LoudsNodeNum) -> bool {
-        !self.louds
-            .parent_to_children(node_num)
-            .is_empty()
+        self.louds
+            .parent_to_children_indices(node_num)
+            .next()
+            .is_some()
     }
 
-    fn children_node_nums(&self, node_num: LoudsNodeNum) -> Vec<LoudsNodeNum> {
+    fn children_node_nums<'a>(&'a self, node_num: LoudsNodeNum)
+                                 -> ChildNodeIter {
         self.louds
-            .parent_to_children(node_num)
-            .iter()
-            .map(|child_idx| self.louds.index_to_node_num(*child_idx))
-            .collect()
+            .parent_to_children_nodes(node_num)
     }
 
     fn bin_search_by_children_labels<L>(
