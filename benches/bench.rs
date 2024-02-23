@@ -36,7 +36,7 @@ mod trie {
         static ref TRIE_EDICT: Trie<u8> = {
             let mut builder = TrieBuilder::new();
 
-            let repo_root = env::var("REPO_ROOT").expect("REPO_ROOT environment variable must be set.");
+            let repo_root = env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR environment variable must be set.");
             let edict2_path = format!("{}/benches/edict.furigana", repo_root);
             println!("Reading dictionary file from: {}", edict2_path);
 
