@@ -38,7 +38,6 @@ impl<K: Clone + Ord, V: Clone> Trie<K,V> where KeyValue<K,V>: Ord + Clone {
 
     /// Return `Some(value)` if query is a key.
     pub fn exact_match<Arr: AsRef<[K]>>(&self, query: Arr) -> Option<V> {
-        // let q: Vec<KeyValue<K,V>> = query.as_ref().iter().map(|x: &K| KeyValue(x.clone(), None)).collect();
         self.inner.exact_match_node::<K>(query).and_then(|n| self.inner.label(n).1)
     }
 
@@ -47,7 +46,6 @@ impl<K: Clone + Ord, V: Clone> Trie<K,V> where KeyValue<K,V>: Ord + Clone {
     /// Note: A prefix may be an exact match or not, and an exact match may be a
     /// prefix or not.
     pub fn is_prefix<Arr: AsRef<[K]>>(&self, query: Arr) -> bool {
-        // let q: Vec<KeyValue<K,V>> = query.as_ref().iter().map(|x: &K| KeyValue(x.clone(), None)).collect();
         self.inner.is_prefix::<K>(query)
     }
 
@@ -56,14 +54,12 @@ impl<K: Clone + Ord, V: Clone> Trie<K,V> where KeyValue<K,V>: Ord + Clone {
     /// # Panics
     /// If `query` is empty.
     pub fn predictive_search<Arr: AsRef<[K]>>(&self, query: Arr) -> Vec<(Vec<K>, V)> {
-        let q: Vec<KeyValue<K,V>> = query.as_ref().iter().map(|x: &K| KeyValue(x.clone(), None)).collect();
-        self.inner.predictive_search(q).into_iter().map(|v| Self::strip(v)).collect()
+        self.inner.predictive_search::<K>(query).into_iter().map(|v| Self::strip(v)).collect()
     }
 
     /// Return the common prefixes and their associated values.
     pub fn common_prefix_search<Arr: AsRef<[K]>>(&self, query: Arr) -> Vec<(Vec<K>, V)> {
-        let q: Vec<KeyValue<K,V>> = query.as_ref().iter().map(|x: &K| KeyValue(x.clone(), None)).collect();
-        self.inner.common_prefix_search(q).into_iter().map(|v| Self::strip(v)).collect()
+        self.inner.common_prefix_search::<K>(query).into_iter().map(|v| Self::strip(v)).collect()
     }
 
     /// Given a list of `KeyValue`s take the last value and return only the keys.

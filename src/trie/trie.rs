@@ -56,7 +56,8 @@ impl<Label: Ord + Clone> Trie<Label> {
     ///
     /// # Panics
     /// If `query` is empty.
-    pub fn predictive_search<Arr: AsRef<[Label]>>(&self, query: Arr) -> Vec<Vec<Label>> {
+    pub fn predictive_search<L>(&self, query: impl AsRef<[L]>) -> Vec<Vec<Label>>
+    where Label: PartialOrd<L> {
         self.rec_predictive_search(query, LoudsNodeNum(1))
     }
 
@@ -103,7 +104,7 @@ impl<Label: Ord + Clone> Trie<Label> {
     }
 
     /// Return the common prefixes.
-    pub fn common_prefix_search<Arr: AsRef<[Label]>>(&self, query: Arr) -> Vec<Vec<Label>> {
+    pub fn common_prefix_search<L>(&self, query: impl AsRef<[L]>) -> Vec<Vec<Label>> where Label: PartialOrd<L> {
         let mut results: Vec<Vec<Label>> = Vec::new();
         let mut labels_in_path: Vec<Label> = Vec::new();
 

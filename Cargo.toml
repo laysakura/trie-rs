@@ -13,7 +13,7 @@ edition = "2018"
 
 [dependencies]
 derivative = "2.2.0"
-louds-rs = "0.4"
+louds-rs = { version = "0.4.1-alpha.0", path = "../louds-rs" }
 
 [dev-dependencies]
 criterion = "0.2"
