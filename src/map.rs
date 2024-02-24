@@ -38,7 +38,7 @@ impl<K: Clone + Ord, V: Clone> Trie<K,V> where KeyValue<K,V>: Ord + Clone {
 
     /// Return `Some(value)` if query is a key.
     pub fn exact_match<Arr: AsRef<[K]>>(&self, query: Arr) -> Option<&V> {
-        self.inner.exact_match_node::<K>(query).and_then(|n| self.inner.label(n).1.as_ref())
+        self.inner.exact_match_node::<K>(query).and_then(move |n| self.inner.label(n).1.as_ref())
     }
 
     /// Return `Some(&mut value)` if query is a key.
