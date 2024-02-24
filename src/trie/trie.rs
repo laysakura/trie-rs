@@ -91,7 +91,58 @@ impl<Label: Ord + Clone> Trie<Label> {
         let all_words_under_cur: Vec<Vec<Label>> = self
             .children_node_nums(cur_node_num)
             .flat_map(|child_node_num| {
-                self.rec_predictive_search(vec![self.label(child_node_num)], cur_node_num)
+                self.rec_predictive_search(vec![self.label(child_node_num).clone()], cur_node_num)
+            })
+            .collect();
+
+        for word in all_words_under_cur {
+            let mut result = result.clone();
+            result.extend(word);
+            results.push(result);
+        }
+        results
+    }
+
+    /// Return all entries that match [query].
+    ///
+    /// # Panics
+    /// If `query` is empty.
+    pub fn predictive_search_ref<L>(&self, query: impl AsRef<[L]>) -> Vec<Vec<&Label>>
+    where Label: PartialOrd<L> {
+        self.rec_predictive_search_ref(query, LoudsNodeNum(1))
+    }
+
+    fn rec_predictive_search_ref<L>(
+        &self,
+        query: impl AsRef<[L]>,
+        node_num: LoudsNodeNum,
+    ) -> Vec<Vec<&Label>>
+    where Label: PartialOrd<L> {
+        assert!(!query.as_ref().is_empty());
+        let mut cur_node_num = node_num;
+        let mut result = Vec::new();
+
+        // Consumes query (prefix)
+        for chr in query.as_ref() {
+            let children_node_nums: Vec<_> = self.children_node_nums(cur_node_num)
+                .collect();
+            let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
+            match res {
+                Ok(i) => cur_node_num = children_node_nums[i],
+                Err(_) => return vec![],
+            }
+            result.push(self.label(cur_node_num));
+        }
+
+        let mut results: Vec<Vec<&Label>> = if self.is_terminal(cur_node_num) {
+            vec![result.clone()]
+        } else {
+            vec![]
+        };
+        let all_words_under_cur: Vec<Vec<&Label>> = self
+            .children_node_nums(cur_node_num)
+            .flat_map(|child_node_num| {
+                self.rec_predictive_search_ref(vec![self.label(child_node_num).clone()], cur_node_num)
             })
             .collect();
 
@@ -105,8 +156,16 @@ impl<Label: Ord + Clone> Trie<Label> {
 
     /// Return the common prefixes.
     pub fn common_prefix_search<L>(&self, query: impl AsRef<[L]>) -> Vec<Vec<Label>> where Label: PartialOrd<L> {
-        let mut results: Vec<Vec<Label>> = Vec::new();
-        let mut labels_in_path: Vec<Label> = Vec::new();
+        self.common_prefix_search_ref(query)
+            .into_iter()
+            .map(|v| v.into_iter().cloned().collect())
+            .collect()
+    }
+
+    /// Return the common prefixes references.
+    pub fn common_prefix_search_ref<L>(&self, query: impl AsRef<[L]>) -> Vec<Vec<&Label>> where Label: PartialOrd<L> {
+        let mut results: Vec<Vec<&Label>> = Vec::new();
+        let mut labels_in_path: Vec<&Label> = Vec::new();
 
         let mut cur_node_num = LoudsNodeNum(1);
 
@@ -152,8 +211,12 @@ impl<Label: Ord + Clone> Trie<Label> {
         children_node_nums.binary_search_by(|child_node_num| self.label(*child_node_num).partial_cmp(query).unwrap())
     }
 
-    pub(crate) fn label(&self, node_num: LoudsNodeNum) -> Label {
-        self.trie_labels[(node_num.0 - 2) as usize].label.clone()
+    pub(crate) fn label(&self, node_num: LoudsNodeNum) -> &Label {
+        &self.trie_labels[(node_num.0 - 2) as usize].label
+    }
+
+    pub(crate) fn label_mut(&mut self, node_num: LoudsNodeNum) -> &mut Label {
+        &mut self.trie_labels[(node_num.0 - 2) as usize].label
     }
 
     fn is_terminal(&self, node_num: LoudsNodeNum) -> bool {

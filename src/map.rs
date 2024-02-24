@@ -37,8 +37,13 @@ pub struct TrieBuilder<K,V> {
 impl<K: Clone + Ord, V: Clone> Trie<K,V> where KeyValue<K,V>: Ord + Clone {
 
     /// Return `Some(value)` if query is a key.
-    pub fn exact_match<Arr: AsRef<[K]>>(&self, query: Arr) -> Option<V> {
-        self.inner.exact_match_node::<K>(query).and_then(|n| self.inner.label(n).1)
+    pub fn exact_match<Arr: AsRef<[K]>>(&self, query: Arr) -> Option<&V> {
+        self.inner.exact_match_node::<K>(query).and_then(|n| self.inner.label(n).1.as_ref())
+    }
+
+    /// Return `Some(&mut value)` if query is a key.
+    pub fn exact_match_mut<Arr: AsRef<[K]>>(&mut self, query: Arr) -> Option<&mut V> {
+        self.inner.exact_match_node::<K>(query).and_then(move |n| self.inner.label_mut(n).1.as_mut())
     }
 
     /// Return true if `query` is a prefix.
@@ -54,18 +59,18 @@ impl<K: Clone + Ord, V: Clone> Trie<K,V> where KeyValue<K,V>: Ord + Clone {
     /// # Panics
     /// If `query` is empty.
     pub fn predictive_search<Arr: AsRef<[K]>>(&self, query: Arr) -> Vec<(Vec<K>, V)> {
-        self.inner.predictive_search::<K>(query).into_iter().map(|v| Self::strip(v)).collect()
+        self.inner.predictive_search_ref::<K>(query).into_iter().map(|v| Self::strip(v)).collect()
     }
 
     /// Return the common prefixes and their associated values.
     pub fn common_prefix_search<Arr: AsRef<[K]>>(&self, query: Arr) -> Vec<(Vec<K>, V)> {
-        self.inner.common_prefix_search::<K>(query).into_iter().map(|v| Self::strip(v)).collect()
+        self.inner.common_prefix_search_ref::<K>(query).into_iter().map(|v| Self::strip(v)).collect()
     }
 
     /// Given a list of `KeyValue`s take the last value and return only the keys.
-    fn strip(mut word: Vec<KeyValue<K,V>>) -> (Vec<K>, V) {
+    fn strip(mut word: Vec<&KeyValue<K,V>>) -> (Vec<K>, V) {
         let value = word.last_mut().expect("word should have length > 0").1.clone().expect("Terminal node should have value");
-        (word.into_iter().map(|x| x.0).collect(), value)
+        (word.into_iter().map(|x| x.0.clone()).collect(), value)
     }
 }
 
@@ -128,12 +133,12 @@ mod search_tests {
         }
 
         parameterized_tests! {
-            t1: ("a", Some(0)),
-            t2: ("app", Some(1)),
-            t3: ("apple", Some(2)),
-            t4: ("application", Some(4)),
-            t5: ("better", Some(3)),
-            t6: ("アップル🍎", Some(5)),
+            t1: ("a", Some(&0)),
+            t2: ("app", Some(&1)),
+            t3: ("apple", Some(&2)),
+            t4: ("application", Some(&4)),
+            t5: ("better", Some(&3)),
+            t6: ("アップル🍎", Some(&5)),
             t7: ("appl", None),
             t8: ("appler", None),
         }
