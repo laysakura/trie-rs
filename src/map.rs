@@ -59,16 +59,21 @@ impl<K: Clone + Ord, V: Clone> Trie<K,V> where KeyValue<K,V>: Ord + Clone {
     /// # Panics
     /// If `query` is empty.
     pub fn predictive_search<Arr: AsRef<[K]>>(&self, query: Arr) -> Vec<(Vec<K>, V)> {
-        self.inner.predictive_search_ref::<K>(query).into_iter().map(|v| Self::strip(v)).collect()
+        self.inner.predictive_search::<K>(query).into_iter().map(|v| Self::strip(v)).collect()
     }
 
     /// Return the common prefixes and their associated values.
     pub fn common_prefix_search<Arr: AsRef<[K]>>(&self, query: Arr) -> Vec<(Vec<K>, V)> {
-        self.inner.common_prefix_search_ref::<K>(query).into_iter().map(|v| Self::strip(v)).collect()
+        self.inner.common_prefix_search_ref::<K>(query).into_iter().map(|v| Self::strip_ref(v)).collect()
     }
 
     /// Given a list of `KeyValue`s take the last value and return only the keys.
-    fn strip(mut word: Vec<&KeyValue<K,V>>) -> (Vec<K>, V) {
+    fn strip_ref(mut word: Vec<&KeyValue<K,V>>) -> (Vec<K>, V) {
+        let value = word.last_mut().expect("word should have length > 0").1.clone().expect("Terminal node should have value");
+        (word.into_iter().map(|x| x.0.clone()).collect(), value)
+    }
+
+    fn strip(mut word: Vec<KeyValue<K,V>>) -> (Vec<K>, V) {
         let value = word.last_mut().expect("word should have length > 0").1.clone().expect("Terminal node should have value");
         (word.into_iter().map(|x| x.0.clone()).collect(), value)
     }

@@ -3,6 +3,7 @@ use louds_rs::Louds;
 
 pub mod trie;
 pub mod trie_builder;
+mod postfix_iter;
 
 /// A trie for sequences of the type `Label`.
 pub struct Trie<Label> {
