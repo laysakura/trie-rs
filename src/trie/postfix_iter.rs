@@ -3,30 +3,15 @@ use louds_rs::LoudsNodeNum;
 
 pub struct PostfixIter<'a, Label>
 {
-    inner: RefCell<PostfixInner<'a, Label>>,
-    index: Cell<usize>,
-}
-
-impl<'a, Label> Iterator for PostfixIter<'a, Label> {
-    type Item = &'a Label;
-
-    fn next(&mut self) -> Option<&'a Label> {
-        self.inner.borrow_mut().next();
-    }
-}
-
-pub struct PostfixInner<'a, Label>
-{
     trie: &'a Trie<Label>,
     queue: Vec<(usize, LoudsNodeNum)>,
     buffer: Vec<&'a Label>,
     consume: Option<usize>,
     defer: Option<(usize, LoudsNodeNum)>,
     done: bool,
-    top_group: usize,
 }
 
-impl<'a, Label> PostfixInner<'a, Label>
+impl<'a, Label> PostfixIter<'a, Label>
 {
     #[inline]
     pub fn new(trie: &'a Trie<Label>, root: LoudsNodeNum) -> Self {
@@ -53,7 +38,7 @@ impl<'a, Label> PostfixInner<'a, Label>
     }
 }
 
-impl<'a, Label: Ord + Clone> Iterator for PostfixInner<'a, Label>
+impl<'a, Label: Ord + Clone> Iterator for PostfixIter<'a, Label>
 {
     type Item = &'a Label;
     #[inline]
