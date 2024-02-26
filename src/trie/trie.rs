@@ -1,6 +1,7 @@
 use super::Trie;
 use louds_rs::{self, LoudsNodeNum, ChildNodeIter};
 use crate::trie::postfix_iter::PostfixIter;
+use crate::trie::split_unfused::SplitUnfused;
 
 impl<Label: Ord + Clone> Trie<Label> {
     /// Return true if [query] is an exact match.
@@ -107,7 +108,7 @@ impl<Label: Ord + Clone> Trie<Label> {
     fn postfix_search_ref<'a, L>(
         &'a self,
         query: impl AsRef<[L]>,
-    ) -> PostfixIter<'a, Label>
+    ) -> SplitUnfused<PostfixIter<'a, Label>>
         where Label: PartialOrd<L> {
         assert!(!query.as_ref().is_empty());
         let mut cur_node_num = LoudsNodeNum(1);//node_num;
@@ -122,7 +123,8 @@ impl<Label: Ord + Clone> Trie<Label> {
                 Err(_) => return PostfixIter::empty(self),
             }
         }
-        PostfixIter::new(self, cur_node_num)
+        SplitUnfused::new(PostfixIter::new(self, cur_node_num))
+
     }
 
     /// Return the common prefixes.
