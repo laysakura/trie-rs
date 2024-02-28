@@ -58,9 +58,11 @@ impl<K: Clone + Ord, V: Clone> Trie<K,V> where KeyValue<K,V>: Ord + Clone {
     ///
     /// # Panics
     /// If `query` is empty.
-    pub fn predictive_search<Arr: AsRef<[K]>>(&self, query: Arr) -> Vec<(Vec<K>, V)> {
-        vec![]
-        // self.inner.predictive_search::<K>(query).into_iter().map(|v| Self::strip(v)).collect()
+    pub fn predictive_search<Arr: AsRef<[K]>>(&self, query: Arr) -> Vec<(Vec<&K>, &V)> {
+        self.inner.predictive_search::<K>(query)
+            .into_iter()
+            .map(Self::strip_ref2)
+            .collect()
     }
 
     /// Return the common prefixes and their associated values.
@@ -69,15 +71,30 @@ impl<K: Clone + Ord, V: Clone> Trie<K,V> where KeyValue<K,V>: Ord + Clone {
     }
 
     /// Given a list of `KeyValue`s take the last value and return only the keys.
+    fn strip_ref2<'a>(mut word: impl Iterator<Item = &'a KeyValue<K,V>>)
+                      -> (Vec<&'a K>, &'a V) where K: 'a{
+        let mut result = Vec::new();
+        let mut word = word.peekable();
+        let mut value: Option<&'a V> = None;
+        while let Some(kv) = word.next() {
+            result.push(&kv.0);
+            if word.peek().is_none() {
+                value = kv.1.as_ref();
+            }
+        }
+        (result, value.unwrap())
+    }
+
+    /// Given a list of `KeyValue`s take the last value and return only the keys.
     fn strip_ref(mut word: Vec<&KeyValue<K,V>>) -> (Vec<K>, V) {
         let value = word.last_mut().expect("word should have length > 0").1.clone().expect("Terminal node should have value");
         (word.into_iter().map(|x| x.0.clone()).collect(), value)
     }
 
-    fn strip(mut word: Vec<KeyValue<K,V>>) -> (Vec<K>, V) {
-        let value = word.last_mut().expect("word should have length > 0").1.clone().expect("Terminal node should have value");
-        (word.into_iter().map(|x| x.0.clone()).collect(), value)
-    }
+    // fn strip(mut word: impl Iterator<Item = KeyValue<K,V>>) -> (Vec<K>, V) {
+    //     let value = word.last_mut().expect("word should have length > 0").1.clone().expect("Terminal node should have value");
+    //     (word.into_iter().map(|x| x.0.clone()).collect(), value)
+    // }
 }
 
 #[allow(private_bounds)]
@@ -120,8 +137,9 @@ mod search_tests {
     fn sanity_check() {
         let trie = build_trie();
         assert_eq!(trie.predictive_search("apple")
-                   .into_iter().map(|g| g.cloned().collect::<Vec<u8>>())
-                   .collect::<Vec<_>>(), vec![("apple".as_bytes().to_vec(), 2)]);
+                   .into_iter().map(|g| (g.0.into_iter().cloned().collect::<Vec<u8>>(), *g.1))
+                   .collect::<Vec<_>>(),
+                   vec![("apple".as_bytes().to_vec(), 2)]);
 
     }
 
@@ -188,7 +206,9 @@ mod search_tests {
                 fn $name() {
                     let (query, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results = trie.predictive_search(query);
+                    let results = trie.predictive_search(query)
+                                      .into_iter().map(|g| (g.0.into_iter().cloned().collect::<Vec<u8>>(), *g.1))
+                                                  .collect::<Vec<_>>();
                     let expected_results: Vec<(Vec<u8>, u8)> = expected_results.iter().map(|s| (s.0.as_bytes().to_vec(), s.1)).collect();
                     assert_eq!(results, expected_results);
                 }

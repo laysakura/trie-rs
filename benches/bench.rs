@@ -97,7 +97,9 @@ mod trie {
                         // Tested function takes too short compared to build(). So loop many times.
                         let results_in_u8s = trie.predictive_search("すし");
                         for _ in 0..(times - 1) {
-                            trie.predictive_search("すし");
+                            for entry in &trie.predictive_search("すし") {
+                                let _ = entry.cloned().collect::<Vec<u8>>();
+                            }
                         }
 
                         let results_in_str: Vec<String> = results_in_u8s

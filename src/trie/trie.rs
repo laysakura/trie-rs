@@ -192,7 +192,9 @@ impl<Label: Ord + Clone> Trie<Label> {
     }
 
     /// Return the common prefixes references.
-    pub fn common_prefix_search_ref<L>(&self, query: impl AsRef<[L]>) -> Vec<Vec<&Label>> where Label: PartialOrd<L> {
+    pub fn common_prefix_search_ref<L>(&self, query: impl AsRef<[L]>)
+                                       -> Vec<Vec<&Label>>
+    where Label: PartialOrd<L> {
         let mut results: Vec<Vec<&Label>> = Vec::new();
         let mut labels_in_path: Vec<&Label> = Vec::new();
 
