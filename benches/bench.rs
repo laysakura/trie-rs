@@ -100,9 +100,9 @@ mod trie {
                             trie.predictive_search("すし");
                         }
 
-                        let results_in_str: Vec<&str> = results_in_u8s
-                            .iter()
-                            .map(|u8s| str::from_utf8(u8s).unwrap())
+                        let results_in_str: Vec<String> = results_in_u8s
+                            .into_iter()
+                            .map(|u8s| String::from_utf8(u8s.cloned().collect::<Vec<u8>>()).unwrap())
                             .collect();
                         assert_eq!(
                             results_in_str,

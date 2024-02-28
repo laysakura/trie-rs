@@ -1,6 +1,30 @@
 // use alloc::vec::{self, Vec};
 use std::vec;
 use std::cell::{Cell, RefCell};
+use crate::trie::postfix_iter::UnfusedPrefix;
+
+pub trait Unfusedtools: Iterator {
+
+    fn chunk_unfused(self) -> SplitUnfused<Self> where Self: Sized {
+        new(self)
+    }
+
+    fn prefix_unfused<I>(self, postfix: I) -> UnfusedPrefix<Self, I>
+    where Self: Sized + Clone,
+        I: Iterator<Item = Self::Item>
+    {
+        UnfusedPrefix::new(self, postfix)
+    }
+}
+
+impl<T: ?Sized> Unfusedtools for T where T: Iterator {}
+
+// mod unfused {
+//     use super::*;
+//     fn chunk<I: Iterator>(i: I) -> SplitUnfused<I> {
+//         SplitUnfused::new(i)
+//     }
+// }
 
 #[derive(Clone)]
 struct UnfusedInner<I>
@@ -244,6 +268,70 @@ where
     index: Cell<usize>,
 }
 
+// pub struct Prepend<I,F> {
+//     into: I,
+//     f: F,
+// }
+
+// impl<I,F> Prepend<I,F> {
+//     pub fn new(into: I, f: F) -> Self {
+//         Self {
+//             into,
+//             f,
+//         }
+//     }
+// }
+
+// impl<I: IntoIterator, F> IntoIterator for Prepend<I,F>
+//     where
+//     F: Vec<I::Item> {
+//     type Item = B;
+//     type IntoIter = std::iter::Map<I::IntoIter, F>;
+
+//     fn into_iter(self) -> Self::IntoIter {
+//         self.into.into_iter().map(|x| self.f)
+//     }
+// }
+
+pub struct Map<I,F> {
+    into: I,
+    f: F,
+}
+
+impl<I,F> Map<I,F> {
+    pub fn new(into: I, f: F) -> Self {
+        Self {
+            into,
+            f,
+        }
+    }
+}
+
+impl<B, I: IntoIterator, F> IntoIterator for Map<I,F>
+    where
+    F: FnMut(I::Item) -> B {
+    type Item = B;
+    type IntoIter = std::iter::Map<I::IntoIter, F>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.into.into_iter().map(self.f)
+    }
+}
+
+pub trait IntoIteratorTools: IntoIterator {
+    fn map_into<B, F>(self, f: F) -> Map<Self, F>
+        where Self: Sized,
+        F: FnMut(Self::Item) -> B,
+    {
+        Map {
+            into: self,
+            f,
+        }
+    }
+}
+
+impl<T: ?Sized> IntoIteratorTools for T where T: IntoIterator {}
+
 /// Create a new
 pub fn new<J>(iter: J) -> SplitUnfused<J::IntoIter>
 where
@@ -280,6 +368,10 @@ where
     /// `client`: Index of group
     fn drop_group(&self, client: usize) {
         self.inner.borrow_mut().drop_group(client);
+    }
+
+    pub fn into_inner(self) -> I {
+        self.inner.into_inner().iter
     }
 }
 
@@ -368,5 +460,114 @@ where
             return elt;
         }
         self.parent.step(self.index)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_vec_into_iter_clone() {
+        let v = vec![1,2,3];
+        let mut i = v.into_iter();
+        let mut c = i.clone();
+        assert_eq!(c.count(), 3);
+        assert_eq!(i.count(), 3);
+    }
+
+    struct Frayed(u8);
+    impl Iterator for Frayed {
+        type Item = u8;
+        fn next(&mut self) -> Option<u8> {
+            self.0 += 1;
+            (self.0 % 3 != 0 && self.0 <= 7).then_some(self.0)
+        }
+    }
+
+    #[test]
+    fn test_prefix() {
+        let v = vec![1,2,3];
+        let split = v.into_iter().prefix_unfused(Frayed(0)).chunk_unfused();
+        let mut iters = split.into_iter();
+        let first = iters.next().unwrap();
+        let second = iters.next().unwrap();
+        let third = iters.next().unwrap();
+        assert!(iters.next().is_none());
+        assert!(iters.next().is_none());
+
+        let v: Vec<_> = third.collect();
+        assert_eq!(v, [1,2,3,7]);
+        let v: Vec<_> = second.collect();
+        assert_eq!(v, [1,2,3,4,5]);
+        let v: Vec<_> = first.collect();
+        assert_eq!(v, [1,2,3,1,2]);
+    }
+
+
+    #[test]
+    fn chunk_unfused() {
+        let v: Vec<_> = Frayed(0).collect();
+        assert_eq!(v, [1,2]);
+        let split = Frayed(0).chunk_unfused();
+        let mut iters = split.into_iter();
+        let iter = iters.next().unwrap();
+        let v: Vec<_> = iter.collect();
+        assert_eq!(v, [1,2]);
+
+        let iter = iters.next().unwrap();
+        let v: Vec<_> = iter.collect();
+        assert_eq!(v, [4,5]);
+        let iter = iters.next().unwrap();
+        let v: Vec<_> = iter.collect();
+        assert_eq!(v, [7]);
+        assert!(iters.next().is_none());
+    }
+
+    #[test]
+    fn split_unfused_on_fused() {
+        // chunk_unfused() on a fused iterator will only have one iterator
+        // and is a kind of identity operator.
+        let split = Frayed(0).fuse().chunk_unfused();
+        let mut iters = split.into_iter();
+        let first = iters.next().unwrap();
+        assert_eq!(first.collect::<Vec<_>>(), [1, 2]);
+        assert!(iters.next().is_none());
+    }
+
+    #[test]
+    fn split_unfused_drop_second() {
+        let v: Vec<_> = Frayed(0).collect();
+        assert_eq!(v, [1,2]);
+        let split = Frayed(0).chunk_unfused();
+        let mut iters = split.into_iter();
+        let iter = iters.next().unwrap();
+        let v: Vec<_> = iter.collect();
+        assert_eq!(v, [1,2]);
+
+        // Drop this one.
+        let _ = iters.next();
+        let iter = iters.next().unwrap();
+        let v: Vec<_> = iter.collect();
+        assert_eq!(v, [7]);
+        assert!(iters.next().is_none());
+    }
+
+    #[test]
+    fn split_unfused_out_of_order() {
+        let split = Frayed(0).chunk_unfused();
+        let mut iters = split.into_iter();
+        let first = iters.next().unwrap();
+        let second = iters.next().unwrap();
+        let third = iters.next().unwrap();
+        assert!(iters.next().is_none());
+        assert!(iters.next().is_none());
+
+        let v: Vec<_> = third.collect();
+        assert_eq!(v, [7]);
+        let v: Vec<_> = second.collect();
+        assert_eq!(v, [4,5]);
+        let v: Vec<_> = first.collect();
+        assert_eq!(v, [1,2]);
     }
 }

@@ -1,7 +1,7 @@
 use super::Trie;
 use louds_rs::{self, LoudsNodeNum, ChildNodeIter};
-use crate::trie::postfix_iter::PostfixIter;
-use crate::trie::split_unfused::SplitUnfused;
+use crate::trie::postfix_iter::{PostfixIter, UnfusedPrefix};
+use crate::trie::split_unfused::{self, SplitUnfused, IntoIteratorTools, Map};
 
 impl<Label: Ord + Clone> Trie<Label> {
     /// Return true if [query] is an exact match.
@@ -58,9 +58,54 @@ impl<Label: Ord + Clone> Trie<Label> {
     ///
     /// # Panics
     /// If `query` is empty.
-    pub fn predictive_search<L>(&self, query: impl AsRef<[L]>) -> Vec<Vec<Label>>
-    where Label: PartialOrd<L> {
-        self.rec_predictive_search(query, LoudsNodeNum(1))
+    pub fn predictive_search<'a, L>(&'a self, query: impl AsRef<[L]>) -> //Vec<Vec<Label>>
+        // impl IntoIterator<Item = Iterator<Item = &'a Label>>
+        // impl IntoIterator<Item = T>
+        // impl &'a IntoIterator<Item = impl It
+        // Map<SplitUnfused<PostfixIter<'_, Label>>, _>
+        // SplitUnfused<PostfixIter<'_, Label>>
+        SplitUnfused<UnfusedPrefix<std::vec::IntoIter<&Label>, PostfixIter<'a, Label>>>
+    where Label: PartialOrd<L>,
+    // T: Iterator<Item = &'a Label>
+    {
+        assert!(!query.as_ref().is_empty());
+        let mut cur_node_num = LoudsNodeNum(1);//node_num;
+        let mut prefix = Vec::new();
+
+        // Consumes query (prefix)
+        for chr in query.as_ref() {
+            let children_node_nums: Vec<_> = self.children_node_nums(cur_node_num)
+                .collect();
+            let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
+            match res {
+                Ok(i) => cur_node_num = children_node_nums[i],
+                Err(_) => {
+                    return split_unfused::new(UnfusedPrefix::new(Vec::new().into_iter(), PostfixIter::empty(self)))
+                }
+            }
+            // prefix.push(self.label(cur_node_num).clone());
+            prefix.push(self.label(cur_node_num));
+        }
+        let _ = prefix.pop();
+        split_unfused::new(UnfusedPrefix::new(prefix.into_iter(), self.postfix_search_unfused(cur_node_num)).require_prefix())
+
+        // self.rec_predictive_search(query, LoudsNodeNum(1))
+        // let mut cur_node_num = LoudsNodeNum(1);//node_num;
+        // let mut result = Vec::new();
+
+        // // Consumes query (prefix)
+        // for chr in query.as_ref() {
+        //     let children_node_nums: Vec<_> = self.children_node_nums(cur_node_num)
+        //                                          .collect();
+        //     let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
+        //     match res {
+        //         Ok(i) => cur_node_num = children_node_nums[i],
+        //         Err(_) => panic!(),//return vec![],
+        //     }
+        //     result.push(self.label(cur_node_num).clone());
+        // }
+        // self.postfix_search_ref(query)
+            // .map_into(|postfix| result.iter().chain(postfix))
     }
 
     fn rec_predictive_search<L>(
@@ -105,11 +150,20 @@ impl<Label: Ord + Clone> Trie<Label> {
         results
     }
 
+    fn postfix_search_unfused<'a>(
+        &'a self,
+        node_num: LoudsNodeNum
+    ) -> PostfixIter<'a, Label>
+    {
+        PostfixIter::new(self, node_num)
+    }
+
     fn postfix_search_ref<'a, L>(
         &'a self,
         query: impl AsRef<[L]>,
     ) -> SplitUnfused<PostfixIter<'a, Label>>
-        where Label: PartialOrd<L> {
+        where Label: PartialOrd<L>
+    {
         assert!(!query.as_ref().is_empty());
         let mut cur_node_num = LoudsNodeNum(1);//node_num;
 
@@ -120,10 +174,12 @@ impl<Label: Ord + Clone> Trie<Label> {
             let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
             match res {
                 Ok(i) => cur_node_num = children_node_nums[i],
-                Err(_) => return PostfixIter::empty(self),
+                Err(_) => return split_unfused::new(PostfixIter::empty(self)),
             }
         }
-        SplitUnfused::new(PostfixIter::new(self, cur_node_num))
+
+        // eprintln!("1 {}", self.children_node_nums(cur_node_num).count());
+        split_unfused::new(self.postfix_search_unfused(cur_node_num))
 
     }
 
@@ -179,7 +235,6 @@ impl<Label: Ord + Clone> Trie<Label> {
         children_node_nums: &[LoudsNodeNum],
     ) -> Result<usize, usize>
         where Label: PartialOrd<L> {
-        // children_node_nums.binary_search_by_key(query, |child_node_num| self.label(*child_node_num))
         children_node_nums.binary_search_by(|child_node_num| self.label(*child_node_num).partial_cmp(query).unwrap())
     }
 
@@ -191,7 +246,7 @@ impl<Label: Ord + Clone> Trie<Label> {
         &mut self.trie_labels[(node_num.0 - 2) as usize].label
     }
 
-    fn is_terminal(&self, node_num: LoudsNodeNum) -> bool {
+    pub(crate) fn is_terminal(&self, node_num: LoudsNodeNum) -> bool {
         self.trie_labels[(node_num.0 - 2) as usize].is_terminal
     }
 }
@@ -277,8 +332,10 @@ mod search_tests {
                 fn $name() {
                     let (query, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results = trie.predictive_search(query);
-                    let expected_results: Vec<Vec<u8>> = expected_results.iter().map(|s| s.as_bytes().to_vec()).collect();
+                    let mut results = trie.predictive_search(query).into_iter().map(|g| String::from_utf8(g.cloned().collect()).unwrap()).collect::<Vec<_>>();
+                    // results.sort_by(|a, b| a.len().cmp(&b.len()));
+                    // let expected_results: Vec<Vec<u8>> = expected_results.iter().map(|s| s.as_bytes().to_vec()).collect();
+                    // let expected_results: Vec<&'static str> = expected_results.iter().collect();
                     assert_eq!(results, expected_results);
                 }
             )*
@@ -325,10 +382,36 @@ mod search_tests {
     }
 
     mod posfix_search_tests {
+
+        #[test]
+        fn postfix_unfused() {
+            let trie = super::build_trie();
+            let postfixes = trie.postfix_search_ref("app");
+            let mut iter = postfixes.into_inner().map(|x| *x as char);
+            assert_eq!(iter.next(), Some('p'));
+            assert!(iter.next().is_none());
+            assert_eq!(iter.next(), Some('p'));
+            assert_eq!(iter.next(), Some('l'));
+            assert_eq!(iter.next(), Some('e'));
+        }
+
         #[test]
         fn postfix_baseline() {
             let trie = super::build_trie();
-            let mut iter = trie.postfix_search_ref("app").map(|x| *x as char);
+            let postfixes = trie.postfix_search_ref("app");
+            let mut chunks = postfixes.into_iter();
+            // assert_eq!(chunks.count(), 3);
+            // chunks = postfixes.into_iter();
+            let mut iter = chunks.next().unwrap().map(|x| *x as char);
+            assert_eq!(iter.next(), Some('p'));
+            assert_eq!(iter.next(), None);
+            let mut iter = chunks.next().unwrap().map(|x| *x as char);
+            assert_eq!(iter.next(), Some('p'));
+            assert_eq!(iter.next(), Some('l'));
+            assert_eq!(iter.next(), Some('e'));
+            assert_eq!(iter.next(), None);
+            let mut iter = chunks.next().unwrap().map(|x| *x as char);
+            assert_eq!(iter.next(), Some('p'));
             assert_eq!(iter.next(), Some('l'));
             assert_eq!(iter.next(), Some('i'));
             assert_eq!(iter.next(), Some('c'));
@@ -338,34 +421,57 @@ mod search_tests {
             assert_eq!(iter.next(), Some('o'));
             assert_eq!(iter.next(), Some('n'));
             assert_eq!(iter.next(), None);
-            assert_eq!(iter.next(), Some('l'));
-            assert_eq!(iter.next(), Some('e'));
-            assert_eq!(iter.next(), None);
-            assert_eq!(iter.next(), None);
+
+
+            assert!(chunks.next().is_none());
         }
 
         #[test]
         fn postfix_2() {
             let trie = super::build_trie();
-            let mut iter = trie.postfix_search_ref("b").map(|x| *x as char);
+            let postfixes = trie.postfix_search_ref("b");
+            let mut chunks = postfixes.into_iter();
+            let mut iter = chunks.next().unwrap().map(|x| *x as char);
+            assert_eq!(iter.next(), Some('b'));
             assert_eq!(iter.next(), Some('e'));
             assert_eq!(iter.next(), Some('t'));
             assert_eq!(iter.next(), Some('t'));
             assert_eq!(iter.next(), Some('e'));
             assert_eq!(iter.next(), Some('r'));
             assert_eq!(iter.next(), None);
-            assert_eq!(iter.next(), None);
+            assert!(chunks.next().is_none());
         }
 
         #[test]
         fn postfix_3() {
             let trie = super::build_trie();
-            let mut iter = trie.postfix_search_ref("bet").map(|x| *x as char);
+            let postfixes = trie.postfix_search_ref("bet");
+            let mut chunks = postfixes.into_iter();
+            let mut iter = chunks.next().unwrap().map(|x| *x as char);
+            assert_eq!(iter.next(), Some('t'));
             assert_eq!(iter.next(), Some('t'));
             assert_eq!(iter.next(), Some('e'));
             assert_eq!(iter.next(), Some('r'));
             assert_eq!(iter.next(), None);
-            assert_eq!(iter.next(), None);
+            assert!(chunks.next().is_none());
         }
+
+        #[test]
+        fn postfix_no_match() {
+            let trie = super::build_trie();
+            let postfixes = trie.postfix_search_ref("NOT-THERE");
+            let mut chunks = postfixes.into_iter();
+            assert_eq!(chunks.count(), 0);
+        }
+
+        #[test]
+        fn vec_into_iter_clone() {
+            let v = vec![1,2,3];
+            let mut i = v.into_iter();
+            let mut c = i.clone();
+            assert_eq!(c.count(), 3);
+            assert_eq!(i.count(), 3);
+        }
+
     }
 }

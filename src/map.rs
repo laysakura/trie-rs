@@ -59,7 +59,8 @@ impl<K: Clone + Ord, V: Clone> Trie<K,V> where KeyValue<K,V>: Ord + Clone {
     /// # Panics
     /// If `query` is empty.
     pub fn predictive_search<Arr: AsRef<[K]>>(&self, query: Arr) -> Vec<(Vec<K>, V)> {
-        self.inner.predictive_search::<K>(query).into_iter().map(|v| Self::strip(v)).collect()
+        vec![]
+        // self.inner.predictive_search::<K>(query).into_iter().map(|v| Self::strip(v)).collect()
     }
 
     /// Return the common prefixes and their associated values.
@@ -118,7 +119,9 @@ mod search_tests {
     #[test]
     fn sanity_check() {
         let trie = build_trie();
-        assert_eq!(trie.predictive_search("apple"), vec![("apple".as_bytes().to_vec(), 2)]);
+        assert_eq!(trie.predictive_search("apple")
+                   .into_iter().map(|g| g.cloned().collect::<Vec<u8>>())
+                   .collect::<Vec<_>>(), vec![("apple".as_bytes().to_vec(), 2)]);
 
     }
 
