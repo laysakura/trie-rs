@@ -4,6 +4,7 @@ use louds_rs::Louds;
 pub mod trie;
 pub mod trie_builder;
 mod postfix_iter;
+mod prefix_iter;
 mod split_unfused;
 
 /// A trie for sequences of the type `Label`.

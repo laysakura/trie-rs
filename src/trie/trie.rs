@@ -1,6 +1,7 @@
 use super::Trie;
 use louds_rs::{self, LoudsNodeNum, ChildNodeIter};
 use crate::trie::postfix_iter::{PostfixIter, UnfusedPrefix};
+use crate::trie::prefix_iter::PrefixIter;
 use crate::trie::split_unfused::{self, SplitUnfused, IntoIteratorTools, Map};
 
 impl<Label: Ord + Clone> Trie<Label> {
@@ -184,11 +185,19 @@ impl<Label: Ord + Clone> Trie<Label> {
     }
 
     /// Return the common prefixes.
-    pub fn common_prefix_search<L>(&self, query: impl AsRef<[L]>) -> Vec<Vec<Label>> where Label: PartialOrd<L> {
-        self.common_prefix_search_ref(query)
+    pub fn common_prefix_search<L>(&self, query: impl AsRef<[L]>) -> Vec<Vec<Label>>
+    where Label: PartialOrd<L>, L: Clone {
+        self.common_prefix_search_ref2(query.as_ref().to_vec())
             .into_iter()
             .map(|v| v.into_iter().cloned().collect())
             .collect()
+    }
+
+    /// Return the common prefixes.
+    pub fn common_prefix_search_ref2<L>(&self, query: Vec<L>)
+                                       -> SplitUnfused<PrefixIter<'_, L, Label>>
+        where Label: PartialOrd<L> {
+        split_unfused::new(PrefixIter::new(&self, query))
     }
 
     /// Return the common prefixes references.
@@ -231,7 +240,7 @@ impl<Label: Ord + Clone> Trie<Label> {
             .parent_to_children_nodes(node_num)
     }
 
-    fn bin_search_by_children_labels<L>(
+    pub(crate) fn bin_search_by_children_labels<L>(
         &self,
         query: &L,
         children_node_nums: &[LoudsNodeNum],
