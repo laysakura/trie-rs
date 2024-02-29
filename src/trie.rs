@@ -14,7 +14,7 @@ pub struct Trie<Label> {
 
 /// A trie builder for [Trie].
 pub struct TrieBuilder<Label> {
-    naive_trie: NaiveTrie<Label>,
+    pub(crate) naive_trie: NaiveTrie<Label>,
 }
 
 struct TrieLabel<Label> {

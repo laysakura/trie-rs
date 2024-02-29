@@ -80,6 +80,6 @@ pub struct NaiveTrieRoot<Label> {
 pub struct NaiveTrieIntermOrLeaf<Label> {
     /// Sorted by Label's order.
     children: Vec<Box<NaiveTrie<Label>>>,
-    label: Label,
-    is_terminal: bool,
+    pub(crate) label: Label,
+    pub(crate) is_terminal: bool,
 }

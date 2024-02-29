@@ -72,9 +72,22 @@ impl<K: Clone, V: Clone> TrieBuilder<K,V> where KeyValue<K,V>: Ord + Clone {
 
     /// Add a key and value.
     pub fn push<Arr: AsRef<[K]>>(&mut self, key: Arr, value: V) {
-        let mut v: Vec<KeyValue<K,V>> = key.as_ref().iter().map(|x: &K| KeyValue(x.clone(), None)).collect();
-        v.last_mut().unwrap().1 = Some(value);
-        self.inner.push(v);
+        use crate::internal_data_structure::naive_trie::NaiveTrie;
+        let v: Vec<KeyValue<K, V>> = key
+            .as_ref()
+            .iter()
+            .map(|x: &K| KeyValue(x.clone(), None))
+            .collect();
+        let trie_terminal = self.inner.push(v);
+        match trie_terminal {
+            NaiveTrie::IntermOrLeaf(ref mut node) => {
+                node.label.1 = Some(value.clone());
+                node.is_terminal = true;
+            }
+            _ => {
+                panic!("Expected a interim or leaf node as terminal.");
+            }
+        }
     }
 
     /// Build a [Trie].

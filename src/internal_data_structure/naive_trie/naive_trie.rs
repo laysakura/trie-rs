@@ -14,7 +14,8 @@ impl<'trie, Label: Ord + Clone> NaiveTrie<Label> {
         }))
     }
 
-    pub fn push<Arr: AsRef<[Label]>>(&'trie mut self, word: Arr) {
+    /// Add a word. Returns the terminal node of the word that can be ignored.
+    pub fn push<Arr: AsRef<[Label]>>(&'trie mut self, word: Arr) -> &'trie mut NaiveTrie<Label> {
         let mut trie = self;
         for (i, chr) in word.as_ref().iter().enumerate() {
             let res = {
@@ -46,6 +47,7 @@ impl<'trie, Label: Ord + Clone> NaiveTrie<Label> {
                 }
             };
         }
+        trie
     }
 
     pub fn bf_iter(&'trie self) -> NaiveTrieBFIter<Label> {

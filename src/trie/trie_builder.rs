@@ -11,8 +11,8 @@ impl<Label: Ord + Clone> TrieBuilder<Label> {
     }
 
     /// Add an entry.
-    pub fn push<Arr: AsRef<[Label]>>(&mut self, entry: Arr) {
-        self.naive_trie.push(entry);
+    pub fn push<Arr: AsRef<[Label]>>(&mut self, entry: Arr) -> &mut NaiveTrie<Label> {
+        self.naive_trie.push(entry)
     }
 
     /// Build a [Trie].
