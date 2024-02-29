@@ -101,8 +101,30 @@ mod search_tests {
     #[test]
     fn sanity_check() {
         let trie = build_trie();
-        assert_eq!(trie.predictive_search("apple"), vec![("apple".as_bytes().to_vec(), 2)]);
+        assert_eq!(
+            trie.predictive_search("apple"),
+            vec![("apple".as_bytes().to_vec(), 2)]
+        );
+    }
 
+    #[test]
+    fn value_overwrite_long_first() {
+        let mut builder = TrieBuilder::new();
+        builder.push("apple", 2);
+        builder.push("app", 1);
+        let trie = builder.build();
+        assert_eq!(trie.exact_match("apple"), Some(2));
+        assert_eq!(trie.exact_match("app"), Some(1));
+    }
+
+    #[test]
+    fn value_overwrite_short() {
+        let mut builder = TrieBuilder::new();
+        builder.push("app", 1);
+        builder.push("apple", 2);
+        let trie = builder.build();
+        assert_eq!(trie.exact_match("apple"), Some(2));
+        assert_eq!(trie.exact_match("app"), Some(1));
     }
 
     mod exact_match_tests {
