@@ -1,21 +1,22 @@
 //! A trie map stores a value with each word.
 use crate::{Trie as OldTrie, TrieBuilder as OldTrieBuilder};
-use derivative::Derivative;
 use std::cmp::Ordering;
 
 /// Instead of a label, we use key value pair that only implements Eq and Ord
 /// for its key.
-#[derive(Derivative, Clone, Debug)]
-#[derivative(Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Debug)]
 struct KeyValue<K,V>(K,
-                     #[derivative(PartialEq="ignore")]
-                     #[derivative(PartialOrd="ignore")]
-                     #[derivative(Ord="ignore")]
                      Option<V>);
 
-impl<K: PartialEq,V> PartialEq<K> for KeyValue<K, V> {
-    fn eq(&self, other: &K) -> bool {
-        self.0.eq(other)
+impl<K: PartialOrd,V> PartialOrd<KeyValue<K,V>> for KeyValue<K, V> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.0.partial_cmp(&other.0)
+    }
+}
+
+impl<K: PartialOrd,V> Ord for KeyValue<K, V> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.0.partial_cmp(&other.0).unwrap()
     }
 }
 
@@ -24,6 +25,22 @@ impl<K: PartialOrd,V> PartialOrd<K> for KeyValue<K, V> {
         self.0.partial_cmp(other)
     }
 }
+
+impl<K: PartialEq,V> PartialEq<KeyValue<K,V>> for KeyValue<K, V> {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.eq(&other.0)
+    }
+}
+
+impl<K: PartialEq,V> Eq for KeyValue<K, V> {}
+
+impl<K: PartialEq,V> PartialEq<K> for KeyValue<K, V> {
+    fn eq(&self, other: &K) -> bool {
+        self.0.eq(other)
+    }
+}
+
+
 
 /// A trie where each key has an associated value. Each entry has an associated value.
 pub struct Trie<K,V> {
