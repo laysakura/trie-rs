@@ -88,7 +88,7 @@ impl<K: Clone + Ord, V: Clone> Trie<K,V> where KeyValue<K,V>: Ord + Clone {
     }
 
     /// Given a list of `KeyValue`s take the last value and return only the keys.
-    fn strip_ref2<'a>(mut word: impl Iterator<Item = &'a KeyValue<K,V>>)
+    fn strip_ref2<'a>(word: impl Iterator<Item = &'a KeyValue<K,V>>)
                       -> (Vec<&'a K>, &'a V) where K: 'a{
         let mut result = Vec::new();
         let mut word = word.peekable();

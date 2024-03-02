@@ -1,8 +1,8 @@
 use super::Trie;
 use louds_rs::{self, LoudsNodeNum, ChildNodeIter};
-use crate::trie::postfix_iter::{PostfixIter, UnfusedPrefix};
+use crate::trie::postfix_iter::PostfixIter;
 use crate::trie::prefix_iter::PrefixIter;
-use crate::trie::split_unfused::{self, SplitUnfused, IntoIteratorTools, Map};
+use frayed::{Chunk, fraught::Prefix};
 
 impl<Label: Ord + Clone> Trie<Label> {
     /// Return true if [query] is an exact match.
@@ -59,18 +59,12 @@ impl<Label: Ord + Clone> Trie<Label> {
     ///
     /// # Panics
     /// If `query` is empty.
-    pub fn predictive_search<'a, L>(&'a self, query: impl AsRef<[L]>) -> //Vec<Vec<Label>>
-        // impl IntoIterator<Item = Iterator<Item = &'a Label>>
-        // impl IntoIterator<Item = T>
-        // impl &'a IntoIterator<Item = impl It
-        // Map<SplitUnfused<PostfixIter<'_, Label>>, _>
-        // SplitUnfused<PostfixIter<'_, Label>>
-        SplitUnfused<UnfusedPrefix<std::vec::IntoIter<&Label>, PostfixIter<'a, Label>>>
+    pub fn predictive_search<'a, L>(&'a self, query: impl AsRef<[L]>) ->
+        Chunk<Prefix<std::vec::IntoIter<&Label>, PostfixIter<'a, Label>>>
     where Label: PartialOrd<L>,
-    // T: Iterator<Item = &'a Label>
     {
         assert!(!query.as_ref().is_empty());
-        let mut cur_node_num = LoudsNodeNum(1);//node_num;
+        let mut cur_node_num = LoudsNodeNum(1);
         let mut prefix = Vec::new();
 
         // Consumes query (prefix)
@@ -81,74 +75,13 @@ impl<Label: Ord + Clone> Trie<Label> {
             match res {
                 Ok(i) => cur_node_num = children_node_nums[i],
                 Err(_) => {
-                    return split_unfused::new(UnfusedPrefix::new(Vec::new().into_iter(), PostfixIter::empty(self)))
+                    return Chunk::new(Prefix::new(Vec::new().into_iter(), PostfixIter::empty(self)))
                 }
             }
-            // prefix.push(self.label(cur_node_num).clone());
             prefix.push(self.label(cur_node_num));
         }
         let _ = prefix.pop();
-        split_unfused::new(UnfusedPrefix::new(prefix.into_iter(), self.postfix_search_unfused(cur_node_num)).require_prefix())
-
-        // self.rec_predictive_search(query, LoudsNodeNum(1))
-        // let mut cur_node_num = LoudsNodeNum(1);//node_num;
-        // let mut result = Vec::new();
-
-        // // Consumes query (prefix)
-        // for chr in query.as_ref() {
-        //     let children_node_nums: Vec<_> = self.children_node_nums(cur_node_num)
-        //                                          .collect();
-        //     let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
-        //     match res {
-        //         Ok(i) => cur_node_num = children_node_nums[i],
-        //         Err(_) => panic!(),//return vec![],
-        //     }
-        //     result.push(self.label(cur_node_num).clone());
-        // }
-        // self.postfix_search_ref(query)
-            // .map_into(|postfix| result.iter().chain(postfix))
-    }
-
-    fn rec_predictive_search<L>(
-        &self,
-        query: impl AsRef<[L]>,
-        node_num: LoudsNodeNum,
-    ) -> Vec<Vec<Label>>
-    where Label: PartialOrd<L> {
-        assert!(!query.as_ref().is_empty());
-        let mut cur_node_num = node_num;
-        let mut result = Vec::new();
-
-        // Consumes query (prefix)
-        for chr in query.as_ref() {
-            let children_node_nums: Vec<_> = self.children_node_nums(cur_node_num)
-                                                 .collect();
-            let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
-            match res {
-                Ok(i) => cur_node_num = children_node_nums[i],
-                Err(_) => return vec![],
-            }
-            result.push(self.label(cur_node_num).clone());
-        }
-
-        let mut results: Vec<Vec<Label>> = if self.is_terminal(cur_node_num) {
-            vec![result.clone()]
-        } else {
-            vec![]
-        };
-        let all_words_under_cur: Vec<Vec<Label>> = self
-            .children_node_nums(cur_node_num)
-            .flat_map(|child_node_num| {
-                self.rec_predictive_search(&[self.label(child_node_num).clone()], cur_node_num)
-            })
-            .collect();
-
-        for word in all_words_under_cur {
-            let mut result = result.clone();
-            result.extend(word);
-            results.push(result);
-        }
-        results
+        Chunk::new(Prefix::new(prefix.into_iter(), self.postfix_search_unfused(cur_node_num)).prefix_empty(true))
     }
 
     fn postfix_search_unfused<'a>(
@@ -159,73 +92,20 @@ impl<Label: Ord + Clone> Trie<Label> {
         PostfixIter::new(self, node_num)
     }
 
-    fn postfix_search_ref<'a, L>(
-        &'a self,
-        query: impl AsRef<[L]>,
-    ) -> SplitUnfused<PostfixIter<'a, Label>>
-        where Label: PartialOrd<L>
-    {
-        assert!(!query.as_ref().is_empty());
-        let mut cur_node_num = LoudsNodeNum(1);//node_num;
-
-        // Consumes query (prefix)
-        for chr in query.as_ref() {
-            let children_node_nums: Vec<_> = self.children_node_nums(cur_node_num)
-                .collect();
-            let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
-            match res {
-                Ok(i) => cur_node_num = children_node_nums[i],
-                Err(_) => return split_unfused::new(PostfixIter::empty(self)),
-            }
-        }
-
-        // eprintln!("1 {}", self.children_node_nums(cur_node_num).count());
-        split_unfused::new(self.postfix_search_unfused(cur_node_num))
-
-    }
-
     /// Return the common prefixes.
     pub fn common_prefix_search<L>(&self, query: impl AsRef<[L]>) -> Vec<Vec<Label>>
     where Label: PartialOrd<L>, L: Clone {
-        self.common_prefix_search_ref2(query.as_ref().to_vec())
+        self.common_prefix_search_ref(query.as_ref().to_vec())
             .into_iter()
             .map(|v| v.into_iter().cloned().collect())
             .collect()
     }
 
     /// Return the common prefixes.
-    pub fn common_prefix_search_ref2<L>(&self, query: Vec<L>)
-                                       -> SplitUnfused<PrefixIter<'_, L, Label>>
+    pub fn common_prefix_search_ref<L>(&self, query: Vec<L>)
+                                       -> Chunk<PrefixIter<'_, L, Label>>
         where Label: PartialOrd<L> {
-        split_unfused::new(PrefixIter::new(&self, query))
-    }
-
-    /// Return the common prefixes references.
-    pub fn common_prefix_search_ref<L>(&self, query: impl AsRef<[L]>)
-                                       -> Vec<Vec<&Label>>
-    where Label: PartialOrd<L> {
-        let mut results: Vec<Vec<&Label>> = Vec::new();
-        let mut labels_in_path: Vec<&Label> = Vec::new();
-
-        let mut cur_node_num = LoudsNodeNum(1);
-
-        for chr in query.as_ref() {
-            let children_node_nums: Vec<_> = self.children_node_nums(cur_node_num)
-                .collect();
-            let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
-            match res {
-                Ok(j) => {
-                    let child_node_num = children_node_nums[j];
-                    labels_in_path.push(self.label(child_node_num));
-                    if self.is_terminal(child_node_num) {
-                        results.push(labels_in_path.clone());
-                    };
-                    cur_node_num = child_node_num;
-                }
-                Err(_) => break,
-            }
-        }
-        results
+        Chunk::new(PrefixIter::new(&self, query))
     }
 
     fn has_children_node_nums(&self, node_num: LoudsNodeNum) -> bool {
@@ -345,8 +225,6 @@ mod search_tests {
                     let trie = super::build_trie();
                     let mut results = trie.predictive_search(query).into_iter().map(|g| String::from_utf8(g.cloned().collect()).unwrap()).collect::<Vec<_>>();
                     // results.sort_by(|a, b| a.len().cmp(&b.len()));
-                    // let expected_results: Vec<Vec<u8>> = expected_results.iter().map(|s| s.as_bytes().to_vec()).collect();
-                    // let expected_results: Vec<&'static str> = expected_results.iter().collect();
                     assert_eq!(results, expected_results);
                 }
             )*
@@ -411,8 +289,7 @@ mod search_tests {
             let trie = super::build_trie();
             let postfixes = trie.postfix_search_ref("app");
             let mut chunks = postfixes.into_iter();
-            // assert_eq!(chunks.count(), 3);
-            // chunks = postfixes.into_iter();
+            // assert_eq!(chunks.by_ref().count(), 3);
             let mut iter = chunks.next().unwrap().map(|x| *x as char);
             assert_eq!(iter.next(), Some('p'));
             assert_eq!(iter.next(), None);
