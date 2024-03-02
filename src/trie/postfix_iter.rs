@@ -1,19 +1,19 @@
 use crate::Trie;
 use louds_rs::LoudsNodeNum;
 
-pub struct PostfixIter<'a, Label>
+pub struct PostfixIter<'a, Label, Value>
 {
-    trie: &'a Trie<Label>,
+    trie: &'a Trie<Label, Value>,
     queue: Vec<(usize, LoudsNodeNum)>,
     buffer: Vec<&'a Label>,
     consume: Option<usize>,
     done: bool,
 }
 
-impl<'a, Label> PostfixIter<'a, Label>
+impl<'a, Label, Value> PostfixIter<'a, Label, Value>
 {
     #[inline]
-    pub fn new(trie: &'a Trie<Label>, root: LoudsNodeNum) -> Self {
+    pub fn new(trie: &'a Trie<Label, Value>, root: LoudsNodeNum) -> Self {
         Self {
             trie,
             queue: vec![(0, root)],
@@ -24,7 +24,7 @@ impl<'a, Label> PostfixIter<'a, Label>
     }
 
     #[inline]
-    pub fn empty(trie: &'a Trie<Label>) -> Self {
+    pub fn empty(trie: &'a Trie<Label, Value>) -> Self {
         Self {
             trie,
             queue: Vec::new(),
@@ -35,7 +35,7 @@ impl<'a, Label> PostfixIter<'a, Label>
     }
 }
 
-impl<'a, Label: Ord + Clone> Iterator for PostfixIter<'a, Label>
+impl<'a, Label: Ord + Clone, Value> Iterator for PostfixIter<'a, Label, Value>
 {
     type Item = &'a Label;
     #[inline]

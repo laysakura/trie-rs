@@ -4,7 +4,7 @@ use crate::trie::postfix_iter::PostfixIter;
 use crate::trie::prefix_iter::PrefixIter;
 use frayed::{Chunk, fraught::Prefix};
 
-impl<Label: Ord + Clone> Trie<Label> {
+impl<Label: Ord + Clone, Value> Trie<Label, Value> {
     /// Return true if [query] is an exact match.
     pub fn exact_match<L>(&self, query: impl AsRef<[L]>) -> bool
     where Label: PartialOrd<L> {
@@ -60,7 +60,7 @@ impl<Label: Ord + Clone> Trie<Label> {
     /// # Panics
     /// If `query` is empty.
     pub fn predictive_search<'a, L>(&'a self, query: impl AsRef<[L]>) ->
-        Chunk<Prefix<std::vec::IntoIter<&Label>, PostfixIter<'a, Label>>>
+        Chunk<Prefix<std::vec::IntoIter<&Label>, PostfixIter<'a, Label, Value>>>
     where Label: PartialOrd<L>,
     {
         assert!(!query.as_ref().is_empty());
@@ -87,7 +87,7 @@ impl<Label: Ord + Clone> Trie<Label> {
     fn postfix_search_unfused<'a>(
         &'a self,
         node_num: LoudsNodeNum
-    ) -> PostfixIter<'a, Label>
+    ) -> PostfixIter<'a, Label, Value>
     {
         PostfixIter::new(self, node_num)
     }
@@ -103,7 +103,7 @@ impl<Label: Ord + Clone> Trie<Label> {
 
     /// Return the common prefixes.
     pub fn common_prefix_search_ref<L>(&self, query: Vec<L>)
-                                       -> Chunk<PrefixIter<'_, L, Label>>
+                                       -> Chunk<PrefixIter<'_, L, Label, Value>>
         where Label: PartialOrd<L> {
         Chunk::new(PrefixIter::new(&self, query))
     }
@@ -138,13 +138,15 @@ impl<Label: Ord + Clone> Trie<Label> {
     }
 
     pub(crate) fn is_terminal(&self, node_num: LoudsNodeNum) -> bool {
-        self.trie_labels[(node_num.0 - 2) as usize].is_terminal
+        self.trie_labels[(node_num.0 - 2) as usize].is_terminal.is_some()
     }
 }
 
 #[cfg(test)]
 mod search_tests {
-    use crate::{Trie, TrieBuilder};
+    // use crate::{Trie, TrieBuilder};
+    type Trie<T> = crate::Trie<T, ()>;
+    type TrieBuilder<T> = crate::TrieBuilder<T, ()>;
 
     fn build_trie() -> Trie<u8> {
         let mut builder = TrieBuilder::new();

@@ -3,7 +3,7 @@ use crate::trie::TrieLabel;
 use crate::{Trie, TrieBuilder};
 use louds_rs::Louds;
 
-impl<Label: Ord + Clone> TrieBuilder<Label> {
+impl<Label: Ord + Clone, Value: Clone> TrieBuilder<Label, Value> {
     /// Return a [TrieBuilder].
     pub fn new() -> Self {
         let naive_trie = NaiveTrie::make_root();
@@ -11,14 +11,14 @@ impl<Label: Ord + Clone> TrieBuilder<Label> {
     }
 
     /// Add an entry.
-    pub fn push<Arr: AsRef<[Label]>>(&mut self, entry: Arr) {
-        self.naive_trie.push(entry);
+    pub fn push<Arr: AsRef<[Label]>>(&mut self, entry: Arr, value: Value) {
+        self.naive_trie.push(entry, value);
     }
 
     /// Build a [Trie].
-    pub fn build(&self) -> Trie<Label> {
+    pub fn build(&self) -> Trie<Label, Value> {
         let mut louds_bits: Vec<bool> = vec![true, false];
-        let mut trie_labels: Vec<TrieLabel<Label>> = vec![];
+        let mut trie_labels: Vec<TrieLabel<Label, Value>> = vec![];
         for node in self.naive_trie.bf_iter() {
             match node {
                 NaiveTrie::Root(_) => {}
@@ -26,7 +26,7 @@ impl<Label: Ord + Clone> TrieBuilder<Label> {
                     louds_bits.push(true);
                     trie_labels.push(TrieLabel {
                         label: node.label(),
-                        is_terminal: node.is_terminal(),
+                        is_terminal: node.terminal().map(|x| x.clone()),
                     });
                 }
                 NaiveTrie::PhantomSibling => {

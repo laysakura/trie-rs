@@ -1,19 +1,19 @@
 use crate::Trie;
 use louds_rs::LoudsNodeNum;
 
-pub struct PrefixIter<'a, L, Label>
+pub struct PrefixIter<'a, L, Label, Value>
 {
-    trie: &'a Trie<Label>,
+    trie: &'a Trie<Label, Value>,
     query: Vec<L>,
     node: LoudsNodeNum,
     buffer: Vec<&'a Label>,
     consume: Option<usize>,
 }
 
-impl<'a, L, Label> PrefixIter<'a, L, Label>
+impl<'a, L, Label, Value> PrefixIter<'a, L, Label, Value>
 {
     #[inline]
-    pub fn new(trie: &'a Trie<Label>, mut query: Vec<L>) -> Self {
+    pub fn new(trie: &'a Trie<Label, Value>, mut query: Vec<L>) -> Self {
         query.reverse();
         Self {
             trie,
@@ -25,7 +25,7 @@ impl<'a, L, Label> PrefixIter<'a, L, Label>
     }
 
     #[inline]
-    pub fn empty(trie: &'a Trie<Label>) -> Self {
+    pub fn empty(trie: &'a Trie<Label, Value>) -> Self {
         Self {
             trie,
             node: LoudsNodeNum(1),
@@ -36,7 +36,7 @@ impl<'a, L, Label> PrefixIter<'a, L, Label>
     }
 }
 
-impl<'a, L, Label: Ord + Clone> Iterator for PrefixIter<'a, L, Label>
+impl<'a, L, Label: Ord + Clone, Value> Iterator for PrefixIter<'a, L, Label, Value>
     where Label: PartialOrd<L>
 {
     type Item = &'a Label;

@@ -2,20 +2,20 @@ use super::NaiveTrie;
 use std::collections::VecDeque;
 
 /// Iterates over NaiveTrie in Breadth-First manner.
-pub struct NaiveTrieBFIter<'trie, Label> {
-    unvisited: VecDeque<&'trie NaiveTrie<Label>>,
+pub struct NaiveTrieBFIter<'trie, Label, Value> {
+    unvisited: VecDeque<&'trie NaiveTrie<Label, Value>>,
 }
 
-impl<'trie, Label> NaiveTrieBFIter<'trie, Label> {
-    pub fn new(iter_start: &'trie NaiveTrie<Label>) -> Self {
+impl<'trie, Label, Value> NaiveTrieBFIter<'trie, Label, Value> {
+    pub fn new(iter_start: &'trie NaiveTrie<Label, Value>) -> Self {
         let mut unvisited = VecDeque::new();
         unvisited.push_back(iter_start);
         Self { unvisited }
     }
 }
 
-impl<'trie, Label: Ord + Clone> Iterator for NaiveTrieBFIter<'trie, Label> {
-    type Item = &'trie NaiveTrie<Label>;
+impl<'trie, Label: Ord + Clone, Value> Iterator for NaiveTrieBFIter<'trie, Label, Value> {
+    type Item = &'trie NaiveTrie<Label, Value>;
 
     /// Returns:
     ///
@@ -41,7 +41,8 @@ impl<'trie, Label: Ord + Clone> Iterator for NaiveTrieBFIter<'trie, Label> {
 
 #[cfg(test)]
 mod bf_iter_tests {
-    use super::NaiveTrie;
+    // use super::NaiveTrie;
+    type NaiveTrie<T> = super::NaiveTrie<T, ()>;
 
     macro_rules! parameterized_tests {
         ($($name:ident: $value:expr,)*) => {
@@ -51,7 +52,7 @@ mod bf_iter_tests {
                 let (words, expected_nodes) = $value;
                 let mut trie = NaiveTrie::make_root();
                 for word in words {
-                    trie.push(word);
+                    trie.push(word, ());
                 }
                 let nodes: Vec<&NaiveTrie<u8>> = trie.bf_iter().collect();
                 assert_eq!(nodes.len(), expected_nodes.len());
@@ -63,7 +64,7 @@ mod bf_iter_tests {
 
                     if let NaiveTrie::IntermOrLeaf(n) = node {
                         assert_eq!(n.label, expected_node.label());
-                        assert_eq!(n.is_terminal, expected_node.is_terminal());
+                        assert_eq!(n.is_terminal.is_some(), expected_node.is_terminal());
                     }
                 }
             }

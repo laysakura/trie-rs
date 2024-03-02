@@ -212,4 +212,4 @@ pub use trie::TrieBuilder;
 
 mod internal_data_structure;
 mod trie;
-pub mod map;
+// pub mod map;

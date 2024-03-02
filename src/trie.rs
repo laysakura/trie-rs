@@ -7,19 +7,19 @@ mod postfix_iter;
 mod prefix_iter;
 
 /// A trie for sequences of the type `Label`.
-pub struct Trie<Label> {
+pub struct Trie<Label, Value> {
     louds: Louds,
 
     /// (LoudsNodeNum - 2) -> TrieLabel
-    trie_labels: Vec<TrieLabel<Label>>,
+    trie_labels: Vec<TrieLabel<Label, Value>>,
 }
 
 /// A trie builder for [Trie].
-pub struct TrieBuilder<Label> {
-    naive_trie: NaiveTrie<Label>,
+pub struct TrieBuilder<Label, Value> {
+    naive_trie: NaiveTrie<Label, Value>,
 }
 
-struct TrieLabel<Label> {
+struct TrieLabel<Label, Value> {
     label: Label,
-    is_terminal: bool,
+    is_terminal: Option<Value>,
 }
