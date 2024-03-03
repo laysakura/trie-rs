@@ -76,7 +76,7 @@ impl<'trie, Label: Ord + Clone, Value> NaiveTrie<Label, Value> {
         }
     }
 
-    pub fn terminal(&self) -> Option<&Value> {
+    pub fn value(&self) -> Option<&Value> {
         match self {
             NaiveTrie::IntermOrLeaf(node) => node.is_terminal.as_ref(),
             _ => panic!("Unexpected type"),

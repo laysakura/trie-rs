@@ -1,4 +1,4 @@
-use crate::Trie;
+use crate::trie::Trie;
 use louds_rs::LoudsNodeNum;
 
 pub struct PrefixIter<'a, L, Label, Value>

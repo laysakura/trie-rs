@@ -1,6 +1,6 @@
 use crate::internal_data_structure::naive_trie::NaiveTrie;
 use crate::trie::TrieLabel;
-use crate::{Trie, TrieBuilder};
+use crate::trie::{Trie, TrieBuilder};
 use louds_rs::Louds;
 
 impl<Label: Ord + Clone, Value: Clone> TrieBuilder<Label, Value> {
@@ -26,7 +26,7 @@ impl<Label: Ord + Clone, Value: Clone> TrieBuilder<Label, Value> {
                     louds_bits.push(true);
                     trie_labels.push(TrieLabel {
                         label: node.label(),
-                        is_terminal: node.terminal().map(|x| x.clone()),
+                        is_terminal: node.value().map(|x| x.clone()),
                     });
                 }
                 NaiveTrie::PhantomSibling => {

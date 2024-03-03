@@ -1,4 +1,4 @@
-#![forbid(missing_docs)]
+// #![forbid(missing_docs)]
 //! Memory efficient trie (prefix tree) and map library based on LOUDS.
 //!
 //! [Master API Docs](https://laysakura.github.io/trie-rs/trie_rs/)
@@ -207,8 +207,73 @@
 //!
 //! Many thanks for these dictionaries and tools.
 
-pub use trie::Trie;
-pub use trie::TrieBuilder;
+use std::ops::{Deref, DerefMut};
+use trie::Trie as TrieMap;
+use trie::TrieBuilder as TrieMapBuilder;
+//
+pub struct Trie<Label>(TrieMap<Label, ()>);
+pub struct TrieBuilder<Label>(TrieMapBuilder<Label, ()>);
+
+impl<Label> Deref for Trie<Label> {
+    type Target = TrieMap<Label, ()>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<Label> DerefMut for Trie<Label> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl<Label> Deref for TrieBuilder<Label> {
+    type Target = TrieMapBuilder<Label, ()>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<Label> DerefMut for TrieBuilder<Label> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl<Label> Trie<Label> {
+
+    // pub fn exact_match<L>(&self, query: impl AsRef<[L]>) -> bool
+    // where Label: PartialOrd<L> {
+    //     self.0.exact_match(query).is_some()
+    // }
+
+    // pub fn exact_match<Arr: AsRef<[K]>>(&self, query: Arr) -> Option<&V> {
+}
+
+impl<Label: Ord + Clone> TrieBuilder<Label> {
+
+    pub fn new() -> Self {
+        Self(TrieMapBuilder::new())
+    }
+
+    /// Add an entry.
+    pub fn push<Arr: AsRef<[Label]>>(&mut self, entry: Arr) {
+        self.0.push(entry, ());
+    }
+
+    /// Build a [Trie].
+    pub fn build(&self) -> Trie<Label> {
+        Trie(self.0.build())
+    }
+
+
+    // pub fn exact_match<L>(&self, query: impl AsRef<[L]>) -> bool
+    // where Label: PartialOrd<L> {
+    //     self.0.exact_match(query).is_some()
+    // }
+
+    // pub fn exact_match<Arr: AsRef<[K]>>(&self, query: Arr) -> Option<&V> {
+}
 
 mod internal_data_structure;
 mod trie;

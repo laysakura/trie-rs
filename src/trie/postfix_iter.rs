@@ -1,4 +1,4 @@
-use crate::Trie;
+use crate::trie::Trie;
 use louds_rs::LoudsNodeNum;
 
 pub struct PostfixIter<'a, Label, Value>
