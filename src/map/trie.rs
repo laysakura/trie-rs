@@ -101,7 +101,19 @@ impl<Label: Ord, Value> Trie<Label, Value> {
         // Chunk::new(Prefix::new(prefix.into_iter(), self.postfix_search_unfused(cur_node_num)).prefix_empty(true))
     }
 
+
     pub fn postfix_search<'a, L>(&'a self, query: impl AsRef<[L]>) ->
+            Vec<(Vec<Label>, Value)>
+        where Label: PartialOrd<L> + Clone, Value: Clone {
+        let chunk = self.postfix_search_ref(query);
+        chunk
+            .map(|v| (v.cloned().collect(),
+                      chunk.iter_ref().value().cloned().unwrap()))
+            .into_iter()
+            .collect()
+    }
+
+    pub fn postfix_search_ref<'a, L>(&'a self, query: impl AsRef<[L]>) ->
         Chunk<PostfixIter<'a, Label, Value>>
     where Label: PartialOrd<L>,
     {
@@ -332,7 +344,7 @@ mod search_tests {
         #[test]
         fn postfix_unfused() {
             let trie = super::build_trie();
-            let postfixes = trie.postfix_search("app");
+            let postfixes = trie.0.postfix_search_ref("app");
             let mut iter = postfixes.into_inner().map(|x| *x as char);
             assert_eq!(iter.next(), Some('p'));
             assert!(iter.next().is_none());
@@ -344,7 +356,7 @@ mod search_tests {
         #[test]
         fn postfix_baseline() {
             let trie = super::build_trie();
-            let postfixes = trie.postfix_search("app");
+            let postfixes = trie.0.postfix_search_ref("app");
             let mut chunks = postfixes.into_iter();
             // assert_eq!(chunks.by_ref().count(), 3);
             let mut iter = chunks.next().unwrap().map(|x| *x as char);
@@ -374,7 +386,7 @@ mod search_tests {
         #[test]
         fn postfix_2() {
             let trie = super::build_trie();
-            let postfixes = trie.postfix_search("b");
+            let postfixes = trie.0.postfix_search_ref("b");
             let mut chunks = postfixes.into_iter();
             let mut iter = chunks.next().unwrap().map(|x| *x as char);
             assert_eq!(iter.next(), Some('b'));
@@ -390,7 +402,7 @@ mod search_tests {
         #[test]
         fn postfix_3() {
             let trie = super::build_trie();
-            let postfixes = trie.postfix_search("bet");
+            let postfixes = trie.0.postfix_search_ref("bet");
             let mut chunks = postfixes.into_iter();
             let mut iter = chunks.next().unwrap().map(|x| *x as char);
             assert_eq!(iter.next(), Some('t'));

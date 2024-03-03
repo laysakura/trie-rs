@@ -207,40 +207,13 @@
 //!
 //! Many thanks for these dictionaries and tools.
 
-use std::ops::{Deref, DerefMut};
 use map::Trie as TrieMap;
 use map::TrieBuilder as TrieMapBuilder;
 //
 pub struct Trie<Label>(TrieMap<Label, ()>);
 pub struct TrieBuilder<Label>(TrieMapBuilder<Label, ()>);
 
-impl<Label> Deref for Trie<Label> {
-    type Target = TrieMap<Label, ()>;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl<Label> DerefMut for Trie<Label> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
-impl<Label> Deref for TrieBuilder<Label> {
-    type Target = TrieMapBuilder<Label, ()>;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl<Label> DerefMut for TrieBuilder<Label> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
-impl<Label: Clone + Ord> Trie<Label> {
+impl<Label: Ord> Trie<Label> {
 
     pub fn exact_match<L>(&self, query: impl AsRef<[L]>) -> bool
     where Label: PartialOrd<L> {
@@ -249,7 +222,7 @@ impl<Label: Clone + Ord> Trie<Label> {
 
     pub fn common_prefix_search<L>(&self, query: impl AsRef<[L]>) -> Vec<Vec<Label>>
     where Label: PartialOrd<L> + Clone, L: Clone {
-        self.common_prefix_search_ref(query.as_ref().to_vec())
+        self.0.common_prefix_search_ref(query.as_ref().to_vec())
             .into_iter()
             .map(|v| v.into_iter().cloned().collect())
             .collect()
@@ -258,11 +231,26 @@ impl<Label: Clone + Ord> Trie<Label> {
     pub fn predictive_search<'a, L>(&'a self, query: impl AsRef<[L]>) ->
         Vec<Vec<Label>>
     where Label: PartialOrd<L> + Clone {
-        let chunk = self.predictive_search_ref(query);
+        let chunk = self.0.predictive_search_ref(query);
         chunk
             .map(|v| v.cloned().collect())
             .into_iter()
             .collect()
+    }
+
+    pub fn postfix_search<'a, L>(&'a self, query: impl AsRef<[L]>) ->
+        Vec<Vec<Label>>
+    where Label: PartialOrd<L> + Clone {
+        let chunk = self.0.postfix_search_ref(query);
+        chunk
+            .map(|v| v.cloned().collect())
+            .into_iter()
+            .collect()
+    }
+
+    pub fn is_prefix<L>(&self, query: impl AsRef<[L]>) -> bool
+    where Label: PartialOrd<L> {
+        self.0.is_prefix(query)
     }
 
     // pub fn exact_match<Arr: AsRef<[K]>>(&self, query: Arr) -> Option<&V> {
@@ -283,14 +271,6 @@ impl<Label: Ord + Clone> TrieBuilder<Label> {
     pub fn build(&self) -> Trie<Label> {
         Trie(self.0.build())
     }
-
-
-    // pub fn exact_match<L>(&self, query: impl AsRef<[L]>) -> bool
-    // where Label: PartialOrd<L> {
-    //     self.0.exact_match(query).is_some()
-    // }
-
-    // pub fn exact_match<Arr: AsRef<[K]>>(&self, query: Arr) -> Option<&V> {
 }
 
 mod internal_data_structure;
