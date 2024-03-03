@@ -1,6 +1,6 @@
 use crate::internal_data_structure::naive_trie::NaiveTrie;
-use crate::trie::TrieLabel;
-use crate::trie::{Trie, TrieBuilder};
+use crate::map::TrieLabel;
+use crate::map::{Trie, TrieBuilder};
 use louds_rs::Louds;
 
 impl<Label: Ord + Clone, Value: Clone> TrieBuilder<Label, Value> {

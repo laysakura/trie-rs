@@ -208,8 +208,8 @@
 //! Many thanks for these dictionaries and tools.
 
 use std::ops::{Deref, DerefMut};
-use trie::Trie as TrieMap;
-use trie::TrieBuilder as TrieMapBuilder;
+use map::Trie as TrieMap;
+use map::TrieBuilder as TrieMapBuilder;
 //
 pub struct Trie<Label>(TrieMap<Label, ()>);
 pub struct TrieBuilder<Label>(TrieMapBuilder<Label, ()>);
@@ -240,12 +240,30 @@ impl<Label> DerefMut for TrieBuilder<Label> {
     }
 }
 
-impl<Label> Trie<Label> {
+impl<Label: Clone + Ord> Trie<Label> {
 
-    // pub fn exact_match<L>(&self, query: impl AsRef<[L]>) -> bool
-    // where Label: PartialOrd<L> {
-    //     self.0.exact_match(query).is_some()
-    // }
+    pub fn exact_match<L>(&self, query: impl AsRef<[L]>) -> bool
+    where Label: PartialOrd<L> {
+        self.0.exact_match(query).is_some()
+    }
+
+    pub fn common_prefix_search<L>(&self, query: impl AsRef<[L]>) -> Vec<Vec<Label>>
+    where Label: PartialOrd<L> + Clone, L: Clone {
+        self.common_prefix_search_ref(query.as_ref().to_vec())
+            .into_iter()
+            .map(|v| v.into_iter().cloned().collect())
+            .collect()
+    }
+
+    pub fn predictive_search<'a, L>(&'a self, query: impl AsRef<[L]>) ->
+        Vec<Vec<Label>>
+    where Label: PartialOrd<L> + Clone {
+        let chunk = self.predictive_search_ref(query);
+        chunk
+            .map(|v| v.cloned().collect())
+            .into_iter()
+            .collect()
+    }
 
     // pub fn exact_match<Arr: AsRef<[K]>>(&self, query: Arr) -> Option<&V> {
 }
@@ -276,5 +294,5 @@ impl<Label: Ord + Clone> TrieBuilder<Label> {
 }
 
 mod internal_data_structure;
-mod trie;
-// pub mod map;
+pub mod map;
+mod old_map;

@@ -1,4 +1,4 @@
-use crate::trie::Trie;
+use crate::map::Trie;
 use louds_rs::LoudsNodeNum;
 
 pub struct PrefixIter<'a, L, Label, Value>
@@ -10,7 +10,7 @@ pub struct PrefixIter<'a, L, Label, Value>
     consume: Option<usize>,
 }
 
-impl<'a, L, Label, Value> PrefixIter<'a, L, Label, Value>
+impl<'a, L, Label: Ord, Value> PrefixIter<'a, L, Label, Value>
 {
     #[inline]
     pub fn new(trie: &'a Trie<Label, Value>, mut query: Vec<L>) -> Self {
@@ -33,6 +33,10 @@ impl<'a, L, Label, Value> PrefixIter<'a, L, Label, Value>
             buffer: Vec::new(),
             consume: None,
         }
+    }
+
+    pub fn value(&self) -> Option<&'a Value> {
+        self.trie.value(self.node)
     }
 }
 

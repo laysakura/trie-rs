@@ -1,14 +1,15 @@
 use super::Trie;
 use louds_rs::{self, LoudsNodeNum, ChildNodeIter};
-use crate::trie::postfix_iter::PostfixIter;
-use crate::trie::prefix_iter::PrefixIter;
+use crate::map::postfix_iter::PostfixIter;
+use crate::map::prefix_iter::PrefixIter;
+use crate::map::search_iter::SearchIter;
 use frayed::{Chunk, fraught::Prefix};
 
-impl<Label: Ord + Clone, Value> Trie<Label, Value> {
+impl<Label: Ord, Value> Trie<Label, Value> {
     /// Return true if [query] is an exact match.
-    pub fn exact_match<L>(&self, query: impl AsRef<[L]>) -> bool
+    pub fn exact_match<L>(&self, query: impl AsRef<[L]>) -> Option<&Value>
     where Label: PartialOrd<L> {
-        self.exact_match_node(query).is_some()
+        self.exact_match_node(query).and_then(|x| self.value(x))
     }
 
     pub(crate) fn exact_match_node<L>(&self, query: impl AsRef<[L]>) -> Option<LoudsNodeNum>
@@ -55,12 +56,25 @@ impl<Label: Ord + Clone, Value> Trie<Label, Value> {
         self.has_children_node_nums(cur_node_num)
     }
 
+    pub fn predictive_search<'a, L>(&'a self, query: impl AsRef<[L]>) ->
+        Vec<(Vec<Label>, Value)>
+    where Label: PartialOrd<L> + Clone,
+    Value: Clone {
+        let chunk = self.predictive_search_ref(query);
+        chunk
+            .map(|v| (v.cloned().collect(),
+                      chunk.iter_ref().value().cloned().unwrap()))
+            .into_iter()
+            .collect()
+    }
+
     /// Return all entries that match [query].
     ///
     /// # Panics
     /// If `query` is empty.
-    pub fn predictive_search<'a, L>(&'a self, query: impl AsRef<[L]>) ->
-        Chunk<Prefix<std::vec::IntoIter<&Label>, PostfixIter<'a, Label, Value>>>
+    pub fn predictive_search_ref<'a, L>(&'a self, query: impl AsRef<[L]>) ->
+        // Chunk<Prefix<std::vec::IntoIter<&Label>, PostfixIter<'a, Label, Value>>>
+        Chunk<SearchIter<'a, Label, Value>>
     where Label: PartialOrd<L>,
     {
         assert!(!query.as_ref().is_empty());
@@ -75,13 +89,16 @@ impl<Label: Ord + Clone, Value> Trie<Label, Value> {
             match res {
                 Ok(i) => cur_node_num = children_node_nums[i],
                 Err(_) => {
-                    return Chunk::new(Prefix::new(Vec::new().into_iter(), PostfixIter::empty(self)))
+                    return Chunk::new(SearchIter::empty(self))
                 }
             }
-            prefix.push(self.label(cur_node_num));
+            // prefix.push(self.label(cur_node_num));
+            prefix.push(cur_node_num);
         }
         let _ = prefix.pop();
-        Chunk::new(Prefix::new(prefix.into_iter(), self.postfix_search_unfused(cur_node_num)).prefix_empty(true))
+        Chunk::new(SearchIter::new(self, prefix, cur_node_num))
+        // Chunk::new(Prefix::new(prefix.into_iter(), self.postfix_search_unfused(cur_node_num)).prefix_empty(true))
+        // Chunk::new(Prefix::new(prefix.into_iter(), self.postfix_search_unfused(cur_node_num)).prefix_empty(true))
     }
 
     pub fn postfix_search<'a, L>(&'a self, query: impl AsRef<[L]>) ->
@@ -115,18 +132,26 @@ impl<Label: Ord + Clone, Value> Trie<Label, Value> {
     }
 
     /// Return the common prefixes.
-    pub fn common_prefix_search<L>(&self, query: impl AsRef<[L]>) -> Vec<Vec<Label>>
-    where Label: PartialOrd<L>, L: Clone {
-        self.common_prefix_search_ref(query.as_ref().to_vec())
+    pub fn common_prefix_search<L>(&self, query: impl AsRef<[L]>) -> Vec<(Vec<Label>, Value)>
+    where Label: PartialOrd<L> + Clone, L: Clone, Value: Clone {
+        let chunk = self.common_prefix_search_ref(query.as_ref().to_vec());
+        chunk
+            .map(|v| (v.cloned().collect(),
+                      chunk.iter_ref().value().cloned().unwrap()))
             .into_iter()
-            .map(|v| v.into_iter().cloned().collect())
             .collect()
+            // .into_iter()
+            // .map(|v| (v.into_iter().cloned().collect(),
+            //           // NOTE: This will not always work if this wasn't being
+            //           // collected and processed in order.
+            //           chunk.iter_ref().value().cloned().unwrap()))
+            // .collect()
     }
 
     /// Return the common prefixes.
     pub fn common_prefix_search_ref<L>(&self, query: Vec<L>)
                                        -> Chunk<PrefixIter<'_, L, Label, Value>>
-        where Label: PartialOrd<L> {
+        where Label: PartialOrd<L> + Clone {
         Chunk::new(PrefixIter::new(&self, query))
     }
 
@@ -255,7 +280,7 @@ mod search_tests {
                 fn $name() {
                     let (query, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results = trie.predictive_search(query).into_iter().map(|g| String::from_utf8(g.cloned().collect()).unwrap()).collect::<Vec<_>>();
+                    let results = trie.predictive_search(query).into_iter().map(|g| String::from_utf8(g).unwrap()).collect::<Vec<_>>();
                     // results.sort_by(|a, b| a.len().cmp(&b.len()));
                     assert_eq!(results, expected_results);
                 }

@@ -98,13 +98,13 @@ mod trie {
                         let results_in_u8s = trie.predictive_search("すし");
                         for _ in 0..(times - 1) {
                             for entry in &trie.predictive_search("すし") {
-                                let _ = entry.cloned().collect::<Vec<u8>>();
+                                // let _ = entry.cloned().collect::<Vec<u8>>();
                             }
                         }
 
                         let results_in_str: Vec<String> = results_in_u8s
                             .into_iter()
-                            .map(|u8s| String::from_utf8(u8s.cloned().collect::<Vec<u8>>()).unwrap())
+                            .map(|u8s| String::from_utf8(u8s).unwrap())
                             .collect();
                         assert_eq!(
                             results_in_str,

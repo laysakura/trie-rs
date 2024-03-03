@@ -1,4 +1,4 @@
-use crate::trie::Trie;
+use crate::map::Trie;
 use louds_rs::LoudsNodeNum;
 
 pub struct PostfixIter<'a, Label, Value>
@@ -7,7 +7,7 @@ pub struct PostfixIter<'a, Label, Value>
     queue: Vec<(usize, LoudsNodeNum)>,
     buffer: Vec<&'a Label>,
     consume: Option<usize>,
-    done: bool,
+    value: Option<&'a Value>,
 }
 
 impl<'a, Label, Value> PostfixIter<'a, Label, Value>
@@ -19,7 +19,7 @@ impl<'a, Label, Value> PostfixIter<'a, Label, Value>
             queue: vec![(0, root)],
             buffer: Vec::new(),
             consume: None,
-            done: false,
+            value: None,
         }
     }
 
@@ -30,12 +30,16 @@ impl<'a, Label, Value> PostfixIter<'a, Label, Value>
             queue: Vec::new(),
             buffer: Vec::new(),
             consume: None,
-            done: false,
+            value: None,
         }
+    }
+
+    pub fn value(&self) -> Option<&'a Value> {
+        self.value
     }
 }
 
-impl<'a, Label: Ord + Clone, Value> Iterator for PostfixIter<'a, Label, Value>
+impl<'a, Label: Ord, Value> Iterator for PostfixIter<'a, Label, Value>
 {
     type Item = &'a Label;
     #[inline]
@@ -54,15 +58,16 @@ impl<'a, Label: Ord + Clone, Value> Iterator for PostfixIter<'a, Label, Value>
                 } else {
                     panic!("depth > buffer.len()");
                 }
-                if self.trie.is_terminal(node) {
+                self.value = self.trie.value(node);
+                if self.value.is_some() {
                     self.consume = Some(0);
                 }
             } else {
-                if self.done {
+                if self.value.is_some() {
                     return None;
                 } else {
                     // self.consume = Some(1);
-                    self.done = true;
+                    self.value = None;
                     // eprintln!("break");
                     break;
                 }
