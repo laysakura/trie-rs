@@ -73,7 +73,6 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     /// # Panics
     /// If `query` is empty.
     pub fn predictive_search_ref<'a, L>(&'a self, query: impl AsRef<[L]>) ->
-        // Chunk<Prefix<std::vec::IntoIter<&Label>, PostfixIter<'a, Label, Value>>>
         Chunk<SearchIter<'a, Label, Value>>
     where Label: PartialOrd<L>,
     {
@@ -92,13 +91,10 @@ impl<Label: Ord, Value> Trie<Label, Value> {
                     return Chunk::new(SearchIter::empty(self))
                 }
             }
-            // prefix.push(self.label(cur_node_num));
             prefix.push(cur_node_num);
         }
         let _ = prefix.pop();
         Chunk::new(SearchIter::new(self, prefix, cur_node_num))
-        // Chunk::new(Prefix::new(prefix.into_iter(), self.postfix_search_unfused(cur_node_num)).prefix_empty(true))
-        // Chunk::new(Prefix::new(prefix.into_iter(), self.postfix_search_unfused(cur_node_num)).prefix_empty(true))
     }
 
 
@@ -161,10 +157,10 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     }
 
     /// Return the common prefixes.
-    pub fn common_prefix_search_ref<L>(&self, query: Vec<L>)
+    pub fn common_prefix_search_ref<L>(&self, query: impl AsRef<[L]>)
                                        -> Chunk<PrefixIter<'_, L, Label, Value>>
-        where Label: PartialOrd<L> + Clone {
-        Chunk::new(PrefixIter::new(&self, query))
+        where Label: PartialOrd<L>, L: Clone {
+        Chunk::new(PrefixIter::new(&self, query.as_ref().to_vec()))
     }
 
     fn has_children_node_nums(&self, node_num: LoudsNodeNum) -> bool {
@@ -344,7 +340,7 @@ mod search_tests {
         #[test]
         fn postfix_unfused() {
             let trie = super::build_trie();
-            let postfixes = trie.0.postfix_search_ref("app");
+            let postfixes = trie.postfix_search_ref("app");
             let mut iter = postfixes.into_inner().map(|x| *x as char);
             assert_eq!(iter.next(), Some('p'));
             assert!(iter.next().is_none());
@@ -356,7 +352,7 @@ mod search_tests {
         #[test]
         fn postfix_baseline() {
             let trie = super::build_trie();
-            let postfixes = trie.0.postfix_search_ref("app");
+            let postfixes = trie.postfix_search_ref("app");
             let mut chunks = postfixes.into_iter();
             // assert_eq!(chunks.by_ref().count(), 3);
             let mut iter = chunks.next().unwrap().map(|x| *x as char);
@@ -386,7 +382,7 @@ mod search_tests {
         #[test]
         fn postfix_2() {
             let trie = super::build_trie();
-            let postfixes = trie.0.postfix_search_ref("b");
+            let postfixes = trie.postfix_search_ref("b");
             let mut chunks = postfixes.into_iter();
             let mut iter = chunks.next().unwrap().map(|x| *x as char);
             assert_eq!(iter.next(), Some('b'));
@@ -402,7 +398,7 @@ mod search_tests {
         #[test]
         fn postfix_3() {
             let trie = super::build_trie();
-            let postfixes = trie.0.postfix_search_ref("bet");
+            let postfixes = trie.postfix_search_ref("bet");
             let mut chunks = postfixes.into_iter();
             let mut iter = chunks.next().unwrap().map(|x| *x as char);
             assert_eq!(iter.next(), Some('t'));

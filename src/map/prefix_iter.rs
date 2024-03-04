@@ -40,7 +40,7 @@ impl<'a, L, Label: Ord, Value> PrefixIter<'a, L, Label, Value>
     }
 }
 
-impl<'a, L, Label: Ord + Clone, Value> Iterator for PrefixIter<'a, L, Label, Value>
+impl<'a, L, Label: Ord, Value> Iterator for PrefixIter<'a, L, Label, Value>
     where Label: PartialOrd<L>
 {
     type Item = &'a Label;
