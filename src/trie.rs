@@ -1,90 +1,113 @@
 
-use super::map::Trie as TrieMap;
-use super::map::TrieBuilder as TrieMapBuilder;
-use super::map::PostfixIter;
-use super::map::SearchIter;
-use super::map::PrefixIter;
+use super::map;
+use super::map::{PostfixIter, SearchIter, PrefixIter, IncSearch};
 use frayed::Chunk;
+
 //
-pub struct Trie<Label>(TrieMap<Label, ()>);
-pub struct TrieBuilder<Label>(TrieMapBuilder<Label, ()>);
+pub struct Trie<Label> { inner: map::Trie<Label, ()> }
+pub struct TrieBuilder<Label> { inner: map::TrieBuilder<Label, ()> }
 
 impl<Label: Ord> Trie<Label> {
 
+    /// Return true if `query` is an exact match.
     pub fn exact_match<L>(&self, query: impl AsRef<[L]>) -> bool
     where Label: PartialOrd<L> {
-        self.0.exact_match(query).is_some()
+        self.inner.exact_match(query).is_some()
     }
 
+    /// Return the common prefixes of `query`.
+    pub fn common_prefix_search_ref<L>(&self, query: impl AsRef<[L]>)
+                                       -> Chunk<PrefixIter<'_, L, Label, ()>>
+        where Label: PartialOrd<L>, L: Clone {
+        self.inner.common_prefix_search_ref(query)
+    }
+
+    /// Return the common prefixes of `query`, cloned.
     pub fn common_prefix_search<L>(&self, query: impl AsRef<[L]>) -> Vec<Vec<Label>>
     where Label: PartialOrd<L> + Clone, L: Clone {
-        self.0.common_prefix_search_ref(query.as_ref().to_vec())
+        self.inner.common_prefix_search_ref(query.as_ref().to_vec())
             .into_iter()
             .map(|v| v.into_iter().cloned().collect())
             .collect()
     }
 
-    pub fn common_prefix_search_ref<L>(&self, query: impl AsRef<[L]>)
-                                       -> Chunk<PrefixIter<'_, L, Label, ()>>
-        where Label: PartialOrd<L>, L: Clone {
-        self.0.common_prefix_search_ref(query)
-    }
-
-    pub fn predictive_search<'a, L>(&'a self, query: impl AsRef<[L]>) ->
-        Vec<Vec<Label>>
-    where Label: PartialOrd<L> + Clone {
-        let chunk = self.0.predictive_search_ref(query);
-        chunk
-            .map(|v| v.cloned().collect())
-            .into_iter()
-            .collect()
-    }
-
+    /// Return all entries that match `query`.
+    ///
+    /// # Panics
+    /// If `query` is empty.
     pub fn predictive_search_ref<'a, L>(&'a self, query: impl AsRef<[L]>) ->
         Chunk<SearchIter<'a, Label, ()>>
     where Label: PartialOrd<L>,
     {
-        self.0.predictive_search_ref(query)
+        self.inner.predictive_search_ref(query)
     }
 
-    pub fn postfix_search_ref<'a, L>(&'a self, query: impl AsRef<[L]>) ->
-        Chunk<PostfixIter<'a, Label, ()>>
-    where Label: PartialOrd<L>
-    {
-        self.0.postfix_search_ref(query)
-    }
-
-    pub fn postfix_search<'a, L>(&'a self, query: impl AsRef<[L]>) ->
+    /// Return all entries that match `query`, cloned.
+    ///
+    /// # Panics
+    /// If `query` is empty.
+    pub fn predictive_search<'a, L>(&'a self, query: impl AsRef<[L]>) ->
         Vec<Vec<Label>>
     where Label: PartialOrd<L> + Clone {
-        let chunk = self.0.postfix_search_ref(query);
+        let chunk = self.inner.predictive_search_ref(query);
         chunk
             .map(|v| v.cloned().collect())
             .into_iter()
             .collect()
     }
 
-    pub fn is_prefix<L>(&self, query: impl AsRef<[L]>) -> bool
-    where Label: PartialOrd<L> {
-        self.0.is_prefix(query)
+    /// Return the postfixes of all entries that match `query`.
+    ///
+    /// # Panics
+    /// If `query` is empty.
+    pub fn postfix_search_ref<'a, L>(&'a self, query: impl AsRef<[L]>) ->
+        Chunk<PostfixIter<'a, Label, ()>>
+    where Label: PartialOrd<L>
+    {
+        self.inner.postfix_search_ref(query)
     }
 
-    // pub fn exact_match<Arr: AsRef<[K]>>(&self, query: Arr) -> Option<&V> {
+    /// Return the postfixes of all entries that match `query`, cloned.
+    ///
+    /// # Panics
+    /// If `query` is empty.
+    pub fn postfix_search<'a, L>(&'a self, query: impl AsRef<[L]>) ->
+        Vec<Vec<Label>>
+    where Label: PartialOrd<L> + Clone {
+        let chunk = self.inner.postfix_search_ref(query);
+        chunk
+            .map(|v| v.cloned().collect())
+            .into_iter()
+            .collect()
+    }
+
+    /// Return true if `query` is a prefix.
+    ///
+    /// Note: A prefix may be an exact match or not, and an exact match may be a
+    /// prefix or not.
+    pub fn is_prefix<L>(&self, query: impl AsRef<[L]>) -> bool
+    where Label: PartialOrd<L> {
+        self.inner.is_prefix(query)
+    }
+
+    pub fn inc_search(&self) -> IncSearch<'_, Label, ()> {
+        IncSearch::new(&self.inner)
+    }
 }
 
 impl<Label: Ord + Clone> TrieBuilder<Label> {
 
     pub fn new() -> Self {
-        Self(TrieMapBuilder::new())
+        Self { inner: map::TrieBuilder::new() }
     }
 
     /// Add an entry.
     pub fn push<Arr: AsRef<[Label]>>(&mut self, entry: Arr) {
-        self.0.push(entry, ());
+        self.inner.push(entry, ());
     }
 
     /// Build a [Trie].
     pub fn build(&self) -> Trie<Label> {
-        Trie(self.0.build())
+        Trie { inner: self.inner.build() }
     }
 }

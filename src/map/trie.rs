@@ -1,18 +1,16 @@
+//! A trie map stores a value with each word or key.
 use super::Trie;
 use louds_rs::{self, LoudsNodeNum, ChildNodeIter};
 use crate::map::postfix_iter::PostfixIter;
 use crate::map::prefix_iter::PrefixIter;
 use crate::map::search_iter::SearchIter;
+use crate::map::inc_search::IncSearch;
 use frayed::{Chunk, fraught::Prefix};
 
 impl<Label: Ord, Value> Trie<Label, Value> {
-    /// Return true if [query] is an exact match.
-    pub fn exact_match<L>(&self, query: impl AsRef<[L]>) -> Option<&Value>
-    where Label: PartialOrd<L> {
-        self.exact_match_node(query).and_then(|x| self.value(x))
-    }
 
-    pub(crate) fn exact_match_node<L>(&self, query: impl AsRef<[L]>) -> Option<LoudsNodeNum>
+    /// Return true if `query` is an exact match.
+    pub fn exact_match<L>(&self, query: impl AsRef<[L]>) -> Option<&Value>
         where Label: PartialOrd<L> {
         let mut cur_node_num = LoudsNodeNum(1);
 
@@ -24,9 +22,10 @@ impl<Label: Ord, Value> Trie<Label, Value> {
             match res {
                 Ok(j) => {
                     let child_node_num = children_node_nums[j];
-                    if i == query.as_ref().len() - 1 && self.is_terminal(child_node_num) {
-                        return Some(child_node_num);
-                    };
+                    let value = self.value(child_node_num);
+                    if i == query.as_ref().len() - 1 && value.is_some() {
+                        return value;
+                    }
                     cur_node_num = child_node_num;
                 }
                 Err(_) => return None,
@@ -35,7 +34,11 @@ impl<Label: Ord, Value> Trie<Label, Value> {
         None
     }
 
-    /// Return true if [query] is a prefix.
+    pub fn inc_search(&self) -> IncSearch<'_, Label, Value> {
+        IncSearch::new(self)
+    }
+
+    /// Return true if `query` is a prefix.
     ///
     /// Note: A prefix may be an exact match or not, and an exact match may be a
     /// prefix or not.
@@ -56,6 +59,10 @@ impl<Label: Ord, Value> Trie<Label, Value> {
         self.has_children_node_nums(cur_node_num)
     }
 
+    /// Return all entries that match `query`, cloned.
+    ///
+    /// # Panics
+    /// If `query` is empty.
     pub fn predictive_search<'a, L>(&'a self, query: impl AsRef<[L]>) ->
         Vec<(Vec<Label>, Value)>
     where Label: PartialOrd<L> + Clone,
@@ -68,7 +75,7 @@ impl<Label: Ord, Value> Trie<Label, Value> {
             .collect()
     }
 
-    /// Return all entries that match [query].
+    /// Return all entries that match `query`.
     ///
     /// # Panics
     /// If `query` is empty.
@@ -87,9 +94,7 @@ impl<Label: Ord, Value> Trie<Label, Value> {
             let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
             match res {
                 Ok(i) => cur_node_num = children_node_nums[i],
-                Err(_) => {
-                    return Chunk::new(SearchIter::empty(self))
-                }
+                Err(_) => return Chunk::new(SearchIter::empty(self))
             }
             prefix.push(cur_node_num);
         }
@@ -98,6 +103,10 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     }
 
 
+    /// Return the postfixes of all entries that match `query`, cloned.
+    ///
+    /// # Panics
+    /// If `query` is empty.
     pub fn postfix_search<'a, L>(&'a self, query: impl AsRef<[L]>) ->
             Vec<(Vec<Label>, Value)>
         where Label: PartialOrd<L> + Clone, Value: Clone {
@@ -109,6 +118,10 @@ impl<Label: Ord, Value> Trie<Label, Value> {
             .collect()
     }
 
+    /// Return the postfixes of all entries that match `query`.
+    ///
+    /// # Panics
+    /// If `query` is empty.
     pub fn postfix_search_ref<'a, L>(&'a self, query: impl AsRef<[L]>) ->
         Chunk<PostfixIter<'a, Label, Value>>
     where Label: PartialOrd<L>,
@@ -128,18 +141,10 @@ impl<Label: Ord, Value> Trie<Label, Value> {
                 }
             }
         }
-        Chunk::new(self.postfix_search_unfused(cur_node_num))
+        Chunk::new(PostfixIter::new(self, cur_node_num))
     }
 
-    fn postfix_search_unfused<'a>(
-        &'a self,
-        node_num: LoudsNodeNum
-    ) -> PostfixIter<'a, Label, Value>
-    {
-        PostfixIter::new(self, node_num)
-    }
-
-    /// Return the common prefixes.
+    /// Return the common prefixes of `query`, cloned.
     pub fn common_prefix_search<L>(&self, query: impl AsRef<[L]>) -> Vec<(Vec<Label>, Value)>
     where Label: PartialOrd<L> + Clone, L: Clone, Value: Clone {
         let chunk = self.common_prefix_search_ref(query.as_ref().to_vec());
@@ -148,22 +153,16 @@ impl<Label: Ord, Value> Trie<Label, Value> {
                       chunk.iter_ref().value().cloned().unwrap()))
             .into_iter()
             .collect()
-            // .into_iter()
-            // .map(|v| (v.into_iter().cloned().collect(),
-            //           // NOTE: This will not always work if this wasn't being
-            //           // collected and processed in order.
-            //           chunk.iter_ref().value().cloned().unwrap()))
-            // .collect()
     }
 
-    /// Return the common prefixes.
+    /// Return the common prefixes of `query`.
     pub fn common_prefix_search_ref<L>(&self, query: impl AsRef<[L]>)
                                        -> Chunk<PrefixIter<'_, L, Label, Value>>
         where Label: PartialOrd<L>, L: Clone {
         Chunk::new(PrefixIter::new(&self, query.as_ref().to_vec()))
     }
 
-    fn has_children_node_nums(&self, node_num: LoudsNodeNum) -> bool {
+    pub(crate) fn has_children_node_nums(&self, node_num: LoudsNodeNum) -> bool {
         self.louds
             .parent_to_children_indices(node_num)
             .next()
@@ -188,10 +187,6 @@ impl<Label: Ord, Value> Trie<Label, Value> {
         &self.trie_labels[(node_num.0 - 2) as usize].label
     }
 
-    pub(crate) fn label_mut(&mut self, node_num: LoudsNodeNum) -> &mut Label {
-        &mut self.trie_labels[(node_num.0 - 2) as usize].label
-    }
-
     pub(crate) fn is_terminal(&self, node_num: LoudsNodeNum) -> bool {
         self.trie_labels[(node_num.0 - 2) as usize].is_terminal.is_some()
     }
@@ -208,8 +203,6 @@ impl<Label: Ord, Value> Trie<Label, Value> {
 #[cfg(test)]
 mod search_tests {
     use crate::{Trie, TrieBuilder};
-    // type Trie<T> = crate::Trie<T, ()>;
-    // type TrieBuilder<T> = crate::TrieBuilder<T, ()>;
 
     fn build_trie() -> Trie<u8> {
         let mut builder = TrieBuilder::new();
