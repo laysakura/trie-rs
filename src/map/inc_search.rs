@@ -1,27 +1,81 @@
 use crate::map::Trie;
 use louds_rs::LoudsNodeNum;
 
+/// An incremental search of the trie.
+///
+/// # Motivation
+///
+/// The motivation for this struct is for "online" or interactive use cases. One
+/// often accumulates input to match against a trie. Using the standard
+/// [`exact_match()`] faculties which has a time complexity of _O(m log n)_
+/// where _m_ is the query string length and _n_ is the number of entries in the
+/// trie. Consider this loop where we simulate accumulating a query.
+///
+/// ```ignore
+/// let q = "appli"; // query string
+/// let mut is_match: bool;
+/// for i = 0..q.len() {
+///     is_match = trie.exact_match(q[0..i]);
+/// }
+/// ```
+///
+/// Building the query one "character" at a time and `exact_match()`ing each
+/// time, the loop has effectively complexity of _O(m<sup>2</sup> log n)_.
+///
+/// Using the incremental search, the time complexity of each query is _O(log
+/// n)_.
+///
+/// ```ignore
+/// let q = "appli"; // query string
+/// let inc_search = trie.inc_search();
+/// let mut is_match: bool;
+/// for i = 0..q.len() {
+///     is_match = inc_search.query(q[i]).unwrap().is_match();
+/// }
+/// ```
+///
+/// This means the above code restores the time complexity of _O(m log n)_ for
+/// the loop.
 pub struct IncSearch<'a, Label, Value>
 {
     trie: &'a Trie<Label, Value>,
     node: LoudsNodeNum,
 }
 
+/// A "matching" answer to an incremental search on a partial query.
 #[derive(Debug, PartialEq, Eq)]
-struct Answer {
-    is_prefix: bool,
-    is_match: bool,
+enum Answer {
+    Prefix,
+    Match,
+    PrefixAndMatch
 }
 
 impl Answer {
-    const NO_MATCH: Answer = Answer { is_prefix: false, is_match: false };
-    const PREFIX: Answer = Answer { is_prefix: true, is_match: false };
-    const MATCH: Answer = Answer { is_prefix: false, is_match: true };
-    const PREFIX_AND_MATCH: Answer = Answer { is_prefix: true, is_match: true };
 
-    // pub fn new(is_prefix: bool, is_match: bool) -> Self {
-    //     Answer { is_prefix, is_match }
-    // }
+    /// Is query answer a prefix?
+    pub fn is_prefix(&self) -> bool {
+        match self {
+            Answer::Prefix | Answer::PrefixAndMatch => true,
+            _ => false
+        }
+    }
+
+    /// Is query answer an exact match?
+    pub fn is_match(&self) -> bool {
+        match self {
+            Answer::Match | Answer::PrefixAndMatch => true,
+            _ => false
+        }
+    }
+
+    fn new(is_prefix: bool, is_match: bool) -> Option<Self> {
+        match (is_prefix, is_match) {
+            (true, false) => Some(Answer::Prefix),
+            (false, true) => Some(Answer::Match),
+            (true, true) => Some(Answer::PrefixAndMatch),
+            (false, false) => None,
+        }
+    }
 }
 
 impl<'a, Label: Ord, Value> IncSearch<'a, Label, Value> {
@@ -32,7 +86,8 @@ impl<'a, Label: Ord, Value> IncSearch<'a, Label, Value> {
         }
     }
 
-    pub fn peek<L>(&self, chr: L) -> Answer
+    /// Query but do not change where we're looking on the trie.
+    pub fn peek<L>(&self, chr: L) -> Option<Answer>
         where Label: PartialOrd<L> {
         let children_node_nums: Vec<_> = self.trie.children_node_nums(self.node)
                                              .collect();
@@ -42,13 +97,14 @@ impl<'a, Label: Ord, Value> IncSearch<'a, Label, Value> {
                 let node = children_node_nums[j];
                 let is_prefix = self.trie.has_children_node_nums(node);
                 let is_match = self.trie.value(node).is_some();
-                Answer { is_prefix, is_match }
+                Answer::new(is_prefix, is_match)
             }
-            Err(_) => return Answer { is_prefix: false, is_match: false },
+            Err(_) => None
         }
     }
 
-    pub fn query<L>(&mut self, chr: L) -> Answer
+    /// Query the trie and go to node if there is a match.
+    pub fn query<L>(&mut self, chr: L) -> Option<Answer>
         where Label: PartialOrd<L> {
         let children_node_nums: Vec<_> = self.trie.children_node_nums(self.node)
                                              .collect();
@@ -58,19 +114,33 @@ impl<'a, Label: Ord, Value> IncSearch<'a, Label, Value> {
                 self.node = children_node_nums[j];
                 let is_prefix = self.trie.has_children_node_nums(self.node);
                 let is_match = self.trie.value(self.node).is_some();
-                Answer { is_prefix, is_match }
+                Answer::new(is_prefix, is_match)
             }
-            Err(_) => return Answer::NO_MATCH,
+            Err(_) => None
         }
     }
 
+    /// Return the value at current node. There should be one for any node where
+    /// `answer.is_match()` is true.
     pub fn value(&self) -> Option<&'a Value> {
         self.trie.value(self.node)
     }
 
-    pub fn value_mut<'b>(&self, trie: &'b mut Trie<Label, Value>) -> Option<&'b mut Value> {
-        trie.value_mut(self.node)
+    // This isn't actually possible.
+    // /// Return the mutable value at current node. There should be one for any
+    // /// node where `answer.is_match()` is true.
+    // ///
+    // /// Note: Because [IncSearch] does not store a mutable reference to the
+    // /// trie, a mutable reference must be provided.
+    // pub fn value_mut<'b>(self, trie: &'b mut Trie<Label, Value>) -> Option<&'b mut Value> {
+    //     trie.value_mut(self.node)
+    // }
+
+    /// Reset the query.
+    pub fn reset(&mut self) {
+        self.node = LoudsNodeNum(1);
     }
+
 }
 
 #[cfg(test)]
@@ -93,11 +163,38 @@ mod search_tests {
     fn inc_search() {
         let trie = build_trie();
         let mut search = trie.inc_search();
-        assert_eq!(Answer::NO_MATCH, search.query(b'z'));
-        assert_eq!(Answer::PREFIX_AND_MATCH, search.query(b'a'));
-        assert_eq!(Answer::PREFIX, search.query(b'p'));
-        assert_eq!(Answer::PREFIX_AND_MATCH, search.query(b'p'));
-        assert_eq!(Answer::PREFIX, search.query(b'l'));
-        assert_eq!(Answer::MATCH, search.query(b'e'));
+        assert_eq!(None, search.query(b'z'));
+        assert_eq!(Answer::PrefixAndMatch, search.query(b'a').unwrap());
+        assert_eq!(Answer::Prefix, search.query(b'p').unwrap());
+        assert_eq!(Answer::PrefixAndMatch, search.query(b'p').unwrap());
+        assert_eq!(Answer::Prefix, search.query(b'l').unwrap());
+        assert_eq!(Answer::Match, search.query(b'e').unwrap());
     }
+
+    #[test]
+    fn inc_serach_value() {
+        let trie = build_trie();
+        let mut search = trie.inc_search();
+        assert_eq!(None, search.query(b'z'));
+        assert_eq!(Answer::PrefixAndMatch, search.query(b'a').unwrap());
+        assert_eq!(Answer::Prefix, search.query(b'p').unwrap());
+        assert_eq!(Answer::PrefixAndMatch, search.query(b'p').unwrap());
+        assert_eq!(Answer::Prefix, search.query(b'l').unwrap());
+        assert_eq!(Answer::Match, search.query(b'e').unwrap());
+        assert_eq!(Some(&2), search.value());
+    }
+
+    // #[test]
+    // fn inc_serach_value_mut() {
+    //     let trie = build_trie();
+    //     let mut search = trie.inc_search();
+    //     assert_eq!(None, search.query(b'z'));
+    //     assert_eq!(Answer::PrefixAndMatch, search.query(b'a').unwrap());
+    //     assert_eq!(Answer::Prefix, search.query(b'p').unwrap());
+    //     assert_eq!(Answer::PrefixAndMatch, search.query(b'p').unwrap());
+    //     assert_eq!(Answer::Prefix, search.query(b'l').unwrap());
+    //     assert_eq!(Answer::Match, search.query(b'e').unwrap());
+    //     let mut v = search.value_mut(&mut trie);
+    //     assert_eq!(Some(&2), v.as_deref())
+    // }
 }
