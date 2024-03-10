@@ -247,6 +247,7 @@ criterion_group!(
     trie::exact_match,
     trie::predictive_search,
     trie::predictive_search_ref,
-    trie::common_prefix_search
+    trie::common_prefix_search,
+    trie::common_prefix_search_ref
 );
 criterion_main!(benches);

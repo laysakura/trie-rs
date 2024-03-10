@@ -6,12 +6,12 @@ mod trie_builder;
 mod postfix_iter;
 mod prefix_iter;
 mod search_iter;
-mod inc_search;
+pub mod inc_search;
 
 pub use postfix_iter::PostfixIter;
 pub use prefix_iter::PrefixIter;
 pub use search_iter::SearchIter;
-pub use inc_search::IncSearch;
+// pub use inc_search::IncSearch;
 
 /// A trie for sequences of the type `Label`; each sequence has an associated `Value`.
 pub struct Trie<Label, Value> {

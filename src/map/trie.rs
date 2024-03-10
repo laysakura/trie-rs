@@ -5,12 +5,18 @@ use crate::map::postfix_iter::PostfixIter;
 use crate::map::prefix_iter::PrefixIter;
 use crate::map::search_iter::SearchIter;
 use crate::map::inc_search::IncSearch;
-use frayed::{Chunk, fraught::Prefix};
+use frayed::Chunk;
 
 impl<Label: Ord, Value> Trie<Label, Value> {
 
     /// Return true if `query` is an exact match.
     pub fn exact_match<L>(&self, query: impl AsRef<[L]>) -> Option<&Value>
+        where Label: PartialOrd<L> {
+        self.exact_match_node(query).and_then(move |x| self.value(x))
+    }
+
+    #[inline]
+    fn exact_match_node<L>(&self, query: impl AsRef<[L]>) -> Option<LoudsNodeNum>
         where Label: PartialOrd<L> {
         let mut cur_node_num = LoudsNodeNum(1);
 
@@ -22,9 +28,8 @@ impl<Label: Ord, Value> Trie<Label, Value> {
             match res {
                 Ok(j) => {
                     let child_node_num = children_node_nums[j];
-                    let value = self.value(child_node_num);
-                    if i == query.as_ref().len() - 1 && value.is_some() {
-                        return value;
+                    if i == query.as_ref().len() - 1 && self.is_terminal(child_node_num) {
+                        return Some(child_node_num);
                     }
                     cur_node_num = child_node_num;
                 }
@@ -34,6 +39,13 @@ impl<Label: Ord, Value> Trie<Label, Value> {
         None
     }
 
+    /// Return true if `query` is an exact match.
+    pub fn exact_match_mut<L>(&mut self, query: impl AsRef<[L]>) -> Option<&mut Value>
+        where Label: PartialOrd<L> {
+        self.exact_match_node(query).and_then(move |x| self.value_mut(x))
+    }
+
+    /// Create an incremental search.
     pub fn inc_search(&self) -> IncSearch<'_, Label, Value> {
         IncSearch::new(self)
     }

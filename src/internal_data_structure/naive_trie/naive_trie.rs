@@ -76,6 +76,8 @@ impl<'trie, Label: Ord + Clone, Value> NaiveTrie<Label, Value> {
         }
     }
 
+    /// # Panics
+    /// If self is not IntermOrLeaf.
     pub fn value(&self) -> Option<&Value> {
         match self {
             NaiveTrie::IntermOrLeaf(node) => node.is_terminal.as_ref(),

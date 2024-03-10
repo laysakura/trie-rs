@@ -23,7 +23,7 @@ use louds_rs::LoudsNodeNum;
 /// time, the loop has effectively complexity of _O(m<sup>2</sup> log n)_.
 ///
 /// Using the incremental search, the time complexity of each query is _O(log
-/// n)_.
+/// n)_ which returns an [Answer] enum.
 ///
 /// ```ignore
 /// let q = "appli"; // query string
@@ -44,9 +44,12 @@ pub struct IncSearch<'a, Label, Value>
 
 /// A "matching" answer to an incremental search on a partial query.
 #[derive(Debug, PartialEq, Eq)]
-enum Answer {
+pub enum Answer {
+    /// There is a prefix here.
     Prefix,
+    /// There is an exact match here.
     Match,
+    /// There is a prefix and an exact match here.
     PrefixAndMatch
 }
 
@@ -86,7 +89,7 @@ impl<'a, Label: Ord, Value> IncSearch<'a, Label, Value> {
         }
     }
 
-    /// Query but do not change where we're looking on the trie.
+    /// Query but do not change the node we're looking at on the trie.
     pub fn peek<L>(&self, chr: L) -> Option<Answer>
         where Label: PartialOrd<L> {
         let children_node_nums: Vec<_> = self.trie.children_node_nums(self.node)
@@ -104,11 +107,11 @@ impl<'a, Label: Ord, Value> IncSearch<'a, Label, Value> {
     }
 
     /// Query the trie and go to node if there is a match.
-    pub fn query<L>(&mut self, chr: L) -> Option<Answer>
+    pub fn query<L>(&mut self, chr: &L) -> Option<Answer>
         where Label: PartialOrd<L> {
         let children_node_nums: Vec<_> = self.trie.children_node_nums(self.node)
                                              .collect();
-        let res = self.trie.bin_search_by_children_labels(&chr, &children_node_nums[..]);
+        let res = self.trie.bin_search_by_children_labels(chr, &children_node_nums[..]);
         match res {
             Ok(j) => {
                 self.node = children_node_nums[j];
@@ -118,6 +121,22 @@ impl<'a, Label: Ord, Value> IncSearch<'a, Label, Value> {
             }
             Err(_) => None
         }
+    }
+
+    /// Query the trie with a sequence. Will return `Err(index of query)` on
+    /// first failure to match.
+    pub fn query_until<L>(&mut self, query: impl AsRef<[L]>) -> Result<Answer, usize>
+        where Label: PartialOrd<L> {
+        let mut result = None;
+        let mut i = 0;
+        for chr in query.as_ref().iter() {
+            result = self.query(chr);
+            if result.is_none() {
+                return Err(i);
+            }
+            i += 1;
+        }
+        result.ok_or(i)
     }
 
     /// Return the value at current node. There should be one for any node where
@@ -163,24 +182,36 @@ mod search_tests {
     fn inc_search() {
         let trie = build_trie();
         let mut search = trie.inc_search();
-        assert_eq!(None, search.query(b'z'));
-        assert_eq!(Answer::PrefixAndMatch, search.query(b'a').unwrap());
-        assert_eq!(Answer::Prefix, search.query(b'p').unwrap());
-        assert_eq!(Answer::PrefixAndMatch, search.query(b'p').unwrap());
-        assert_eq!(Answer::Prefix, search.query(b'l').unwrap());
-        assert_eq!(Answer::Match, search.query(b'e').unwrap());
+        assert_eq!(None, search.query(&b'z'));
+        assert_eq!(Answer::PrefixAndMatch, search.query(&b'a').unwrap());
+        assert_eq!(Answer::Prefix, search.query(&b'p').unwrap());
+        assert_eq!(Answer::PrefixAndMatch, search.query(&b'p').unwrap());
+        assert_eq!(Answer::Prefix, search.query(&b'l').unwrap());
+        assert_eq!(Answer::Match, search.query(&b'e').unwrap());
     }
 
     #[test]
-    fn inc_serach_value() {
+    fn inc_search_value() {
         let trie = build_trie();
         let mut search = trie.inc_search();
-        assert_eq!(None, search.query(b'z'));
-        assert_eq!(Answer::PrefixAndMatch, search.query(b'a').unwrap());
-        assert_eq!(Answer::Prefix, search.query(b'p').unwrap());
-        assert_eq!(Answer::PrefixAndMatch, search.query(b'p').unwrap());
-        assert_eq!(Answer::Prefix, search.query(b'l').unwrap());
-        assert_eq!(Answer::Match, search.query(b'e').unwrap());
+        assert_eq!(None, search.query(&b'z'));
+        assert_eq!(Answer::PrefixAndMatch, search.query(&b'a').unwrap());
+        assert_eq!(Answer::Prefix, search.query(&b'p').unwrap());
+        assert_eq!(Answer::PrefixAndMatch, search.query(&b'p').unwrap());
+        assert_eq!(Answer::Prefix, search.query(&b'l').unwrap());
+        assert_eq!(Answer::Match, search.query(&b'e').unwrap());
+        assert_eq!(Some(&2), search.value());
+    }
+
+    #[test]
+    fn inc_search_query_until() {
+        let trie = build_trie();
+        let mut search = trie.inc_search();
+        assert_eq!(Err(0), search.query_until("zoo"));
+        search.reset();
+        assert_eq!(Err(1), search.query_until("blue"));
+        search.reset();
+        assert_eq!(Answer::Match, search.query_until("apple").unwrap());
         assert_eq!(Some(&2), search.value());
     }
 

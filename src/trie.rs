@@ -1,6 +1,5 @@
 
-use super::map;
-use super::map::{PostfixIter, SearchIter, PrefixIter, IncSearch};
+use super::map::{self, PostfixIter, SearchIter, PrefixIter, inc_search::IncSearch};
 use frayed::Chunk;
 
 //
