@@ -24,7 +24,7 @@ fn git_hash() -> String {
 }
 
 mod trie {
-    use criterion::{BatchSize, Criterion, black_box};
+    use criterion::{black_box, BatchSize, Criterion};
     use std::env;
     use std::fs::File;
     use std::io::{BufRead, BufReader};
@@ -154,7 +154,9 @@ mod trie {
 
                         let results_in_str: Vec<String> = results_in_u8s
                             .into_iter()
-                            .map(|u8s| String::from_utf8(u8s.cloned().collect::<Vec<u8>>()).unwrap())
+                            .map(|u8s| {
+                                String::from_utf8(u8s.cloned().collect::<Vec<u8>>()).unwrap()
+                            })
                             .collect();
                         assert_eq!(
                             results_in_str,
@@ -231,7 +233,9 @@ mod trie {
 
                         let results_in_str: Vec<String> = results_in_u8s
                             .into_iter()
-                            .map(|u8s| String::from_utf8(u8s.cloned().collect::<Vec<u8>>()).unwrap())
+                            .map(|u8s| {
+                                String::from_utf8(u8s.cloned().collect::<Vec<u8>>()).unwrap()
+                            })
                             .collect();
                         assert_eq!(results_in_str, vec!["す", "すし", "すしをにぎる"]);
                     },

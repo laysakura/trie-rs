@@ -36,8 +36,7 @@ use louds_rs::LoudsNodeNum;
 ///
 /// This means the above code restores the time complexity of _O(m log n)_ for
 /// the loop.
-pub struct IncSearch<'a, Label, Value>
-{
+pub struct IncSearch<'a, Label, Value> {
     trie: &'a Trie<Label, Value>,
     node: LoudsNodeNum,
 }
@@ -50,16 +49,15 @@ pub enum Answer {
     /// There is an exact match here.
     Match,
     /// There is a prefix and an exact match here.
-    PrefixAndMatch
+    PrefixAndMatch,
 }
 
 impl Answer {
-
     /// Is query answer a prefix?
     pub fn is_prefix(&self) -> bool {
         match self {
             Answer::Prefix | Answer::PrefixAndMatch => true,
-            _ => false
+            _ => false,
         }
     }
 
@@ -67,7 +65,7 @@ impl Answer {
     pub fn is_match(&self) -> bool {
         match self {
             Answer::Match | Answer::PrefixAndMatch => true,
-            _ => false
+            _ => false,
         }
     }
 
@@ -85,16 +83,19 @@ impl<'a, Label: Ord, Value> IncSearch<'a, Label, Value> {
     pub fn new(trie: &'a Trie<Label, Value>) -> Self {
         Self {
             trie,
-            node: LoudsNodeNum(1)
+            node: LoudsNodeNum(1),
         }
     }
 
     /// Query but do not change the node we're looking at on the trie.
     pub fn peek<L>(&self, chr: L) -> Option<Answer>
-        where Label: PartialOrd<L> {
-        let children_node_nums: Vec<_> = self.trie.children_node_nums(self.node)
-                                             .collect();
-        let res = self.trie.bin_search_by_children_labels(&chr, &children_node_nums[..]);
+    where
+        Label: PartialOrd<L>,
+    {
+        let children_node_nums: Vec<_> = self.trie.children_node_nums(self.node).collect();
+        let res = self
+            .trie
+            .bin_search_by_children_labels(&chr, &children_node_nums[..]);
         match res {
             Ok(j) => {
                 let node = children_node_nums[j];
@@ -102,16 +103,19 @@ impl<'a, Label: Ord, Value> IncSearch<'a, Label, Value> {
                 let is_match = self.trie.value(node).is_some();
                 Answer::new(is_prefix, is_match)
             }
-            Err(_) => None
+            Err(_) => None,
         }
     }
 
     /// Query the trie and go to node if there is a match.
     pub fn query<L>(&mut self, chr: &L) -> Option<Answer>
-        where Label: PartialOrd<L> {
-        let children_node_nums: Vec<_> = self.trie.children_node_nums(self.node)
-                                             .collect();
-        let res = self.trie.bin_search_by_children_labels(chr, &children_node_nums[..]);
+    where
+        Label: PartialOrd<L>,
+    {
+        let children_node_nums: Vec<_> = self.trie.children_node_nums(self.node).collect();
+        let res = self
+            .trie
+            .bin_search_by_children_labels(chr, &children_node_nums[..]);
         match res {
             Ok(j) => {
                 self.node = children_node_nums[j];
@@ -119,14 +123,16 @@ impl<'a, Label: Ord, Value> IncSearch<'a, Label, Value> {
                 let is_match = self.trie.value(self.node).is_some();
                 Answer::new(is_prefix, is_match)
             }
-            Err(_) => None
+            Err(_) => None,
         }
     }
 
     /// Query the trie with a sequence. Will return `Err(index of query)` on
     /// first failure to match.
     pub fn query_until<L>(&mut self, query: impl AsRef<[L]>) -> Result<Answer, usize>
-        where Label: PartialOrd<L> {
+    where
+        Label: PartialOrd<L>,
+    {
         let mut result = None;
         let mut i = 0;
         for chr in query.as_ref().iter() {
@@ -159,7 +165,6 @@ impl<'a, Label: Ord, Value> IncSearch<'a, Label, Value> {
     pub fn reset(&mut self) {
         self.node = LoudsNodeNum(1);
     }
-
 }
 
 #[cfg(test)]

@@ -1,12 +1,12 @@
 use crate::internal_data_structure::naive_trie::NaiveTrie;
 use louds_rs::Louds;
 
-mod trie;
-mod trie_builder;
+pub mod inc_search;
 mod postfix_iter;
 mod prefix_iter;
 mod search_iter;
-pub mod inc_search;
+mod trie;
+mod trie_builder;
 
 pub use postfix_iter::PostfixIter;
 pub use prefix_iter::PrefixIter;

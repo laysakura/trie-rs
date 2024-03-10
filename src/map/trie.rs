@@ -1,28 +1,32 @@
 //! A trie map stores a value with each word or key.
 use super::Trie;
-use louds_rs::{self, LoudsNodeNum, ChildNodeIter};
+use crate::map::inc_search::IncSearch;
 use crate::map::postfix_iter::PostfixIter;
 use crate::map::prefix_iter::PrefixIter;
 use crate::map::search_iter::SearchIter;
-use crate::map::inc_search::IncSearch;
 use frayed::Chunk;
+use louds_rs::{self, ChildNodeIter, LoudsNodeNum};
 
 impl<Label: Ord, Value> Trie<Label, Value> {
-
     /// Return true if `query` is an exact match.
     pub fn exact_match<L>(&self, query: impl AsRef<[L]>) -> Option<&Value>
-        where Label: PartialOrd<L> {
-        self.exact_match_node(query).and_then(move |x| self.value(x))
+    where
+        Label: PartialOrd<L>,
+    {
+        self.exact_match_node(query)
+            .and_then(move |x| self.value(x))
     }
 
     #[inline]
     fn exact_match_node<L>(&self, query: impl AsRef<[L]>) -> Option<LoudsNodeNum>
-        where Label: PartialOrd<L> {
+    where
+        Label: PartialOrd<L>,
+    {
         let mut cur_node_num = LoudsNodeNum(1);
 
         for (i, chr) in query.as_ref().iter().enumerate() {
-            let children_node_nums: Vec<LoudsNodeNum> = self.children_node_nums(cur_node_num)
-                                                            .collect();
+            let children_node_nums: Vec<LoudsNodeNum> =
+                self.children_node_nums(cur_node_num).collect();
             let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
 
             match res {
@@ -41,8 +45,11 @@ impl<Label: Ord, Value> Trie<Label, Value> {
 
     /// Return true if `query` is an exact match.
     pub fn exact_match_mut<L>(&mut self, query: impl AsRef<[L]>) -> Option<&mut Value>
-        where Label: PartialOrd<L> {
-        self.exact_match_node(query).and_then(move |x| self.value_mut(x))
+    where
+        Label: PartialOrd<L>,
+    {
+        self.exact_match_node(query)
+            .and_then(move |x| self.value_mut(x))
     }
 
     /// Create an incremental search.
@@ -55,12 +62,13 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     /// Note: A prefix may be an exact match or not, and an exact match may be a
     /// prefix or not.
     pub fn is_prefix<L>(&self, query: impl AsRef<[L]>) -> bool
-    where Label: PartialOrd<L> {
+    where
+        Label: PartialOrd<L>,
+    {
         let mut cur_node_num = LoudsNodeNum(1);
 
         for chr in query.as_ref().iter() {
-            let children_node_nums: Vec<_> = self.children_node_nums(cur_node_num)
-                                                 .collect();
+            let children_node_nums: Vec<_> = self.children_node_nums(cur_node_num).collect();
             let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
             match res {
                 Ok(j) => cur_node_num = children_node_nums[j],
@@ -75,14 +83,19 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     ///
     /// # Panics
     /// If `query` is empty.
-    pub fn predictive_search<'a, L>(&'a self, query: impl AsRef<[L]>) ->
-        Vec<(Vec<Label>, Value)>
-    where Label: PartialOrd<L> + Clone,
-    Value: Clone {
+    pub fn predictive_search<'a, L>(&'a self, query: impl AsRef<[L]>) -> Vec<(Vec<Label>, Value)>
+    where
+        Label: PartialOrd<L> + Clone,
+        Value: Clone,
+    {
         let chunk = self.predictive_search_ref(query);
         chunk
-            .map(|v| (v.cloned().collect(),
-                      chunk.iter_ref().value().cloned().unwrap()))
+            .map(|v| {
+                (
+                    v.cloned().collect(),
+                    chunk.iter_ref().value().cloned().unwrap(),
+                )
+            })
             .into_iter()
             .collect()
     }
@@ -91,9 +104,12 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     ///
     /// # Panics
     /// If `query` is empty.
-    pub fn predictive_search_ref<'a, L>(&'a self, query: impl AsRef<[L]>) ->
-        Chunk<SearchIter<'a, Label, Value>>
-    where Label: PartialOrd<L>,
+    pub fn predictive_search_ref<'a, L>(
+        &'a self,
+        query: impl AsRef<[L]>,
+    ) -> Chunk<SearchIter<'a, Label, Value>>
+    where
+        Label: PartialOrd<L>,
     {
         assert!(!query.as_ref().is_empty());
         let mut cur_node_num = LoudsNodeNum(1);
@@ -101,12 +117,11 @@ impl<Label: Ord, Value> Trie<Label, Value> {
 
         // Consumes query (prefix)
         for chr in query.as_ref() {
-            let children_node_nums: Vec<_> = self.children_node_nums(cur_node_num)
-                .collect();
+            let children_node_nums: Vec<_> = self.children_node_nums(cur_node_num).collect();
             let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
             match res {
                 Ok(i) => cur_node_num = children_node_nums[i],
-                Err(_) => return Chunk::new(SearchIter::empty(self))
+                Err(_) => return Chunk::new(SearchIter::empty(self)),
             }
             prefix.push(cur_node_num);
         }
@@ -114,18 +129,23 @@ impl<Label: Ord, Value> Trie<Label, Value> {
         Chunk::new(SearchIter::new(self, prefix, cur_node_num))
     }
 
-
     /// Return the postfixes of all entries that match `query`, cloned.
     ///
     /// # Panics
     /// If `query` is empty.
-    pub fn postfix_search<'a, L>(&'a self, query: impl AsRef<[L]>) ->
-            Vec<(Vec<Label>, Value)>
-        where Label: PartialOrd<L> + Clone, Value: Clone {
+    pub fn postfix_search<'a, L>(&'a self, query: impl AsRef<[L]>) -> Vec<(Vec<Label>, Value)>
+    where
+        Label: PartialOrd<L> + Clone,
+        Value: Clone,
+    {
         let chunk = self.postfix_search_ref(query);
         chunk
-            .map(|v| (v.cloned().collect(),
-                      chunk.iter_ref().value().cloned().unwrap()))
+            .map(|v| {
+                (
+                    v.cloned().collect(),
+                    chunk.iter_ref().value().cloned().unwrap(),
+                )
+            })
             .into_iter()
             .collect()
     }
@@ -134,17 +154,19 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     ///
     /// # Panics
     /// If `query` is empty.
-    pub fn postfix_search_ref<'a, L>(&'a self, query: impl AsRef<[L]>) ->
-        Chunk<PostfixIter<'a, Label, Value>>
-    where Label: PartialOrd<L>,
+    pub fn postfix_search_ref<'a, L>(
+        &'a self,
+        query: impl AsRef<[L]>,
+    ) -> Chunk<PostfixIter<'a, Label, Value>>
+    where
+        Label: PartialOrd<L>,
     {
         assert!(!query.as_ref().is_empty());
         let mut cur_node_num = LoudsNodeNum(1);
 
         // Consumes query (prefix)
         for chr in query.as_ref() {
-            let children_node_nums: Vec<_> = self.children_node_nums(cur_node_num)
-                .collect();
+            let children_node_nums: Vec<_> = self.children_node_nums(cur_node_num).collect();
             let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
             match res {
                 Ok(i) => cur_node_num = children_node_nums[i],
@@ -158,19 +180,32 @@ impl<Label: Ord, Value> Trie<Label, Value> {
 
     /// Return the common prefixes of `query`, cloned.
     pub fn common_prefix_search<L>(&self, query: impl AsRef<[L]>) -> Vec<(Vec<Label>, Value)>
-    where Label: PartialOrd<L> + Clone, L: Clone, Value: Clone {
+    where
+        Label: PartialOrd<L> + Clone,
+        L: Clone,
+        Value: Clone,
+    {
         let chunk = self.common_prefix_search_ref(query.as_ref().to_vec());
         chunk
-            .map(|v| (v.cloned().collect(),
-                      chunk.iter_ref().value().cloned().unwrap()))
+            .map(|v| {
+                (
+                    v.cloned().collect(),
+                    chunk.iter_ref().value().cloned().unwrap(),
+                )
+            })
             .into_iter()
             .collect()
     }
 
     /// Return the common prefixes of `query`.
-    pub fn common_prefix_search_ref<L>(&self, query: impl AsRef<[L]>)
-                                       -> Chunk<PrefixIter<'_, L, Label, Value>>
-        where Label: PartialOrd<L>, L: Clone {
+    pub fn common_prefix_search_ref<L>(
+        &self,
+        query: impl AsRef<[L]>,
+    ) -> Chunk<PrefixIter<'_, L, Label, Value>>
+    where
+        Label: PartialOrd<L>,
+        L: Clone,
+    {
         Chunk::new(PrefixIter::new(&self, query.as_ref().to_vec()))
     }
 
@@ -182,8 +217,7 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     }
 
     pub(crate) fn children_node_nums(&self, node_num: LoudsNodeNum) -> ChildNodeIter {
-        self.louds
-            .parent_to_children_nodes(node_num)
+        self.louds.parent_to_children_nodes(node_num)
     }
 
     pub(crate) fn bin_search_by_children_labels<L>(
@@ -191,8 +225,12 @@ impl<Label: Ord, Value> Trie<Label, Value> {
         query: &L,
         children_node_nums: &[LoudsNodeNum],
     ) -> Result<usize, usize>
-        where Label: PartialOrd<L> {
-        children_node_nums.binary_search_by(|child_node_num| self.label(*child_node_num).partial_cmp(query).unwrap())
+    where
+        Label: PartialOrd<L>,
+    {
+        children_node_nums.binary_search_by(|child_node_num| {
+            self.label(*child_node_num).partial_cmp(query).unwrap()
+        })
     }
 
     pub(crate) fn label(&self, node_num: LoudsNodeNum) -> &Label {
@@ -200,15 +238,21 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     }
 
     pub(crate) fn is_terminal(&self, node_num: LoudsNodeNum) -> bool {
-        self.trie_labels[(node_num.0 - 2) as usize].is_terminal.is_some()
+        self.trie_labels[(node_num.0 - 2) as usize]
+            .is_terminal
+            .is_some()
     }
 
     pub(crate) fn value(&self, node_num: LoudsNodeNum) -> Option<&Value> {
-        self.trie_labels[(node_num.0 - 2) as usize].is_terminal.as_ref()
+        self.trie_labels[(node_num.0 - 2) as usize]
+            .is_terminal
+            .as_ref()
     }
 
     pub(crate) fn value_mut(&mut self, node_num: LoudsNodeNum) -> Option<&mut Value> {
-        self.trie_labels[(node_num.0 - 2) as usize].is_terminal.as_mut()
+        self.trie_labels[(node_num.0 - 2) as usize]
+            .is_terminal
+            .as_mut()
     }
 }
 
@@ -380,7 +424,6 @@ mod search_tests {
             assert_eq!(iter.next(), Some('n'));
             assert_eq!(iter.next(), None);
 
-
             assert!(chunks.next().is_none());
         }
 
@@ -424,12 +467,11 @@ mod search_tests {
 
         #[test]
         fn vec_into_iter_clone() {
-            let v = vec![1,2,3];
+            let v = vec![1, 2, 3];
             let i = v.into_iter();
             let c = i.clone();
             assert_eq!(c.count(), 3);
             assert_eq!(i.count(), 3);
         }
-
     }
 }

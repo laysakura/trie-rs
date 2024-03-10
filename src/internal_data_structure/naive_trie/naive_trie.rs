@@ -38,7 +38,10 @@ impl<'trie, Label: Ord + Clone, Value> NaiveTrie<Label, Value> {
                 }
                 Err(j) => {
                     let is_terminal = i == word.as_ref().len() - 1;
-                    let child_trie = Box::new(Self::make_interm_or_leaf(chr, is_terminal.then(|| value.take().unwrap())));
+                    let child_trie = Box::new(Self::make_interm_or_leaf(
+                        chr,
+                        is_terminal.then(|| value.take().unwrap()),
+                    ));
                     trie = match trie {
                         NaiveTrie::Root(node) => {
                             node.children.insert(j, child_trie);

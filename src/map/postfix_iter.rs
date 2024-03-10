@@ -1,8 +1,7 @@
 use crate::map::Trie;
 use louds_rs::LoudsNodeNum;
 
-pub struct PostfixIter<'a, Label, Value>
-{
+pub struct PostfixIter<'a, Label, Value> {
     trie: &'a Trie<Label, Value>,
     queue: Vec<(usize, LoudsNodeNum)>,
     buffer: Vec<&'a Label>,
@@ -10,8 +9,7 @@ pub struct PostfixIter<'a, Label, Value>
     value: Option<&'a Value>,
 }
 
-impl<'a, Label, Value> PostfixIter<'a, Label, Value>
-{
+impl<'a, Label, Value> PostfixIter<'a, Label, Value> {
     #[inline]
     pub fn new(trie: &'a Trie<Label, Value>, root: LoudsNodeNum) -> Self {
         Self {
@@ -39,8 +37,7 @@ impl<'a, Label, Value> PostfixIter<'a, Label, Value>
     }
 }
 
-impl<'a, Label: Ord, Value> Iterator for PostfixIter<'a, Label, Value>
-{
+impl<'a, Label: Ord, Value> Iterator for PostfixIter<'a, Label, Value> {
     type Item = &'a Label;
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
@@ -48,11 +45,12 @@ impl<'a, Label: Ord, Value> Iterator for PostfixIter<'a, Label, Value>
             if let Some((depth, node)) = self.queue.pop() {
                 // eprintln!("depth {}", depth);
                 let children = self.trie.children_node_nums(node);
-                self.queue.extend(children.rev().map(|child| (depth + 1, child)));
+                self.queue
+                    .extend(children.rev().map(|child| (depth + 1, child)));
                 if depth == self.buffer.len() {
                     self.buffer.push(self.trie.label(node));
                 } else if depth < self.buffer.len() {
-                    let _ = self.buffer.drain(depth+1..);
+                    let _ = self.buffer.drain(depth + 1..);
                     self.buffer[depth] = self.trie.label(node);
                     // self.defer = Some((depth, node));
                 } else {

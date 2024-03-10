@@ -207,7 +207,6 @@
 //!
 //! Many thanks for these dictionaries and tools.
 
-
 mod internal_data_structure;
 pub mod map;
 mod old_map;

@@ -40,8 +40,6 @@
 //     }
 // }
 
-
-
 // /// A trie where each key has an associated value. Each entry has an associated value.
 // pub struct Trie<K,V> {
 //     inner: OldTrie<KeyValue<K,V>>
@@ -153,24 +151,20 @@ mod search_tests {
     #[test]
     fn sanity_check() {
         let trie = build_trie();
-        assert_eq!(trie.predictive_search("apple"),
-                   // .into_iter().map(|g| (g.into_iter().cloned().collect::<Vec<u8>>(), 999))
-                   // .collect::<Vec<_>>(),
-                   vec![("apple".as_bytes().to_vec(), 2)]);
-
+        assert_eq!(
+            trie.predictive_search("apple"),
+            vec![("apple".as_bytes().to_vec(), 2)]
+        );
     }
 
     #[test]
     fn value_mut() {
         let mut trie = build_trie();
-        assert_eq!(trie.exact_match("apple"),
-                   Some(&2));
+        assert_eq!(trie.exact_match("apple"), Some(&2));
         let v = trie.exact_match_mut("apple").unwrap();
         *v = 10;
-        assert_eq!(trie.exact_match("apple"),
-                   Some(&10));
+        assert_eq!(trie.exact_match("apple"), Some(&10));
     }
-
 
     mod exact_match_tests {
         macro_rules! parameterized_tests {

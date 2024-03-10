@@ -1,9 +1,8 @@
+use crate::map::postfix_iter::PostfixIter;
 use crate::map::Trie;
 use louds_rs::LoudsNodeNum;
-use crate::map::postfix_iter::PostfixIter;
 
-pub struct SearchIter<'a, Label, Value>
-{
+pub struct SearchIter<'a, Label, Value> {
     trie: &'a Trie<Label, Value>,
     prefix: Vec<LoudsNodeNum>,
     index: usize,
@@ -12,18 +11,19 @@ pub struct SearchIter<'a, Label, Value>
     value: Option<&'a Value>,
 }
 
-impl <'a, Label, Value> SearchIter<'a, Label, Value> {
-
-    pub fn new(trie: &'a Trie<Label, Value>,
-           prefix: Vec<LoudsNodeNum>,
-           postfix_start: LoudsNodeNum) -> Self {
+impl<'a, Label, Value> SearchIter<'a, Label, Value> {
+    pub fn new(
+        trie: &'a Trie<Label, Value>,
+        prefix: Vec<LoudsNodeNum>,
+        postfix_start: LoudsNodeNum,
+    ) -> Self {
         SearchIter {
             trie,
             prefix,
             index: 0,
             first: None,
             value: None,
-            postfix_iter: PostfixIter::new(trie, postfix_start)
+            postfix_iter: PostfixIter::new(trie, postfix_start),
         }
     }
 
@@ -34,7 +34,7 @@ impl <'a, Label, Value> SearchIter<'a, Label, Value> {
             index: 0,
             first: None,
             value: None,
-            postfix_iter: PostfixIter::empty(trie)
+            postfix_iter: PostfixIter::empty(trie),
         }
     }
 
@@ -43,8 +43,7 @@ impl <'a, Label, Value> SearchIter<'a, Label, Value> {
     }
 }
 
-impl<'a, Label: Ord, Value> Iterator for SearchIter<'a, Label, Value>
-{
+impl<'a, Label: Ord, Value> Iterator for SearchIter<'a, Label, Value> {
     type Item = &'a Label;
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
@@ -62,7 +61,7 @@ impl<'a, Label: Ord, Value> Iterator for SearchIter<'a, Label, Value>
                         self.index = 0;
                     }
                     None
-                },
+                }
                 x => {
                     self.value = self.postfix_iter.value();
                     x
