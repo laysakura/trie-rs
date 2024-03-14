@@ -84,7 +84,7 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     ///
     /// # Panics
     /// If `query` is empty.
-    pub fn predictive_search<'a, L>(&'a self, query: impl AsRef<[L]>) -> Vec<(Vec<Label>, Value)>
+    pub fn predictive_search<L>(&self, query: impl AsRef<[L]>) -> Vec<(Vec<Label>, Value)>
     where
         Label: PartialOrd<L> + Clone,
         Value: Clone,
@@ -105,10 +105,10 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     ///
     /// # Panics
     /// If `query` is empty.
-    pub fn predictive_search_ref<'a, L>(
-        &'a self,
+    pub fn predictive_search_ref<L>(
+        &self,
         query: impl AsRef<[L]>,
-    ) -> Chunk<SearchIter<'a, Label, Value>>
+    ) -> Chunk<SearchIter<'_, Label, Value>>
     where
         Label: PartialOrd<L>,
     {
@@ -134,7 +134,7 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     ///
     /// # Panics
     /// If `query` is empty.
-    pub fn postfix_search<'a, L>(&'a self, query: impl AsRef<[L]>) -> Vec<(Vec<Label>, Value)>
+    pub fn postfix_search<L>(&self, query: impl AsRef<[L]>) -> Vec<(Vec<Label>, Value)>
     where
         Label: PartialOrd<L> + Clone,
         Value: Clone,
@@ -155,10 +155,10 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     ///
     /// # Panics
     /// If `query` is empty.
-    pub fn postfix_search_ref<'a, L>(
-        &'a self,
+    pub fn postfix_search_ref<L>(
+        &self,
         query: impl AsRef<[L]>,
-    ) -> Chunk<PostfixIter<'a, Label, Value>>
+    ) -> Chunk<PostfixIter<'_, Label, Value>>
     where
         Label: PartialOrd<L>,
     {
@@ -186,7 +186,7 @@ impl<Label: Ord, Value> Trie<Label, Value> {
         L: Clone,
         Value: Clone,
     {
-        let chunk = self.common_prefix_search_ref(query.as_ref().to_vec());
+        let chunk = self.common_prefix_search_ref(query.as_ref());
         chunk
             .map(|v| {
                 (
@@ -207,7 +207,7 @@ impl<Label: Ord, Value> Trie<Label, Value> {
         Label: PartialOrd<L>,
         L: Clone,
     {
-        Chunk::new(PrefixIter::new(&self, query.as_ref().to_vec()))
+        Chunk::new(PrefixIter::new(self, query.as_ref().to_vec()))
     }
 
     pub(crate) fn has_children_node_nums(&self, node_num: LoudsNodeNum) -> bool {

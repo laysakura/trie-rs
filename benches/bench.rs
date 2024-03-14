@@ -17,7 +17,7 @@ fn c() -> Criterion {
 fn git_hash() -> String {
     use std::process::Command;
     let output = Command::new("git")
-        .args(&["rev-parse", "--short", "HEAD"])
+        .args(["rev-parse", "--short", "HEAD"])
         .output()
         .unwrap();
     String::from(String::from_utf8(output.stdout).unwrap().trim())
@@ -74,7 +74,7 @@ mod trie {
                         for _ in 0..(times - 1) {
                             assert!(trie.exact_match("すしをにぎる"));
                         }
-                        assert_eq!(result, true);
+                        assert!(result);
                     },
                     BatchSize::SmallInput,
                 )

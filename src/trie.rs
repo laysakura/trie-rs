@@ -37,7 +37,7 @@ impl<Label: Ord> Trie<Label> {
         L: Clone,
     {
         self.inner
-            .common_prefix_search_ref(query.as_ref().to_vec())
+            .common_prefix_search_ref(query.as_ref())
             .into_iter()
             .map(|v| v.into_iter().cloned().collect())
             .collect()
@@ -47,10 +47,10 @@ impl<Label: Ord> Trie<Label> {
     ///
     /// # Panics
     /// If `query` is empty.
-    pub fn predictive_search_ref<'a, L>(
-        &'a self,
+    pub fn predictive_search_ref<L>(
+        &self,
         query: impl AsRef<[L]>,
-    ) -> Chunk<SearchIter<'a, Label, ()>>
+    ) -> Chunk<SearchIter<'_, Label, ()>>
     where
         Label: PartialOrd<L>,
     {
@@ -61,7 +61,7 @@ impl<Label: Ord> Trie<Label> {
     ///
     /// # Panics
     /// If `query` is empty.
-    pub fn predictive_search<'a, L>(&'a self, query: impl AsRef<[L]>) -> Vec<Vec<Label>>
+    pub fn predictive_search<L>(&self, query: impl AsRef<[L]>) -> Vec<Vec<Label>>
     where
         Label: PartialOrd<L> + Clone,
     {
@@ -73,10 +73,10 @@ impl<Label: Ord> Trie<Label> {
     ///
     /// # Panics
     /// If `query` is empty.
-    pub fn postfix_search_ref<'a, L>(
-        &'a self,
+    pub fn postfix_search_ref<L>(
+        &self,
         query: impl AsRef<[L]>,
-    ) -> Chunk<PostfixIter<'a, Label, ()>>
+    ) -> Chunk<PostfixIter<'_, Label, ()>>
     where
         Label: PartialOrd<L>,
     {
@@ -87,7 +87,7 @@ impl<Label: Ord> Trie<Label> {
     ///
     /// # Panics
     /// If `query` is empty.
-    pub fn postfix_search<'a, L>(&'a self, query: impl AsRef<[L]>) -> Vec<Vec<Label>>
+    pub fn postfix_search<L>(&self, query: impl AsRef<[L]>) -> Vec<Vec<Label>>
     where
         Label: PartialOrd<L> + Clone,
     {
@@ -108,6 +108,12 @@ impl<Label: Ord> Trie<Label> {
 
     pub fn inc_search(&self) -> IncSearch<'_, Label, ()> {
         IncSearch::new(&self.inner)
+    }
+}
+
+impl<Label: Ord> Default for TrieBuilder<Label> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

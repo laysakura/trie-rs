@@ -60,15 +60,13 @@ impl<'a, Label: Ord, Value> Iterator for PostfixIter<'a, Label, Value> {
                 if self.value.is_some() {
                     self.consume = Some(0);
                 }
+            } else if self.value.is_some() {
+                return None;
             } else {
-                if self.value.is_some() {
-                    return None;
-                } else {
-                    // self.consume = Some(1);
-                    self.value = None;
-                    // eprintln!("break");
-                    break;
-                }
+                // self.consume = Some(1);
+                self.value = None;
+                // eprintln!("break");
+                break;
             }
         }
         if let Some(i) = self.consume.take() {

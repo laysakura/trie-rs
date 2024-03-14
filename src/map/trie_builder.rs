@@ -3,6 +3,12 @@ use crate::map::TrieLabel;
 use crate::map::{Trie, TrieBuilder};
 use louds_rs::Louds;
 
+impl<Label: Ord, Value: Clone> Default for TrieBuilder<Label, Value> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<Label: Ord, Value: Clone> TrieBuilder<Label, Value> {
     /// Return a [TrieBuilder].
     pub fn new() -> Self {

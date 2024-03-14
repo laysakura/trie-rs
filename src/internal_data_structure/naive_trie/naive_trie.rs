@@ -11,7 +11,7 @@ impl<'trie, Label: Ord, Value> NaiveTrie<Label, Value> {
     pub fn make_interm_or_leaf(label: Label, terminal: Option<Value>) -> Self {
         NaiveTrie::IntermOrLeaf(Box::new(NaiveTrieIntermOrLeaf {
             children: vec![],
-            label: label,
+            label,
             value: terminal,
         }))
     }
