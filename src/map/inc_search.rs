@@ -55,18 +55,12 @@ pub enum Answer {
 impl Answer {
     /// Is query answer a prefix?
     pub fn is_prefix(&self) -> bool {
-        match self {
-            Answer::Prefix | Answer::PrefixAndMatch => true,
-            _ => false,
-        }
+        matches!(self, Answer::Prefix | Answer::PrefixAndMatch)
     }
 
     /// Is query answer an exact match?
     pub fn is_match(&self) -> bool {
-        match self {
-            Answer::Match | Answer::PrefixAndMatch => true,
-            _ => false,
-        }
+        matches!(self, Answer::Match | Answer::PrefixAndMatch)
     }
 
     fn new(is_prefix: bool, is_match: bool) -> Option<Self> {

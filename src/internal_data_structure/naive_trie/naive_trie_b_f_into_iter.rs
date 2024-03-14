@@ -14,7 +14,7 @@ impl< Label, Value> NaiveTrieBFIntoIter<Label, Value> {
     }
 }
 
-impl<'trie, Label: Ord, Value> Iterator for NaiveTrieBFIntoIter<Label, Value> {
+impl<Label: Ord, Value> Iterator for NaiveTrieBFIntoIter<Label, Value> {
     type Item = NaiveTrie<Label, Value>;
 
     /// Returns:
@@ -28,7 +28,7 @@ impl<'trie, Label: Ord, Value> Iterator for NaiveTrieBFIntoIter<Label, Value> {
             match trie {
                 NaiveTrie::Root(_) | NaiveTrie::IntermOrLeaf(_) => {
                     for child in trie.drain_children() {
-                        self.unvisited.push_back(*child);
+                        self.unvisited.push_back(child);
                     }
                     self.unvisited.push_back(NaiveTrie::PhantomSibling);
                 }

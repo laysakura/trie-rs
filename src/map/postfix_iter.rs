@@ -41,20 +41,25 @@ impl<'a, Label: Ord, Value> Iterator for PostfixIter<'a, Label, Value> {
     type Item = &'a Label;
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
+        use std::cmp::Ordering;
         while self.consume.is_none() {
             if let Some((depth, node)) = self.queue.pop() {
                 // eprintln!("depth {}", depth);
                 let children = self.trie.children_node_nums(node);
                 self.queue
                     .extend(children.rev().map(|child| (depth + 1, child)));
-                if depth == self.buffer.len() {
-                    self.buffer.push(self.trie.label(node));
-                } else if depth < self.buffer.len() {
-                    let _ = self.buffer.drain(depth + 1..);
-                    self.buffer[depth] = self.trie.label(node);
-                    // self.defer = Some((depth, node));
-                } else {
-                    panic!("depth > buffer.len()");
+                match depth.cmp(&self.buffer.len()) {
+                    Ordering::Equal => {
+                        self.buffer.push(self.trie.label(node));
+                    },
+                    Ordering::Less => {
+                        let _ = self.buffer.drain(depth + 1..);
+                        self.buffer[depth] = self.trie.label(node);
+                        // self.defer = Some((depth, node));
+                    },
+                    Ordering::Greater => {
+                        panic!("depth > buffer.len()");
+                    }
                 }
                 self.value = self.trie.value(node);
                 if self.value.is_some() {
