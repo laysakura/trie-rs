@@ -53,6 +53,42 @@ mod trie {
         };
     }
 
+    pub fn build(_: &mut Criterion) {
+        let items = 10_000;
+
+        super::c().bench_function(
+            &format!(
+                "[{}] Trie::build() {} items",
+                super::git_hash(),
+                items
+            ),
+            move |b| {
+                b.iter_batched(
+                    || &TRIE_EDICT,
+                    |trie| {
+                        let mut builder = TrieBuilder::new();
+
+                        let repo_root = env::var("CARGO_MANIFEST_DIR")
+                            .expect("CARGO_MANIFEST_DIR environment variable must be set.");
+                        let edict2_path = format!("{}/benches/edict.furigana", repo_root);
+
+                        let mut n_words = 0;
+                        for result in BufReader::new(File::open(edict2_path).unwrap()).lines() {
+                            let l = result.unwrap();
+                            builder.push(l);
+                            n_words += 1;
+                            if n_words >= items {
+                                break;
+                            }
+                        }
+                        black_box(builder.build())
+                    },
+                    BatchSize::SmallInput,
+                )
+            },
+        );
+    }
+
     pub fn exact_match(_: &mut Criterion) {
         let times = 100;
 
@@ -301,6 +337,7 @@ mod trie {
 
 criterion_group!(
     benches,
+    trie::build,
     trie::exact_match,
     trie::predictive_search,
     trie::predictive_search_ref,
