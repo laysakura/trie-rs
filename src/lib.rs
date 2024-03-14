@@ -215,5 +215,5 @@
 mod internal_data_structure;
 pub mod map;
 mod trie;
-
+pub mod inc_search;
 pub use trie::{Trie, TrieBuilder};

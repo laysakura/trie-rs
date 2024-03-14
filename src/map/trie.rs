@@ -1,6 +1,6 @@
 //! A trie map stores a value with each word or key.
 use super::{Trie, Value};
-use crate::map::inc_search::IncSearch;
+use crate::inc_search::IncSearch;
 use crate::map::postfix_iter::PostfixIter;
 use crate::map::prefix_iter::PrefixIter;
 use crate::map::search_iter::SearchIter;

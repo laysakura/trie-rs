@@ -1,4 +1,5 @@
-use super::map::{self, inc_search::IncSearch, PostfixIter, PrefixIter, SearchIter};
+use super::map::{self, PostfixIter, PrefixIter, SearchIter};
+use super::inc_search::IncSearch;
 use frayed::Defray;
 
 //

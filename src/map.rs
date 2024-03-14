@@ -1,7 +1,6 @@
 use crate::internal_data_structure::naive_trie::NaiveTrie;
 use louds_rs::Louds;
 
-pub mod inc_search;
 mod postfix_iter;
 mod prefix_iter;
 mod search_iter;
