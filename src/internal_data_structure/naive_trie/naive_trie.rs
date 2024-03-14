@@ -1,4 +1,3 @@
-use super::naive_trie_b_f_into_iter::NaiveTrieBFIntoIter;
 use super::naive_trie_b_f_iter::NaiveTrieBFIter;
 use super::{NaiveTrie, NaiveTrieIntermOrLeaf, NaiveTrieRoot};
 use std::vec::Drain;
@@ -55,14 +54,6 @@ impl<'trie, Label: Ord, Value> NaiveTrie<Label, Value> {
         }
     }
 
-    pub fn bf_iter(&'trie self) -> NaiveTrieBFIter<Label, Value> {
-        NaiveTrieBFIter::new(self)
-    }
-
-    pub fn into_iter(self) -> NaiveTrieBFIntoIter<Label, Value> {
-        NaiveTrieBFIntoIter::new(self)
-    }
-
     pub fn children(&self) -> &[Self] {
         match self {
             NaiveTrie::Root(node) => &node.children,
@@ -95,5 +86,13 @@ impl<'trie, Label: Ord, Value> NaiveTrie<Label, Value> {
             NaiveTrie::IntermOrLeaf(node) => &node.label,
             _ => panic!("Unexpected type"),
         }
+    }
+}
+
+impl<Label: Ord, Value> IntoIterator for NaiveTrie<Label, Value> {
+    type Item = NaiveTrie<Label, Value>;
+    type IntoIter = NaiveTrieBFIter<Label, Value>;
+    fn into_iter(self) -> NaiveTrieBFIter<Label, Value> {
+        NaiveTrieBFIter::new(self)
     }
 }

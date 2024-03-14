@@ -2,20 +2,20 @@ use super::NaiveTrie;
 use std::collections::VecDeque;
 
 /// Iterates over NaiveTrie in Breadth-First manner.
-pub struct NaiveTrieBFIter<'trie, Label, Value> {
-    unvisited: VecDeque<&'trie NaiveTrie<Label, Value>>,
+pub struct NaiveTrieBFIter<Label, Value> {
+    unvisited: VecDeque<NaiveTrie<Label, Value>>,
 }
 
-impl<'trie, Label, Value> NaiveTrieBFIter<'trie, Label, Value> {
-    pub fn new(iter_start: &'trie NaiveTrie<Label, Value>) -> Self {
+impl<Label, Value> NaiveTrieBFIter<Label, Value> {
+    pub fn new(iter_start: NaiveTrie<Label, Value>) -> Self {
         let mut unvisited = VecDeque::new();
         unvisited.push_back(iter_start);
         Self { unvisited }
     }
 }
 
-impl<'trie, Label: Ord, Value> Iterator for NaiveTrieBFIter<'trie, Label, Value> {
-    type Item = &'trie NaiveTrie<Label, Value>;
+impl<Label: Ord, Value> Iterator for NaiveTrieBFIter<Label, Value> {
+    type Item = NaiveTrie<Label, Value>;
 
     /// Returns:
     ///
@@ -24,13 +24,13 @@ impl<'trie, Label: Ord, Value> Iterator for NaiveTrieBFIter<'trie, Label, Value>
     /// - Some(NaiveTrie::IntermOrLeaf): Intermediate or leaf node.
     /// - Some(NaiveTrie::PhantomSibling): Marker to represent "all siblings are iterated".
     fn next(&mut self) -> Option<Self::Item> {
-        self.unvisited.pop_front().map(|trie| {
+        self.unvisited.pop_front().map(|mut trie| {
             match trie {
                 NaiveTrie::Root(_) | NaiveTrie::IntermOrLeaf(_) => {
-                    for child in trie.children() {
+                    for child in trie.drain_children() {
                         self.unvisited.push_back(child);
                     }
-                    self.unvisited.push_back(&NaiveTrie::PhantomSibling);
+                    self.unvisited.push_back(NaiveTrie::PhantomSibling);
                 }
                 NaiveTrie::PhantomSibling => {}
             };
@@ -41,7 +41,6 @@ impl<'trie, Label: Ord, Value> Iterator for NaiveTrieBFIter<'trie, Label, Value>
 
 #[cfg(test)]
 mod bf_iter_tests {
-    // use super::NaiveTrie;
     type NaiveTrie<T> = super::NaiveTrie<T, ()>;
     const TRUE: Option<()> = Some(());
     const FALSE: Option<()> = None;
@@ -56,10 +55,10 @@ mod bf_iter_tests {
                 for word in words {
                     trie.push(word.bytes().into_iter(), ());
                 }
-                let nodes: Vec<&NaiveTrie<u8>> = trie.bf_iter().collect();
+                let nodes: Vec<NaiveTrie<u8>> = trie.into_iter().collect();
                 assert_eq!(nodes.len(), expected_nodes.len());
                 for i in 0..nodes.len() {
-                    let node = nodes[i];
+                    let node = &nodes[i];
                     let expected_node = &expected_nodes[i];
 
                     assert!(std::mem::discriminant(node) == std::mem::discriminant(expected_node));
@@ -175,7 +174,7 @@ mod bf_iter_tests {
                 // parent = 227 130 [147] (ん)
                 NaiveTrie::make_interm_or_leaf(227, FALSE),
                 NaiveTrie::PhantomSibling,
-                // parent = [227] _ _ (ご or り
+                // parent = [227] _ _ (ご or り)
                 NaiveTrie::make_interm_or_leaf(129, FALSE),
                 NaiveTrie::make_interm_or_leaf(130, FALSE),
                 NaiveTrie::PhantomSibling,
