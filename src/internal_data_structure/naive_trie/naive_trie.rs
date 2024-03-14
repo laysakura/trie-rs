@@ -15,15 +15,14 @@ impl<'trie, Label: Ord, Value> NaiveTrie<Label, Value> {
         })
     }
 
-    pub fn push<Arr: Iterator<Item=Label>>(&'trie mut self, word: Arr, value: Value)
-    {
+    pub fn push<Arr: Iterator<Item = Label>>(&'trie mut self, word: Arr, value: Value) {
         let mut trie = self;
         let mut value = Some(value);
         let mut word = word.peekable();
         while let Some(chr) = word.next() {
-            let res = trie.children()
-                    .binary_search_by(|child|
-                                      child.label().cmp(&chr));
+            let res = trie
+                .children()
+                .binary_search_by(|child| child.label().cmp(&chr));
             match res {
                 Ok(j) => {
                     trie = match trie {
@@ -34,10 +33,8 @@ impl<'trie, Label: Ord, Value> NaiveTrie<Label, Value> {
                 }
                 Err(j) => {
                     let is_terminal = word.peek().is_none();
-                    let child_trie = Self::make_interm_or_leaf(
-                        chr,
-                        is_terminal.then(|| value.take().unwrap()),
-                    );
+                    let child_trie =
+                        Self::make_interm_or_leaf(chr, is_terminal.then(|| value.take().unwrap()));
                     trie = match trie {
                         NaiveTrie::Root(node) => {
                             node.children.insert(j, child_trie);

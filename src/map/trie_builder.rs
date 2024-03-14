@@ -25,8 +25,7 @@ impl<Label: Ord, Value> TrieBuilder<Label, Value> {
     }
 
     /// Add an entry and value.
-    pub fn insert<Arr: IntoIterator<Item=Label>>(&mut self, entry: Arr, value: Value)
-    {
+    pub fn insert<Arr: IntoIterator<Item = Label>>(&mut self, entry: Arr, value: Value) {
         self.naive_trie.push(entry.into_iter(), value);
     }
 

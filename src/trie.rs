@@ -130,7 +130,7 @@ impl<Label: Ord> TrieBuilder<Label> {
     }
 
     /// Add an entry.
-    pub fn insert<Arr: IntoIterator<Item=Label>>(&mut self, entry: Arr) {
+    pub fn insert<Arr: IntoIterator<Item = Label>>(&mut self, entry: Arr) {
         self.inner.insert(entry, ());
     }
 
