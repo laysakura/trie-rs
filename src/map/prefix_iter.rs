@@ -1,4 +1,4 @@
-use crate::map::Trie;
+use crate::map::{Trie, Value};
 use louds_rs::LoudsNodeNum;
 
 pub struct PrefixIter<'a, L, Label, Value> {
@@ -43,7 +43,6 @@ where
     Label: PartialOrd<L>,
 {
     type Item = &'a Label;
-    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         while self.consume.is_none() {
             if let Some(chr) = self.query.pop() {
@@ -76,5 +75,11 @@ where
         } else {
             None
         }
+    }
+}
+
+impl<'a, L, Label: Ord + PartialOrd<L>, V> Value<V> for frayed::chunk::Group<'a, PrefixIter<'_, L, Label, V>> {
+    fn value(&self) -> Option<&V> {
+        self.parent.iter_ref().value()
     }
 }

@@ -30,3 +30,8 @@ struct TrieLabel<Label, Value> {
     label: Label,
     value: Option<Value>,
 }
+
+/// This accesses a value if there is one. Useful on iterators.
+pub trait Value<V> {
+    fn value(&self) -> Option<&V>;
+}

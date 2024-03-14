@@ -1,5 +1,5 @@
 //! A trie map stores a value with each word or key.
-use super::Trie;
+use super::{Trie, Value};
 use crate::map::inc_search::IncSearch;
 use crate::map::postfix_iter::PostfixIter;
 use crate::map::prefix_iter::PrefixIter;
@@ -91,10 +91,10 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     {
         let chunk = self.predictive_search_ref(query);
         chunk
-            .map(|v| {
+            .map(|mut v| {
                 (
-                    v.cloned().collect(),
-                    chunk.iter_ref().value().cloned().unwrap(),
+                    v.by_ref().cloned().collect(),
+                    v.value().cloned().unwrap(),
                 )
             })
             .into_iter()
@@ -141,10 +141,10 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     {
         let chunk = self.postfix_search_ref(query);
         chunk
-            .map(|v| {
+            .map(|mut v| {
                 (
-                    v.cloned().collect(),
-                    chunk.iter_ref().value().cloned().unwrap(),
+                    v.by_ref().cloned().collect(),
+                    v.value().cloned().unwrap()
                 )
             })
             .into_iter()
@@ -188,10 +188,10 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     {
         let chunk = self.common_prefix_search_ref(query.as_ref());
         chunk
-            .map(|v| {
+            .map(|mut v| {
                 (
-                    v.cloned().collect(),
-                    chunk.iter_ref().value().cloned().unwrap(),
+                    v.by_ref().cloned().collect(),
+                    v.value().cloned().unwrap()
                 )
             })
             .into_iter()
@@ -209,6 +209,8 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     {
         Chunk::new(PrefixIter::new(self, query.as_ref().to_vec()))
     }
+
+    // fn wrap_group<I: Iterator>(iter: I) -> MyIter
 
     pub(crate) fn has_children_node_nums(&self, node_num: LoudsNodeNum) -> bool {
         self.louds

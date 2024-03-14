@@ -1,4 +1,4 @@
-use crate::map::Trie;
+use crate::map::{Trie, Value};
 use louds_rs::LoudsNodeNum;
 
 pub struct PostfixIter<'a, Label, Value> {
@@ -44,7 +44,6 @@ impl<'a, Label: Ord, Value> Iterator for PostfixIter<'a, Label, Value> {
         use std::cmp::Ordering;
         while self.consume.is_none() {
             if let Some((depth, node)) = self.queue.pop() {
-                // eprintln!("depth {}", depth);
                 let children = self.trie.children_node_nums(node);
                 self.queue
                     .extend(children.rev().map(|child| (depth + 1, child)));
@@ -55,7 +54,6 @@ impl<'a, Label: Ord, Value> Iterator for PostfixIter<'a, Label, Value> {
                     Ordering::Less => {
                         let _ = self.buffer.drain(depth + 1..);
                         self.buffer[depth] = self.trie.label(node);
-                        // self.defer = Some((depth, node));
                     }
                     Ordering::Greater => {
                         panic!("depth > buffer.len()");
@@ -68,14 +66,11 @@ impl<'a, Label: Ord, Value> Iterator for PostfixIter<'a, Label, Value> {
             } else if self.value.is_some() {
                 return None;
             } else {
-                // self.consume = Some(1);
                 self.value = None;
-                // eprintln!("break");
                 break;
             }
         }
         if let Some(i) = self.consume.take() {
-            // eprintln!("consume {}", i);
             if i >= self.buffer.len() {
                 None
             } else {
@@ -85,5 +80,11 @@ impl<'a, Label: Ord, Value> Iterator for PostfixIter<'a, Label, Value> {
         } else {
             None
         }
+    }
+}
+
+impl<'a, Label: Ord, V> Value<V> for frayed::chunk::Group<'a, PostfixIter<'_, Label, V>> {
+    fn value(&self) -> Option<&V> {
+        self.parent.iter_ref().value()
     }
 }

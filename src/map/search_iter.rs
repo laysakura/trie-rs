@@ -1,5 +1,5 @@
 use crate::map::postfix_iter::PostfixIter;
-use crate::map::Trie;
+use crate::map::{Trie, Value};
 use louds_rs::LoudsNodeNum;
 
 pub struct SearchIter<'a, Label, Value> {
@@ -38,7 +38,7 @@ impl<'a, Label, Value> SearchIter<'a, Label, Value> {
         }
     }
 
-    pub fn value(&self) -> Option<&Value> {
+    pub fn value(&self) -> Option<&'a Value> {
         self.value
     }
 }
@@ -68,5 +68,11 @@ impl<'a, Label: Ord, Value> Iterator for SearchIter<'a, Label, Value> {
                 }
             }
         }
+    }
+}
+
+impl<'a, Label: Ord, V> Value<V> for frayed::chunk::Group<'a, SearchIter<'_, Label, V>> {
+    fn value(&self) -> Option<&V> {
+        self.parent.iter_ref().value()
     }
 }
