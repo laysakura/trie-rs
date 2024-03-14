@@ -1,32 +1,28 @@
 use super::naive_trie_b_f_iter::NaiveTrieBFIter;
+use super::naive_trie_b_f_into_iter::NaiveTrieBFIntoIter;
 use super::{NaiveTrie, NaiveTrieIntermOrLeaf, NaiveTrieRoot};
+use std::vec::Drain;
 
-// impl<'trie, Label: Ord + Clone> NaiveTrie<Label, ()> {
-//     pub fn push<Arr: AsRef<[Label]>>(&'trie mut self, word: Arr) {
-//         self.push(word, ());
-//     }
-// }
-
-impl<'trie, Label: Ord + Clone, Value> NaiveTrie<Label, Value> {
+impl<'trie, Label: Ord, Value> NaiveTrie<Label, Value> {
     pub fn make_root() -> Self {
         NaiveTrie::Root(Box::new(NaiveTrieRoot { children: vec![] }))
     }
 
-    pub fn make_interm_or_leaf(label: &Label, terminal: Option<Value>) -> Self {
+    pub fn make_interm_or_leaf(label: Label, terminal: Option<Value>) -> Self {
         NaiveTrie::IntermOrLeaf(Box::new(NaiveTrieIntermOrLeaf {
             children: vec![],
-            label: label.clone(),
+            label: label,
             value: terminal,
         }))
     }
 
-    pub fn push<Arr: AsRef<[Label]>>(&'trie mut self, word: Arr, value: Value) {
+    pub fn push<Arr: AsRef<[Label]>>(&'trie mut self, word: Arr, value: Value) where Label: Clone {
         let mut trie = self;
         let mut value = Some(value);
         for (i, chr) in word.as_ref().iter().enumerate() {
             let res = {
                 trie.children()
-                    .binary_search_by_key(chr, |child| child.label())
+                    .binary_search_by_key(chr, |child| child.label().clone())
             };
             match res {
                 Ok(j) => {
@@ -39,7 +35,7 @@ impl<'trie, Label: Ord + Clone, Value> NaiveTrie<Label, Value> {
                 Err(j) => {
                     let is_terminal = i == word.as_ref().len() - 1;
                     let child_trie = Box::new(Self::make_interm_or_leaf(
-                        chr,
+                        chr.clone(),
                         is_terminal.then(|| value.take().unwrap()),
                     ));
                     trie = match trie {
@@ -62,10 +58,22 @@ impl<'trie, Label: Ord + Clone, Value> NaiveTrie<Label, Value> {
         NaiveTrieBFIter::new(self)
     }
 
+    pub fn into_iter(self) -> NaiveTrieBFIntoIter<Label, Value> {
+        NaiveTrieBFIntoIter::new(self)
+    }
+
     pub fn children(&self) -> &[Box<Self>] {
         match self {
             NaiveTrie::Root(node) => &node.children,
             NaiveTrie::IntermOrLeaf(node) => &node.children,
+            _ => panic!("Unexpected type"),
+        }
+    }
+
+    pub fn drain_children(&mut self) ->  Drain<'_, Box<Self>> {
+        match self {
+            NaiveTrie::Root(node) => node.children.drain(0..),
+            NaiveTrie::IntermOrLeaf(node) => node.children.drain(0..),
             _ => panic!("Unexpected type"),
         }
     }
@@ -81,9 +89,9 @@ impl<'trie, Label: Ord + Clone, Value> NaiveTrie<Label, Value> {
 
     /// # Panics
     /// If self is not IntermOrLeaf.
-    pub fn label(&self) -> Label {
+    pub fn label(&self) -> &Label {
         match self {
-            NaiveTrie::IntermOrLeaf(node) => node.label.clone(),
+            NaiveTrie::IntermOrLeaf(node) => &node.label,
             _ => panic!("Unexpected type"),
         }
     }

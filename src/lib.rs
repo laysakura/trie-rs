@@ -209,7 +209,6 @@
 
 mod internal_data_structure;
 pub mod map;
-mod old_map;
 mod trie;
 
 pub use trie::{Trie, TrieBuilder};

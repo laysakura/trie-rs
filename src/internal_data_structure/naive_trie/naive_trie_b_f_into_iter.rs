@@ -2,20 +2,20 @@ use super::NaiveTrie;
 use std::collections::VecDeque;
 
 /// Iterates over NaiveTrie in Breadth-First manner.
-pub struct NaiveTrieBFIter<'trie, Label, Value> {
-    unvisited: VecDeque<&'trie NaiveTrie<Label, Value>>,
+pub struct NaiveTrieBFIntoIter<Label, Value> {
+    unvisited: VecDeque<NaiveTrie<Label, Value>>,
 }
 
-impl<'trie, Label, Value> NaiveTrieBFIter<'trie, Label, Value> {
-    pub fn new(iter_start: &'trie NaiveTrie<Label, Value>) -> Self {
+impl< Label, Value> NaiveTrieBFIntoIter<Label, Value> {
+    pub fn new(iter_start: NaiveTrie<Label, Value>) -> Self {
         let mut unvisited = VecDeque::new();
         unvisited.push_back(iter_start);
         Self { unvisited }
     }
 }
 
-impl<'trie, Label: Ord + Clone, Value> Iterator for NaiveTrieBFIter<'trie, Label, Value> {
-    type Item = &'trie NaiveTrie<Label, Value>;
+impl<'trie, Label: Ord, Value> Iterator for NaiveTrieBFIntoIter<Label, Value> {
+    type Item = NaiveTrie<Label, Value>;
 
     /// Returns:
     ///
@@ -24,13 +24,13 @@ impl<'trie, Label: Ord + Clone, Value> Iterator for NaiveTrieBFIter<'trie, Label
     /// - Some(NaiveTrie::IntermOrLeaf): Intermediate or leaf node.
     /// - Some(NaiveTrie::PhantomSibling): Marker to represent "all siblings are iterated".
     fn next(&mut self) -> Option<Self::Item> {
-        self.unvisited.pop_front().map(|trie| {
+        self.unvisited.pop_front().map(|mut trie| {
             match trie {
                 NaiveTrie::Root(_) | NaiveTrie::IntermOrLeaf(_) => {
-                    for child in trie.children() {
-                        self.unvisited.push_back(child);
+                    for child in trie.drain_children() {
+                        self.unvisited.push_back(*child);
                     }
-                    self.unvisited.push_back(&NaiveTrie::PhantomSibling);
+                    self.unvisited.push_back(NaiveTrie::PhantomSibling);
                 }
                 NaiveTrie::PhantomSibling => {}
             };
@@ -175,7 +175,7 @@ mod bf_iter_tests {
                 // parent = 227 130 [147] (ん)
                 NaiveTrie::make_interm_or_leaf(227, FALSE),
                 NaiveTrie::PhantomSibling,
-                // parent = [227] _ _ (ご or り
+                // parent = [227] _ _ (ご or り)
                 NaiveTrie::make_interm_or_leaf(129, FALSE),
                 NaiveTrie::make_interm_or_leaf(130, FALSE),
                 NaiveTrie::PhantomSibling,

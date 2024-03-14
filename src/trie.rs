@@ -111,7 +111,7 @@ impl<Label: Ord> Trie<Label> {
     }
 }
 
-impl<Label: Ord + Clone> TrieBuilder<Label> {
+impl<Label: Ord> TrieBuilder<Label> {
     pub fn new() -> Self {
         Self {
             inner: map::TrieBuilder::new(),
@@ -119,12 +119,12 @@ impl<Label: Ord + Clone> TrieBuilder<Label> {
     }
 
     /// Add an entry.
-    pub fn push<Arr: AsRef<[Label]>>(&mut self, entry: Arr) {
+    pub fn push<Arr: AsRef<[Label]>>(&mut self, entry: Arr) where Label: Clone {
         self.inner.push(entry, ());
     }
 
     /// Build a [Trie].
-    pub fn build(&self) -> Trie<Label> {
+    pub fn build(self) -> Trie<Label> {
         Trie {
             inner: self.inner.build(),
         }

@@ -1,5 +1,6 @@
 pub mod naive_trie;
 pub mod naive_trie_b_f_iter;
+pub mod naive_trie_b_f_into_iter;
 
 /// Naive trie with ordered Label sequence in edges.
 ///
@@ -80,6 +81,6 @@ pub struct NaiveTrieRoot<Label, Value> {
 pub struct NaiveTrieIntermOrLeaf<Label, Value> {
     /// Sorted by Label's order.
     children: Vec<Box<NaiveTrie<Label, Value>>>,
-    label: Label,
-    value: Option<Value>,
+    pub(crate) label: Label,
+    pub(crate) value: Option<Value>,
 }
