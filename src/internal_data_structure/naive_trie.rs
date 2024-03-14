@@ -1,6 +1,6 @@
 pub mod naive_trie;
-pub mod naive_trie_b_f_iter;
 pub mod naive_trie_b_f_into_iter;
+pub mod naive_trie_b_f_iter;
 
 /// Naive trie with ordered Label sequence in edges.
 ///

@@ -51,12 +51,12 @@ impl<'a, Label: Ord, Value> Iterator for PostfixIter<'a, Label, Value> {
                 match depth.cmp(&self.buffer.len()) {
                     Ordering::Equal => {
                         self.buffer.push(self.trie.label(node));
-                    },
+                    }
                     Ordering::Less => {
                         let _ = self.buffer.drain(depth + 1..);
                         self.buffer[depth] = self.trie.label(node);
                         // self.defer = Some((depth, node));
-                    },
+                    }
                     Ordering::Greater => {
                         panic!("depth > buffer.len()");
                     }

@@ -73,10 +73,7 @@ impl<Label: Ord> Trie<Label> {
     ///
     /// # Panics
     /// If `query` is empty.
-    pub fn postfix_search_ref<L>(
-        &self,
-        query: impl AsRef<[L]>,
-    ) -> Chunk<PostfixIter<'_, Label, ()>>
+    pub fn postfix_search_ref<L>(&self, query: impl AsRef<[L]>) -> Chunk<PostfixIter<'_, Label, ()>>
     where
         Label: PartialOrd<L>,
     {
@@ -125,7 +122,10 @@ impl<Label: Ord> TrieBuilder<Label> {
     }
 
     /// Add an entry.
-    pub fn push<Arr: AsRef<[Label]>>(&mut self, entry: Arr) where Label: Clone {
+    pub fn push<Arr: AsRef<[Label]>>(&mut self, entry: Arr)
+    where
+        Label: Clone,
+    {
         self.inner.push(entry, ());
     }
 

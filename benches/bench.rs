@@ -57,11 +57,7 @@ mod trie {
         let items = 10_000;
 
         super::c().bench_function(
-            &format!(
-                "[{}] Trie::build() {} items",
-                super::git_hash(),
-                items
-            ),
+            &format!("[{}] Trie::build() {} items", super::git_hash(), items),
             move |b| {
                 b.iter_batched(
                     || &TRIE_EDICT,
@@ -227,10 +223,7 @@ mod trie {
                         let results = trie.predictive_search("す");
                         assert_eq!(results.len(), 4220);
                         let results_in_u8s = results.into_iter().take(100);
-                        assert_eq!(
-                            results_in_u8s
-                            .len(),
-                            100);
+                        assert_eq!(results_in_u8s.len(), 100);
                     },
                     BatchSize::SmallInput,
                 )
@@ -250,11 +243,7 @@ mod trie {
                     |trie| {
                         let results = trie.predictive_search_ref("す");
                         let results_in_u8s = results.into_iter().take(100);
-                        assert_eq!(
-                            results_in_u8s
-                            .into_iter()
-                            .count(),
-                            100);
+                        assert_eq!(results_in_u8s.into_iter().count(), 100);
                     },
                     BatchSize::SmallInput,
                 )

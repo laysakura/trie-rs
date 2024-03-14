@@ -239,21 +239,15 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     }
 
     pub(crate) fn is_terminal(&self, node_num: LoudsNodeNum) -> bool {
-        self.trie_labels[(node_num.0 - 2) as usize]
-            .value
-            .is_some()
+        self.trie_labels[(node_num.0 - 2) as usize].value.is_some()
     }
 
     pub(crate) fn value(&self, node_num: LoudsNodeNum) -> Option<&Value> {
-        self.trie_labels[(node_num.0 - 2) as usize]
-            .value
-            .as_ref()
+        self.trie_labels[(node_num.0 - 2) as usize].value.as_ref()
     }
 
     pub(crate) fn value_mut(&mut self, node_num: LoudsNodeNum) -> Option<&mut Value> {
-        self.trie_labels[(node_num.0 - 2) as usize]
-            .value
-            .as_mut()
+        self.trie_labels[(node_num.0 - 2) as usize].value.as_mut()
     }
 }
 

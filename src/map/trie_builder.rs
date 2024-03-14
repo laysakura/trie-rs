@@ -17,7 +17,10 @@ impl<Label: Ord, Value: Clone> TrieBuilder<Label, Value> {
     }
 
     /// Add an entry and value.
-    pub fn push<Arr: AsRef<[Label]>>(&mut self, entry: Arr, value: Value) where Label: Clone {
+    pub fn push<Arr: AsRef<[Label]>>(&mut self, entry: Arr, value: Value)
+    where
+        Label: Clone,
+    {
         self.naive_trie.push(entry, value);
     }
 

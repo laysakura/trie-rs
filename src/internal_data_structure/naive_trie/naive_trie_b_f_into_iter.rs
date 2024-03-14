@@ -6,7 +6,7 @@ pub struct NaiveTrieBFIntoIter<Label, Value> {
     unvisited: VecDeque<NaiveTrie<Label, Value>>,
 }
 
-impl< Label, Value> NaiveTrieBFIntoIter<Label, Value> {
+impl<Label, Value> NaiveTrieBFIntoIter<Label, Value> {
     pub fn new(iter_start: NaiveTrie<Label, Value>) -> Self {
         let mut unvisited = VecDeque::new();
         unvisited.push_back(iter_start);

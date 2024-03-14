@@ -1,5 +1,5 @@
-use super::naive_trie_b_f_iter::NaiveTrieBFIter;
 use super::naive_trie_b_f_into_iter::NaiveTrieBFIntoIter;
+use super::naive_trie_b_f_iter::NaiveTrieBFIter;
 use super::{NaiveTrie, NaiveTrieIntermOrLeaf, NaiveTrieRoot};
 use std::vec::Drain;
 
@@ -16,7 +16,10 @@ impl<'trie, Label: Ord, Value> NaiveTrie<Label, Value> {
         })
     }
 
-    pub fn push<Arr: AsRef<[Label]>>(&'trie mut self, word: Arr, value: Value) where Label: Clone {
+    pub fn push<Arr: AsRef<[Label]>>(&'trie mut self, word: Arr, value: Value)
+    where
+        Label: Clone,
+    {
         let mut trie = self;
         let mut value = Some(value);
         for (i, chr) in word.as_ref().iter().enumerate() {
@@ -70,7 +73,7 @@ impl<'trie, Label: Ord, Value> NaiveTrie<Label, Value> {
         }
     }
 
-    pub fn drain_children(&mut self) ->  Drain<'_, Self> {
+    pub fn drain_children(&mut self) -> Drain<'_, Self> {
         match self {
             NaiveTrie::Root(node) => node.children.drain(0..),
             NaiveTrie::IntermOrLeaf(node) => node.children.drain(0..),
