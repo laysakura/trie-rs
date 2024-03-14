@@ -182,12 +182,17 @@
 //! builder.push("すし", 6);  // Word `push`ed twice is just ignored.
 //! builder.push("🍣", 7);
 //!
-//! let trie = builder.build();
+//! let mut trie = builder.build();
 //!
 //! // exact_match(): Find a word exactly match to query.
-//! assert_eq!(trie.exact_match("すし"), Some(0));
-//! assert_eq!(trie.exact_match("🍣"), Some(7));
+//! assert_eq!(trie.exact_match("すし"), Some(&0));
+//! assert_eq!(trie.exact_match("🍣"), Some(&7));
 //! assert_eq!(trie.exact_match("🍜"), None);
+//!
+//! // Values can be modified.
+//! let v = trie.exact_match_mut("🍣").unwrap();
+//! *v = 8;
+//! assert_eq!(trie.exact_match("🍣"), Some(&8));
 //! ```
 //!
 //! # Features
