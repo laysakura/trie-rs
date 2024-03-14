@@ -78,7 +78,7 @@ where
     }
 }
 
-impl<'a, L, Label: Ord + PartialOrd<L>, V> Value<V> for frayed::chunk::Group<'a, PrefixIter<'_, L, Label, V>> {
+impl<'a, L, Label: Ord + PartialOrd<L>, V> Value<V> for frayed::defray::Group<'a, PrefixIter<'_, L, Label, V>> {
     fn value(&self) -> Option<&V> {
         self.parent.iter_ref().value()
     }

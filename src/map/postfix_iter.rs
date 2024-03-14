@@ -83,7 +83,7 @@ impl<'a, Label: Ord, Value> Iterator for PostfixIter<'a, Label, Value> {
     }
 }
 
-impl<'a, Label: Ord, V> Value<V> for frayed::chunk::Group<'a, PostfixIter<'_, Label, V>> {
+impl<'a, Label: Ord, V> Value<V> for frayed::defray::Group<'a, PostfixIter<'_, Label, V>> {
     fn value(&self) -> Option<&V> {
         self.parent.iter_ref().value()
     }

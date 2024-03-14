@@ -1,5 +1,5 @@
 use super::map::{self, inc_search::IncSearch, PostfixIter, PrefixIter, SearchIter};
-use frayed::Chunk;
+use frayed::Defray;
 
 //
 pub struct Trie<Label> {
@@ -22,7 +22,7 @@ impl<Label: Ord> Trie<Label> {
     pub fn common_prefix_search_ref<L>(
         &self,
         query: impl AsRef<[L]>,
-    ) -> Chunk<PrefixIter<'_, L, Label, ()>>
+    ) -> Defray<PrefixIter<'_, L, Label, ()>>
     where
         Label: PartialOrd<L>,
         L: Clone,
@@ -50,7 +50,7 @@ impl<Label: Ord> Trie<Label> {
     pub fn predictive_search_ref<L>(
         &self,
         query: impl AsRef<[L]>,
-    ) -> Chunk<SearchIter<'_, Label, ()>>
+    ) -> Defray<SearchIter<'_, Label, ()>>
     where
         Label: PartialOrd<L>,
     {
@@ -73,7 +73,7 @@ impl<Label: Ord> Trie<Label> {
     ///
     /// # Panics
     /// If `query` is empty.
-    pub fn postfix_search_ref<L>(&self, query: impl AsRef<[L]>) -> Chunk<PostfixIter<'_, Label, ()>>
+    pub fn postfix_search_ref<L>(&self, query: impl AsRef<[L]>) -> Defray<PostfixIter<'_, Label, ()>>
     where
         Label: PartialOrd<L>,
     {

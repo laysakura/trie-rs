@@ -4,7 +4,7 @@ use crate::map::inc_search::IncSearch;
 use crate::map::postfix_iter::PostfixIter;
 use crate::map::prefix_iter::PrefixIter;
 use crate::map::search_iter::SearchIter;
-use frayed::Chunk;
+use frayed::Defray;
 use louds_rs::{self, ChildNodeIter, LoudsNodeNum};
 
 impl<Label: Ord, Value> Trie<Label, Value> {
@@ -108,7 +108,7 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     pub fn predictive_search_ref<L>(
         &self,
         query: impl AsRef<[L]>,
-    ) -> Chunk<SearchIter<'_, Label, Value>>
+    ) -> Defray<SearchIter<'_, Label, Value>>
     where
         Label: PartialOrd<L>,
     {
@@ -122,12 +122,12 @@ impl<Label: Ord, Value> Trie<Label, Value> {
             let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
             match res {
                 Ok(i) => cur_node_num = children_node_nums[i],
-                Err(_) => return Chunk::new(SearchIter::empty(self)),
+                Err(_) => return Defray::new(SearchIter::empty(self)),
             }
             prefix.push(cur_node_num);
         }
         let _ = prefix.pop();
-        Chunk::new(SearchIter::new(self, prefix, cur_node_num))
+        Defray::new(SearchIter::new(self, prefix, cur_node_num))
     }
 
     /// Return the postfixes and values of all entries that match `query`, cloned.
@@ -158,7 +158,7 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     pub fn postfix_search_ref<L>(
         &self,
         query: impl AsRef<[L]>,
-    ) -> Chunk<PostfixIter<'_, Label, Value>>
+    ) -> Defray<PostfixIter<'_, Label, Value>>
     where
         Label: PartialOrd<L>,
     {
@@ -172,11 +172,11 @@ impl<Label: Ord, Value> Trie<Label, Value> {
             match res {
                 Ok(i) => cur_node_num = children_node_nums[i],
                 Err(_) => {
-                    return Chunk::new(PostfixIter::empty(self));
+                    return Defray::new(PostfixIter::empty(self));
                 }
             }
         }
-        Chunk::new(PostfixIter::new(self, cur_node_num))
+        Defray::new(PostfixIter::new(self, cur_node_num))
     }
 
     /// Return the common prefixes of `query`, cloned.
@@ -202,12 +202,12 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     pub fn common_prefix_search_ref<L>(
         &self,
         query: impl AsRef<[L]>,
-    ) -> Chunk<PrefixIter<'_, L, Label, Value>>
+    ) -> Defray<PrefixIter<'_, L, Label, Value>>
     where
         Label: PartialOrd<L>,
         L: Clone,
     {
-        Chunk::new(PrefixIter::new(self, query.as_ref().to_vec()))
+        Defray::new(PrefixIter::new(self, query.as_ref().to_vec()))
     }
 
     // fn wrap_group<I: Iterator>(iter: I) -> MyIter
