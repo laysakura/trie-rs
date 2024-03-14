@@ -178,6 +178,54 @@ mod trie {
         );
     }
 
+    pub fn predictive_search_big_output(_: &mut Criterion) {
+        super::c().bench_function(
+            &format!(
+                "[{}] Trie::predictive_search_big_output()",
+                super::git_hash(),
+            ),
+            move |b| {
+                b.iter_batched(
+                    || &TRIE_EDICT,
+                    |trie| {
+                        let results = trie.predictive_search("す");
+                        assert_eq!(results.len(), 4220);
+                        let results_in_u8s = results.into_iter().take(100);
+                        assert_eq!(
+                            results_in_u8s
+                            .len(),
+                            100);
+                    },
+                    BatchSize::SmallInput,
+                )
+            },
+        );
+    }
+
+    pub fn predictive_search_ref_big_output(_: &mut Criterion) {
+        super::c().bench_function(
+            &format!(
+                "[{}] Trie::predictive_search_ref_big_output()",
+                super::git_hash(),
+            ),
+            move |b| {
+                b.iter_batched(
+                    || &TRIE_EDICT,
+                    |trie| {
+                        let results = trie.predictive_search_ref("す");
+                        let results_in_u8s = results.into_iter().take(100);
+                        assert_eq!(
+                            results_in_u8s
+                            .into_iter()
+                            .count(),
+                            100);
+                    },
+                    BatchSize::SmallInput,
+                )
+            },
+        );
+    }
+
     pub fn common_prefix_search(_: &mut Criterion) {
         let times = 100;
 
@@ -256,6 +304,8 @@ criterion_group!(
     trie::exact_match,
     trie::predictive_search,
     trie::predictive_search_ref,
+    trie::predictive_search_big_output,
+    trie::predictive_search_ref_big_output,
     trie::common_prefix_search,
     trie::common_prefix_search_ref
 );
