@@ -195,6 +195,45 @@
 //! assert_eq!(trie.exact_match("🍣"), Some(&8));
 //! ```
 //!
+//! ## Incremental Search
+//!
+//! For interactive applications, one can use an incremental search to get the
+//! best performance. See [IncSearch][crate::inc_search::IncSearch].
+//!
+//! ```rust
+//! use std::str;
+//! use trie_rs::{TrieBuilder, inc_search::Answer};
+//!
+//! let mut builder = TrieBuilder::new();  // Inferred `TrieBuilder<u8, u8>` automatically
+//! builder.push("ab");
+//! builder.push("すし");
+//! builder.push("すしや");
+//! builder.push("すしだね");
+//! builder.push("すしづめ");
+//! builder.push("すしめし");
+//! builder.push("すしをにぎる");
+//! let trie = builder.build();
+//! let mut search = trie.inc_search();
+//!
+//! // Query by the byte.
+//! assert_eq!(search.query(&b'a'), Some(Answer::Prefix));
+//! assert_eq!(search.query(&b'c'), None);
+//! assert_eq!(search.query(&b'b'), Some(Answer::Match));
+//!
+//! // Reset the query to go again.
+//! search.reset();
+//!
+//! // For unicode its easier to use .query_until().
+//! assert_eq!(search.query_until("す"), Ok(Answer::Prefix));
+//! assert_eq!(search.query_until("し"), Ok(Answer::PrefixAndMatch));
+//! assert_eq!(search.query_until("や"), Ok(Answer::Match));
+//! assert_eq!(search.query(&b'a'), None);
+//! assert_eq!(search.query_until("a"), Err(0));
+//!
+//! search.reset();
+//! assert_eq!(search.query_until("ab-NO-MATCH-"), Err(2)); // No match on byte at index 2.
+//! ```
+//!
 //! # Features
 //! - **Generic type support**: As the above examples show, trie-rs can be used for searching not only UTF-8 string but also other data types.
 //! - **Based on [louds-rs](https://crates.io/crates/louds-rs)**, which is fast, parallelized, and memory efficient.
