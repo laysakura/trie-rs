@@ -84,14 +84,13 @@ assert_eq!(
 ### Using with Various Data Types
 `TrieBuilder` is implemented using generic type like following:
 
-```rust ignore
+```rust
 impl<Label: Ord> TrieBuilder<Label> {
     ...
     pub fn push<Arr: AsRef<[Label]>>(&mut self, word: Arr) where Label: Clone { ... }
-
     ...
 }
-```rust
+```
 
 In the above `Usage Overview` example, we used `Label=u8, Arr=&str`. If
 `Label` does not implement `Clone`, use
@@ -99,7 +98,7 @@ In the above `Usage Overview` example, we used `Label=u8, Arr=&str`. If
 
 Here shows other `Label` and `Arr` type examples.
 
-### `Label=&str, Arr=Vec<&str>`
+#### `Label=&str, Arr=Vec<&str>`
 Say `Label` is English words and `Arr` is English phrases.
 
 ```rust

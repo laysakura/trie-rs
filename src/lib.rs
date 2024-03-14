@@ -83,11 +83,10 @@
 //! ## Using with Various Data Types
 //! `TrieBuilder` is implemented using generic type like following:
 //!
-//! ```rust ignore
+//! ```ignore
 //! impl<Label: Ord> TrieBuilder<Label> {
 //!     ...
 //!     pub fn push<Arr: AsRef<[Label]>>(&mut self, word: Arr) where Label: Clone { ... }
-//!
 //!     ...
 //! }
 //! ```
