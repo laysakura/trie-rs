@@ -3,25 +3,31 @@ use crate::map::TrieLabel;
 use crate::map::{Trie, TrieBuilder};
 use louds_rs::Louds;
 
-impl<Label: Ord, Value: Clone> Default for TrieBuilder<Label, Value> {
+impl<Label: Ord, Value> Default for TrieBuilder<Label, Value> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<Label: Ord, Value: Clone> TrieBuilder<Label, Value> {
+impl<Label: Ord, Value> TrieBuilder<Label, Value> {
     /// Return a [TrieBuilder].
     pub fn new() -> Self {
         let naive_trie = NaiveTrie::make_root();
         Self { naive_trie }
     }
 
-    /// Add an entry and value.
+    /// Add a cloneable entry and value.
     pub fn push<Arr: AsRef<[Label]>>(&mut self, entry: Arr, value: Value)
     where
         Label: Clone,
     {
-        self.naive_trie.push(entry, value);
+        self.naive_trie.push(entry.as_ref().iter().cloned(), value);
+    }
+
+    /// Add an entry and value.
+    pub fn insert<Arr: IntoIterator<Item=Label>>(&mut self, entry: Arr, value: Value)
+    {
+        self.naive_trie.push(entry.into_iter(), value);
     }
 
     /// Build a [Trie].

@@ -16,17 +16,15 @@ impl<'trie, Label: Ord, Value> NaiveTrie<Label, Value> {
         })
     }
 
-    pub fn push<Arr: AsRef<[Label]>>(&'trie mut self, word: Arr, value: Value)
-    where
-        Label: Clone,
+    pub fn push<Arr: Iterator<Item=Label>>(&'trie mut self, word: Arr, value: Value)
     {
         let mut trie = self;
         let mut value = Some(value);
-        for (i, chr) in word.as_ref().iter().enumerate() {
-            let res = {
-                trie.children()
-                    .binary_search_by_key(chr, |child| child.label().clone())
-            };
+        let mut word = word.peekable();
+        while let Some(chr) = word.next() {
+            let res = trie.children()
+                    .binary_search_by(|child|
+                                      child.label().cmp(&chr));
             match res {
                 Ok(j) => {
                     trie = match trie {
@@ -36,9 +34,9 @@ impl<'trie, Label: Ord, Value> NaiveTrie<Label, Value> {
                     };
                 }
                 Err(j) => {
-                    let is_terminal = i == word.as_ref().len() - 1;
+                    let is_terminal = word.peek().is_none();
                     let child_trie = Self::make_interm_or_leaf(
-                        chr.clone(),
+                        chr,
                         is_terminal.then(|| value.take().unwrap()),
                     );
                     trie = match trie {

@@ -54,7 +54,7 @@ mod bf_iter_tests {
                 let (words, expected_nodes) = $value;
                 let mut trie = NaiveTrie::make_root();
                 for word in words {
-                    trie.push(word, ());
+                    trie.push(word.bytes().into_iter(), ());
                 }
                 let nodes: Vec<&NaiveTrie<u8>> = trie.bf_iter().collect();
                 assert_eq!(nodes.len(), expected_nodes.len());

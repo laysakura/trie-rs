@@ -121,12 +121,17 @@ impl<Label: Ord> TrieBuilder<Label> {
         }
     }
 
-    /// Add an entry.
+    /// Add a cloneable entry.
     pub fn push<Arr: AsRef<[Label]>>(&mut self, entry: Arr)
     where
         Label: Clone,
     {
         self.inner.push(entry, ());
+    }
+
+    /// Add an entry.
+    pub fn insert<Arr: IntoIterator<Item=Label>>(&mut self, entry: Arr) {
+        self.inner.insert(entry, ());
     }
 
     /// Build a [Trie].

@@ -84,9 +84,9 @@
 //! `TrieBuilder` is implemented using generic type like following:
 //!
 //! ```text
-//! impl<Label: Ord + Clone> TrieBuilder<Label> {
+//! impl<Label: Ord> TrieBuilder<Label> {
 //!     ...
-//!     pub fn push<Arr: AsRef<[Label]>>(&mut self, word: Arr) { ... }
+//!     pub fn push<Arr: AsRef<[Label]>>(&mut self, word: Arr) where Label: Clone { ... }
 //!     ...
 //! }
 //! ```
