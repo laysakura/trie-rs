@@ -61,7 +61,7 @@ mod trie {
             move |b| {
                 b.iter_batched(
                     || &TRIE_EDICT,
-                    |trie| {
+                    |_trie| {
                         let mut builder = TrieBuilder::new();
 
                         let repo_root = env::var("CARGO_MANIFEST_DIR")
