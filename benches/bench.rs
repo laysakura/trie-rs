@@ -46,7 +46,7 @@ mod trie {
                 builder.push(l);
                 n_words += 1;
             }
-            println!("Read {} words", n_words);
+            println!("Read {} words.", n_words);
 
             builder.build()
             // TODO print memory footprint compared to original `edict.furigana` file
@@ -66,8 +66,10 @@ mod trie {
                 b.iter_batched(
                     || &TRIE_EDICT,
                     |trie| {
-                        // iter_batched() does not properly time `routine` time when `setup` time is far longer than `routine` time.
-                        // Tested function takes too short compared to build(). So loop many times.
+                        // iter_batched() does not properly time `routine` time
+                        // when `setup` time is far longer than `routine` time.
+                        // Tested function takes too short compared to build().
+                        // So loop many times.
                         let result = trie.exact_match("すしをにぎる");
                         for _ in 0..(times - 1) {
                             assert!(trie.exact_match("すしをにぎる"));
@@ -93,13 +95,14 @@ mod trie {
                 b.iter_batched(
                     || &TRIE_EDICT,
                     |trie| {
-                        // iter_batched() does not properly time `routine` time when `setup` time is far longer than `routine` time.
-                        // Tested function takes too short compared to build(). So loop many times.
+                        // iter_batched() does not properly time `routine` time
+                        // when `setup` time is far longer than `routine` time.
+                        // Tested function takes too short compared to build().
+                        // So loop many times.
                         let results_in_u8s = trie.predictive_search("すし");
                         for _ in 0..(times - 1) {
                             for entry in trie.predictive_search("すし") {
                                 black_box(entry);
-                                // let _ = entry.cloned().collect::<Vec<u8>>();
                             }
                         }
 
@@ -139,16 +142,14 @@ mod trie {
                 b.iter_batched(
                     || &TRIE_EDICT,
                     |trie| {
-                        // iter_batched() does not properly time `routine` time when `setup` time is far longer than `routine` time.
-                        // Tested function takes too short compared to build(). So loop many times.
+                        // iter_batched() does not properly time `routine` time
+                        // when `setup` time is far longer than `routine` time.
+                        // Tested function takes too short compared to build().
+                        // So loop many times.
                         let results_in_u8s = trie.predictive_search_ref("すし");
                         for _ in 0..(times - 1) {
                             for entry in &trie.predictive_search_ref("すし") {
                                 black_box(entry);
-                                // for label_ref in entry {
-
-                                // }
-                                // let _ = entry.cloned().collect::<Vec<u8>>();
                             }
                         }
 
@@ -190,8 +191,10 @@ mod trie {
                 b.iter_batched(
                     || &TRIE_EDICT,
                     |trie| {
-                        // iter_batched() does not properly time `routine` time when `setup` time is far longer than `routine` time.
-                        // Tested function takes too short compared to build(). So loop many times.
+                        // iter_batched() does not properly time `routine` time
+                        // when `setup` time is far longer than `routine` time.
+                        // Tested function takes too short compared to build().
+                        // So loop many times.
                         let results_in_u8s = trie.common_prefix_search("すしをにぎる");
                         for _ in 0..(times - 1) {
                             black_box(trie.common_prefix_search("すしをにぎる"));
@@ -222,8 +225,10 @@ mod trie {
                 b.iter_batched(
                     || &TRIE_EDICT,
                     |trie| {
-                        // iter_batched() does not properly time `routine` time when `setup` time is far longer than `routine` time.
-                        // Tested function takes too short compared to build(). So loop many times.
+                        // iter_batched() does not properly time `routine` time
+                        // when `setup` time is far longer than `routine` time.
+                        // Tested function takes too short compared to build().
+                        // So loop many times.
                         let results_in_u8s = trie.common_prefix_search_ref("すしをにぎる");
                         for _ in 0..(times - 1) {
                             for entry in &trie.common_prefix_search_ref("すしをにぎる") {

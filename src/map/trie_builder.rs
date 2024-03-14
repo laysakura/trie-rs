@@ -26,7 +26,7 @@ impl<Label: Ord + Clone, Value: Clone> TrieBuilder<Label, Value> {
                     louds_bits.push(true);
                     trie_labels.push(TrieLabel {
                         label: node.label(),
-                        is_terminal: node.value().map(|x| x.clone()),
+                        value: node.value().map(|x| x.clone()),
                     });
                 }
                 NaiveTrie::PhantomSibling => {

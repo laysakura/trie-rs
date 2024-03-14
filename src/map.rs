@@ -28,5 +28,5 @@ pub struct TrieBuilder<Label, Value> {
 
 struct TrieLabel<Label, Value> {
     label: Label,
-    is_terminal: Option<Value>,
+    value: Option<Value>,
 }

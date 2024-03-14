@@ -17,6 +17,7 @@ impl<Label: Ord, Value> Trie<Label, Value> {
             .and_then(move |x| self.value(x))
     }
 
+    /// Return `Node` if query is an exact match.
     #[inline]
     fn exact_match_node<L>(&self, query: impl AsRef<[L]>) -> Option<LoudsNodeNum>
     where
@@ -129,7 +130,7 @@ impl<Label: Ord, Value> Trie<Label, Value> {
         Chunk::new(SearchIter::new(self, prefix, cur_node_num))
     }
 
-    /// Return the postfixes of all entries that match `query`, cloned.
+    /// Return the postfixes and values of all entries that match `query`, cloned.
     ///
     /// # Panics
     /// If `query` is empty.
@@ -150,7 +151,7 @@ impl<Label: Ord, Value> Trie<Label, Value> {
             .collect()
     }
 
-    /// Return the postfixes of all entries that match `query`.
+    /// Return the postfixes and values of all entries that match `query`.
     ///
     /// # Panics
     /// If `query` is empty.
@@ -197,7 +198,7 @@ impl<Label: Ord, Value> Trie<Label, Value> {
             .collect()
     }
 
-    /// Return the common prefixes of `query`.
+    /// Return the common prefixes and values of `query`.
     pub fn common_prefix_search_ref<L>(
         &self,
         query: impl AsRef<[L]>,
@@ -239,20 +240,19 @@ impl<Label: Ord, Value> Trie<Label, Value> {
 
     pub(crate) fn is_terminal(&self, node_num: LoudsNodeNum) -> bool {
         self.trie_labels[(node_num.0 - 2) as usize]
-            .is_terminal
+            .value
             .is_some()
     }
 
     pub(crate) fn value(&self, node_num: LoudsNodeNum) -> Option<&Value> {
         self.trie_labels[(node_num.0 - 2) as usize]
-            .is_terminal
+            .value
             .as_ref()
     }
 
     pub(crate) fn value_mut(&mut self, node_num: LoudsNodeNum) -> Option<&mut Value> {
         self.trie_labels[(node_num.0 - 2) as usize]
-            .is_terminal
+            .value
             .as_mut()
     }
 }
-

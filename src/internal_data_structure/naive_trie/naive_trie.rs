@@ -16,7 +16,7 @@ impl<'trie, Label: Ord + Clone, Value> NaiveTrie<Label, Value> {
         NaiveTrie::IntermOrLeaf(Box::new(NaiveTrieIntermOrLeaf {
             children: vec![],
             label: label.clone(),
-            is_terminal: terminal,
+            value: terminal,
         }))
     }
 
@@ -72,18 +72,9 @@ impl<'trie, Label: Ord + Clone, Value> NaiveTrie<Label, Value> {
 
     /// # Panics
     /// If self is not IntermOrLeaf.
-    pub fn is_terminal(&self) -> bool {
-        match self {
-            NaiveTrie::IntermOrLeaf(node) => node.is_terminal.is_some(),
-            _ => panic!("Unexpected type"),
-        }
-    }
-
-    /// # Panics
-    /// If self is not IntermOrLeaf.
     pub fn value(&self) -> Option<&Value> {
         match self {
-            NaiveTrie::IntermOrLeaf(node) => node.is_terminal.as_ref(),
+            NaiveTrie::IntermOrLeaf(node) => node.value.as_ref(),
             _ => panic!("Unexpected type"),
         }
     }

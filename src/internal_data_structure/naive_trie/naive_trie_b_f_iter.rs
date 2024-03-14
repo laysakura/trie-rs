@@ -66,7 +66,7 @@ mod bf_iter_tests {
 
                     if let NaiveTrie::IntermOrLeaf(n) = node {
                         assert_eq!(n.label, expected_node.label());
-                        assert_eq!(n.is_terminal.is_some(), expected_node.is_terminal());
+                        assert_eq!(n.value.is_some(), expected_node.value().is_some());
                     }
                 }
             }
