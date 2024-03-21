@@ -1,11 +1,56 @@
 //! A trie map stores a value with each word or key.
+use std::iter::FromIterator;
 use super::{Trie, Value};
 use crate::inc_search::IncSearch;
 use crate::map::postfix_iter::PostfixIter;
 use crate::map::prefix_iter::PrefixIter;
+use crate::map::longest_prefix_iter::LongestPrefixIter;
 use crate::map::search_iter::SearchIter;
 use frayed::Defray;
 use louds_rs::{self, ChildNodeIter, LoudsNodeNum};
+
+pub trait AsQuery<L,M>: Sized {
+    type Item;
+    type IntoIter: Iterator<Item = Self::Item>;
+    fn as_query(self) -> Self::IntoIter;
+}
+
+struct IsChar;
+struct IsChar2;
+struct IsNotChar;
+
+impl<'a> AsQuery<char, IsChar> for &'a String {
+    type Item = char;
+    type IntoIter = std::str::Chars<'a>;
+    fn as_query(self) -> Self::IntoIter {
+        self.chars().into_iter()
+    }
+}
+
+impl<'a> AsQuery<char, IsChar2> for &'a str {
+    type Item = char;
+    type IntoIter = std::str::Chars<'a>;
+    fn as_query(self) -> Self::IntoIter {
+        self.chars().into_iter()
+    }
+}
+//
+// impl<'a, T, L: 'a> AsQuery<L, IsNotChar> for &'a T where T: AsRef<[L]> {
+//     type Item = &'a L;
+//     type IntoIter = std::slice::Iter<'a, L>;
+//     fn as_query(self) -> Self::IntoIter {
+//         self.as_ref().iter()
+//     }
+// }
+
+impl<'a, T, L: 'a> AsQuery<L, IsNotChar> for T<'a> where T: AsRef<[L]>, Self: 'a {
+    type Item = &'a L;
+    type IntoIter = std::slice::Iter<'a, L>;
+    fn as_query(self) -> Self::IntoIter {
+        self.as_ref().iter()
+    }
+}
+
 
 impl<Label: Ord, Value> Trie<Label, Value> {
     /// Return `Some(&value)` if query is an exact match.
@@ -134,10 +179,11 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     ///
     /// # Panics
     /// If `query` is empty.
-    pub fn postfix_search<L>(&self, query: impl AsRef<[L]>) -> Vec<(Vec<Label>, Value)>
+    pub fn postfix_search<'a, L: 'a,C,M>(&self, query: impl AsQuery<L,M, Item = &'a L>) -> Vec<(C, Value)>
     where
         Label: PartialOrd<L> + Clone,
         Value: Clone,
+        C: FromIterator<Label>
     {
         let chunk = self.postfix_search_ref(query);
         chunk
@@ -155,18 +201,18 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     ///
     /// # Panics
     /// If `query` is empty.
-    pub fn postfix_search_ref<L>(
+    pub fn postfix_search_ref<'a, L: 'a,M>(
         &self,
-        query: impl AsRef<[L]>,
+        query: impl AsQuery<L,M, Item = &'a L>,
     ) -> Defray<PostfixIter<'_, Label, Value>>
     where
         Label: PartialOrd<L>,
     {
-        assert!(!query.as_ref().is_empty());
+        // assert!(!query.as_ref().is_empty());
         let mut cur_node_num = LoudsNodeNum(1);
 
         // Consumes query (prefix)
-        for chr in query.as_ref() {
+        for chr in query.as_query() {
             let children_node_nums: Vec<_> = self.children_node_nums(cur_node_num).collect();
             let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
             match res {
@@ -208,6 +254,16 @@ impl<Label: Ord, Value> Trie<Label, Value> {
         L: Clone,
     {
         Defray::new(PrefixIter::new(self, query.as_ref().to_vec()))
+    }
+
+    pub fn find_longest_prefix<L>(&self,
+        query: impl AsRef<[L]>,
+    ) -> LongestPrefixIter<'_, L, Label, Value>
+    where
+        Label: PartialOrd<L>,
+        L: Clone,
+    {
+        LongestPrefixIter::new(self, query.as_ref().to_vec())
     }
 
     // fn wrap_group<I: Iterator>(iter: I) -> MyIter
@@ -265,6 +321,18 @@ mod search_tests {
         builder.push("better", 3);
         builder.push("application", 4);
         builder.push("アップル🍎", 5);
+        builder.build()
+    }
+
+
+    fn build_trie2() -> Trie<char, u8> {
+        let mut builder: TrieBuilder<char, u8> = TrieBuilder::new();
+        builder.insert("a".chars(), 0);
+        builder.insert("app".chars(), 1);
+        builder.insert("apple".chars(), 2);
+        builder.insert("better".chars(), 3);
+        builder.insert("application".chars(), 4);
+        builder.insert("アップル🍎".chars(), 5);
         builder.build()
     }
 
@@ -341,6 +409,34 @@ mod search_tests {
         }
     }
 
+    mod find_longest_prefix_tests {
+        macro_rules! parameterized_tests {
+            ($($name:ident: $value:expr,)*) => {
+            $(
+                #[test]
+                fn $name() {
+                    let (query, expected_match) = $value;
+                    let trie = super::build_trie();
+                    let result = String::from_utf8(trie.find_longest_prefix(query).cloned().collect::<Vec<u8>>()).unwrap();
+                    assert_eq!(result, expected_match);
+                }
+            )*
+            }
+        }
+
+        parameterized_tests! {
+            t1: ("a", "a"),
+            t2: ("ap", "app"),
+            t3: ("appl", "appl"),
+            t4: ("appli", "application"),
+            t5: ("b", "better"),
+            t6: ("アップル🍎", "アップル🍎"),
+            t7: ("appler", "apple"),
+            t8: ("アップル", "アップル🍎"),
+            t9: ("z", ""),
+        }
+    }
+
     mod predictive_search_tests {
         macro_rules! parameterized_tests {
             ($($name:ident: $value:expr,)*) => {
@@ -394,6 +490,62 @@ mod search_tests {
             t6: ("betterment", vec![("better", 3)]),
             t7: ("c", Vec::<(&str, u8)>::new()),
             t8: ("アップル🍎🍏", vec![("アップル🍎", 5)]),
+        }
+    }
+
+    mod postfix_search_tests {
+        macro_rules! parameterized_tests {
+            ($($name:ident: $value:expr,)*) => {
+            $(
+                #[test]
+                fn $name() {
+                    let (query, expected_results) = $value;
+                    let trie = super::build_trie();
+                    let results: Vec<(String, u8)> = trie.postfix_search::<u8,Vec<u8>,crate::map::trie::IsNotChar>(query).into_iter().map(|x| (String::from(x.0), x.1)).collect();
+                    let expected_results: Vec<(String, u8)> = expected_results.iter().map(|s| (s.0.to_string(), s.1)).collect();
+                    assert_eq!(results, expected_results);
+                }
+            )*
+            }
+        }
+
+        parameterized_tests! {
+            t1: ("a", vec![("a", 0), ("app", 1), ("apple", 2), ("application", 4)]),
+            t2: ("ap", vec![("pp", 1), ("pple", 2), ("pplication", 4)]),
+            t3: ("appl", vec![("le", 2), ("lication", 4)]),
+            t4: ("appler", Vec::<(&str, u8)>::new()),
+            t5: ("bette", vec![("er", 3)]),
+            t6: ("betterment", Vec::<(&str, u8)>::new()),
+            t7: ("c", Vec::<(&str, u8)>::new()),
+            t8: ("アップル🍎🍏", Vec::<(&str, u8)>::new()),
+        }
+    }
+
+    mod postfix_search_char_tests {
+        macro_rules! parameterized_tests {
+            ($($name:ident: $value:expr,)*) => {
+            $(
+                #[test]
+                fn $name() {
+                    let (query, expected_results) = $value;
+                    let trie = super::build_trie2();
+                    let results: Vec<(String, u8)> = trie.postfix_search(query);
+                    let expected_results: Vec<(String, u8)> = expected_results.iter().map(|s| (s.0.to_string(), s.1)).collect();
+                    assert_eq!(results, expected_results);
+                }
+            )*
+            }
+        }
+
+        parameterized_tests! {
+            t1: ("a", vec![("a", 0), ("app", 1), ("apple", 2), ("application", 4)]),
+            t2: ("ap", vec![("pp", 1), ("pple", 2), ("pplication", 4)]),
+            t3: ("appl", vec![("le", 2), ("lication", 4)]),
+            t4: ("appler", Vec::<(&str, u8)>::new()),
+            t5: ("bette", vec![("er", 3)]),
+            t6: ("betterment", Vec::<(&str, u8)>::new()),
+            t7: ("c", Vec::<(&str, u8)>::new()),
+            t8: ("アップル🍎🍏", Vec::<(&str, u8)>::new()),
         }
     }
 }

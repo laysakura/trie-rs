@@ -78,7 +78,8 @@ impl<Label: Ord> Trie<Label> {
     where
         Label: PartialOrd<L>,
     {
-        self.inner.postfix_search_ref(query)
+        todo!();
+        // self.inner.postfix_search_ref(query)
     }
 
     /// Return the postfixes of all entries that match `query`, cloned.
@@ -89,8 +90,9 @@ impl<Label: Ord> Trie<Label> {
     where
         Label: PartialOrd<L> + Clone,
     {
-        let chunk = self.inner.postfix_search_ref(query);
-        chunk.map(|v| v.cloned().collect()).into_iter().collect()
+        todo!();
+        // let chunk = self.inner.postfix_search_ref(query);
+        // chunk.map(|v| v.cloned().collect()).into_iter().collect()
     }
 
     /// Return true if `query` is a prefix.

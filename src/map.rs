@@ -4,11 +4,13 @@ use louds_rs::Louds;
 mod postfix_iter;
 mod prefix_iter;
 mod search_iter;
+mod longest_prefix_iter;
 mod trie;
 mod trie_builder;
 
 pub use postfix_iter::PostfixIter;
 pub use prefix_iter::PrefixIter;
+pub use longest_prefix_iter::LongestPrefixIter;
 pub use search_iter::SearchIter;
 // pub use inc_search::IncSearch;
 
