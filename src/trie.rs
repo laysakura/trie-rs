@@ -24,7 +24,7 @@ impl<Label: Ord> Trie<Label> {
         Label: Clone,
         Query: AsRef<[Label]>, // + 'b
     {
-        self.inner.common_prefix_search_ref(query)
+        self.inner.common_prefix_search(query)
     }
 
     /// Return the common prefixes of `query`, cloned.
@@ -33,7 +33,7 @@ impl<Label: Ord> Trie<Label> {
         Label: Clone,
     {
         self.inner
-            .common_prefix_search_ref(query)
+            .common_prefix_search(query)
             .into_iter()
             .map(|v| v.into_iter().cloned().collect())
             .collect()
@@ -47,7 +47,7 @@ impl<Label: Ord> Trie<Label> {
         &self,
         query: impl AsRef<[Label]>,
     ) -> Defray<SearchIter<'_, Label, ()>> {
-        self.inner.predictive_search_ref(query)
+        self.inner.predictive_search(query)
     }
 
     /// Return all entries that match `query`, cloned.
@@ -58,7 +58,7 @@ impl<Label: Ord> Trie<Label> {
     where
         Label: Clone,
     {
-        let chunk = self.inner.predictive_search_ref(query);
+        let chunk = self.inner.predictive_search(query);
         chunk.map(|v| v.cloned().collect()).into_iter().collect()
     }
 
@@ -70,7 +70,7 @@ impl<Label: Ord> Trie<Label> {
         &self,
         query: impl AsRef<[Label]>,
     ) -> Defray<PostfixIter<'_, Label, ()>> {
-        self.inner.postfix_search_ref(query)
+        self.inner.postfix_search(query)
     }
 
     /// Return the postfixes of all entries that match `query`, cloned.
@@ -81,7 +81,7 @@ impl<Label: Ord> Trie<Label> {
     where
         Label: Clone,
     {
-        let chunk = self.inner.postfix_search_ref(query);
+        let chunk = self.inner.postfix_search(query);
         chunk.map(|v| v.cloned().collect()).into_iter().collect()
     }
 

@@ -1,43 +1,43 @@
 use crate::map::Trie;
 use louds_rs::LoudsNodeNum;
 
-pub struct LongestPrefixIter<'a, Label, Value> {
+pub struct LongestPrefixIter<'a, Label, Value, Query> {
     trie: &'a Trie<Label, Value>,
-    query: Vec<Label>,
+    query: Query,
     node: LoudsNodeNum,
     index: usize,
 }
 
-impl<'a, Label: Ord, Value> LongestPrefixIter<'a, Label, Value> {
+impl<'a, Label: Ord, Value, Query: AsRef<[Label]>> LongestPrefixIter<'a, Label, Value, Query> {
     #[inline]
-    pub fn new(trie: &'a Trie<Label, Value>, query: Vec<Label>) -> Self {
+    pub fn new(trie: &'a Trie<Label, Value>, query: Query) -> Self {
         Self {
             trie,
-            node: LoudsNodeNum(1),
             query,
+            node: LoudsNodeNum(1),
             index: 0,
         }
     }
 
-    #[inline]
-    pub fn empty(trie: &'a Trie<Label, Value>) -> Self {
-        Self {
-            trie,
-            node: LoudsNodeNum(1),
-            query: Vec::new(),
-            index: 0,
-        }
-    }
+    // #[inline]
+    // pub fn empty(trie: &'a Trie<Label, Value>) -> Self {
+    //     Self {
+    //         trie,
+    //         node: LoudsNodeNum(1),
+    //         query: Vec::new(),
+    //         index: 0,
+    //     }
+    // }
 
     pub fn value(&self) -> Option<&'a Value> {
         self.trie.value(self.node)
     }
 }
 
-impl<'a, Label: Ord, Value> Iterator for LongestPrefixIter<'a, Label, Value> {
+impl<'a, Label: Ord, Value, Query: AsRef<[Label]>> Iterator for LongestPrefixIter<'a, Label, Value, Query> {
     type Item = &'a Label;
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(chr) = self.query.get(self.index) {
+        if let Some(chr) = self.query.as_ref().get(self.index) {
             let children_node_nums: Vec<_> = self.trie.children_node_nums(self.node).collect();
             let res = self
                 .trie

@@ -14,6 +14,19 @@ use crate::map::Value;
 use std::ops::{Deref, DerefMut};
 
 #[derive(Deref, DerefMut)]
+struct TrieBuilder<Label, Value>(map::TrieBuilder<Label, Value>);
+
+impl<Label: Ord + Clone, Value: Clone> TrieBuilder<Label, Value> {
+    fn new() -> Self {
+        Self(map::TrieBuilder::new())
+    }
+
+    fn build(self) -> Trie<Label, Value> {
+        Trie(self.0.build())
+    }
+}
+
+#[derive(Deref, DerefMut)]
 struct Trie<Label, Value>(map::Trie<Label, Value>);
 
 impl<Label: Ord + Clone, Value: Clone> Trie<Label, Value> {
@@ -26,7 +39,7 @@ impl<Label: Ord + Clone, Value: Clone> Trie<Label, Value> {
         Label: Clone,
         Value: Clone,
     {
-        let chunk = self.0.predictive_search_ref(query);
+        let chunk = self.0.predictive_search(query);
         chunk
             .map(|mut v| (v.by_ref().cloned().collect(), v.value().cloned().unwrap()))
             .into_iter()
@@ -43,7 +56,7 @@ impl<Label: Ord + Clone, Value: Clone> Trie<Label, Value> {
         Value: Clone,
         C: TryFromIterator<Label, M>,
     {
-        let chunk = self.0.postfix_search_ref(query);
+        let chunk = self.0.postfix_search(query);
         chunk
             .map(|mut v| {
                 (
@@ -61,27 +74,18 @@ impl<Label: Ord + Clone, Value: Clone> Trie<Label, Value> {
         Label: Clone,
         Value: Clone,
     {
-        let chunk = self.0.common_prefix_search_ref(query.as_ref());
+        let chunk = self.0.common_prefix_search(query.as_ref());
         chunk
             .map(|mut v| (v.by_ref().cloned().collect(), v.value().cloned().unwrap()))
             .into_iter()
             .collect()
     }
 
-    pub fn find_longest_prefix(
-        &self,
-        query: impl AsRef<[Label]>,
-    ) -> LongestPrefixIter<'_, Label, Value>
-    where
-        Label: Clone,
-    {
-        LongestPrefixIter::new(self, query.as_ref().to_vec())
-    }
 }
 
 #[cfg(test)]
 mod search_tests {
-    use crate::map::{Trie, TrieBuilder};
+    use crate::map::clone::{Trie, TrieBuilder};
 
     fn build_trie() -> Trie<u8, u8> {
         let mut builder = TrieBuilder::new();
