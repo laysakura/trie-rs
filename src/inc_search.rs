@@ -82,8 +82,7 @@ impl<'a, Label: Ord, Value> IncSearch<'a, Label, Value> {
     }
 
     /// Query but do not change the node we're looking at on the trie.
-    pub fn peek(&self, chr: &Label) -> Option<Answer>
-    {
+    pub fn peek(&self, chr: &Label) -> Option<Answer> {
         let children_node_nums: Vec<_> = self.trie.children_node_nums(self.node).collect();
         let res = self
             .trie
@@ -100,8 +99,7 @@ impl<'a, Label: Ord, Value> IncSearch<'a, Label, Value> {
     }
 
     /// Query the trie and go to node if there is a match.
-    pub fn query(&mut self, chr: &Label) -> Option<Answer>
-    {
+    pub fn query(&mut self, chr: &Label) -> Option<Answer> {
         let children_node_nums: Vec<_> = self.trie.children_node_nums(self.node).collect();
         let res = self
             .trie
@@ -119,8 +117,7 @@ impl<'a, Label: Ord, Value> IncSearch<'a, Label, Value> {
 
     /// Query the trie with a sequence. Will return `Err(index of query)` on
     /// first failure to match.
-    pub fn query_until(&mut self, query: impl AsRef<[Label]>) -> Result<Answer, usize>
-    {
+    pub fn query_until(&mut self, query: impl AsRef<[Label]>) -> Result<Answer, usize> {
         let mut result = None;
         let mut i = 0;
         for chr in query.as_ref().iter() {

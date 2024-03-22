@@ -257,8 +257,8 @@
 //!
 //! Many thanks for these dictionaries and tools.
 
+pub mod inc_search;
 mod internal_data_structure;
 pub mod map;
 mod trie;
-pub mod inc_search;
 pub use trie::{Trie, TrieBuilder};

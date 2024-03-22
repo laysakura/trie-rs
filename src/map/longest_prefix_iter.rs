@@ -1,4 +1,4 @@
-use crate::map::{Trie};
+use crate::map::Trie;
 use louds_rs::LoudsNodeNum;
 
 pub struct LongestPrefixIter<'a, Label, Value> {
@@ -34,8 +34,7 @@ impl<'a, Label: Ord, Value> LongestPrefixIter<'a, Label, Value> {
     }
 }
 
-impl<'a, Label: Ord, Value> Iterator for LongestPrefixIter<'a, Label, Value>
-{
+impl<'a, Label: Ord, Value> Iterator for LongestPrefixIter<'a, Label, Value> {
     type Item = &'a Label;
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(chr) = self.query.get(self.index) {
@@ -67,7 +66,7 @@ impl<'a, Label: Ord, Value> Iterator for LongestPrefixIter<'a, Label, Value>
                     (Some(child_node_num), None) => {
                         self.node = child_node_num;
                         Some(self.trie.label(child_node_num))
-                    },
+                    }
                     _ => None,
                 }
             }

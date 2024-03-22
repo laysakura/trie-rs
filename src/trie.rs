@@ -1,5 +1,5 @@
-use super::map::{self, PostfixIter, PrefixIter, SearchIter};
 use super::inc_search::IncSearch;
+use super::map::{self, PostfixIter, PrefixIter, SearchIter};
 use frayed::Defray;
 
 pub struct Trie<Label> {
@@ -11,8 +11,7 @@ pub struct TrieBuilder<Label> {
 
 impl<Label: Ord> Trie<Label> {
     /// Return true if `query` is an exact match.
-    pub fn exact_match(&self, query: impl AsRef<[Label]>) -> bool
-    {
+    pub fn exact_match(&self, query: impl AsRef<[Label]>) -> bool {
         self.inner.exact_match(query).is_some()
     }
 
@@ -23,7 +22,7 @@ impl<Label: Ord> Trie<Label> {
     ) -> Defray<PrefixIter<'a, Label, (), Query>>
     where
         Label: Clone,
-        Query: AsRef<[Label]>// + 'b
+        Query: AsRef<[Label]>, // + 'b
     {
         self.inner.common_prefix_search_ref(query)
     }
@@ -47,8 +46,7 @@ impl<Label: Ord> Trie<Label> {
     pub fn predictive_search_ref(
         &self,
         query: impl AsRef<[Label]>,
-    ) -> Defray<SearchIter<'_, Label, ()>>
-    {
+    ) -> Defray<SearchIter<'_, Label, ()>> {
         self.inner.predictive_search_ref(query)
     }
 
@@ -68,8 +66,10 @@ impl<Label: Ord> Trie<Label> {
     ///
     /// # Panics
     /// If `query` is empty.
-    pub fn postfix_search_ref(&self, query: impl AsRef<[Label]>) -> Defray<PostfixIter<'_, Label, ()>>
-    {
+    pub fn postfix_search_ref(
+        &self,
+        query: impl AsRef<[Label]>,
+    ) -> Defray<PostfixIter<'_, Label, ()>> {
         self.inner.postfix_search_ref(query)
     }
 
@@ -89,8 +89,7 @@ impl<Label: Ord> Trie<Label> {
     ///
     /// Note: A prefix may be an exact match or not, and an exact match may be a
     /// prefix or not.
-    pub fn is_prefix(&self, query: impl AsRef<[Label]>) -> bool
-    {
+    pub fn is_prefix(&self, query: impl AsRef<[Label]>) -> bool {
         self.inner.is_prefix(query)
     }
 

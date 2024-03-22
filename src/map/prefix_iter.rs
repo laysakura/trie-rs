@@ -10,7 +10,10 @@ pub struct PrefixIter<'a, Label, Value, Query> {
     consume: Option<usize>,
 }
 
-impl<'a, Label: Ord, Value, Query> PrefixIter<'a, Label, Value, Query> where Query: AsRef<[Label]> {
+impl<'a, Label: Ord, Value, Query> PrefixIter<'a, Label, Value, Query>
+where
+    Query: AsRef<[Label]>,
+{
     #[inline]
     // pub fn new(trie: &'a Trie<Label, Value>, query: &'b [Label]) -> Self {
     pub fn new(trie: &'a Trie<Label, Value>, query: Query) -> Self {
@@ -47,7 +50,8 @@ impl<'a, Label: Ord, Value, Query> PrefixIter<'a, Label, Value, Query> where Que
 }
 
 impl<'a, Label: Ord, Value, Query> Iterator for PrefixIter<'a, Label, Value, Query>
-where Query: AsRef<[Label]>
+where
+    Query: AsRef<[Label]>,
 {
     type Item = &'a Label;
     fn next(&mut self) -> Option<Self::Item> {
@@ -86,7 +90,10 @@ where Query: AsRef<[Label]>
     }
 }
 
-impl<'a, Label: Ord, V, Q> Value<V> for frayed::defray::Group<'a, PrefixIter<'_, Label, V, Q>> where Q: AsRef<[Label]>{
+impl<'a, Label: Ord, V, Q> Value<V> for frayed::defray::Group<'a, PrefixIter<'_, Label, V, Q>>
+where
+    Q: AsRef<[Label]>,
+{
     fn value(&self) -> Option<&V> {
         self.parent.iter_ref().value()
     }

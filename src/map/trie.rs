@@ -1,48 +1,60 @@
 //! A trie map stores a value with each word or key.
-use std::iter::FromIterator;
 use super::{Trie, Value};
 use crate::inc_search::IncSearch;
+use crate::map::longest_prefix_iter::LongestPrefixIter;
 use crate::map::postfix_iter::PostfixIter;
 use crate::map::prefix_iter::PrefixIter;
-use crate::map::longest_prefix_iter::LongestPrefixIter;
 use crate::map::search_iter::SearchIter;
 use frayed::Defray;
 use louds_rs::{self, ChildNodeIter, LoudsNodeNum};
+use std::iter::FromIterator;
 
 /// Try to create an object from an iterator.
-pub trait TryFromIterator<A,Marker> {
+pub trait TryFromIterator<A, Marker> {
     type Error: std::fmt::Debug;
-    fn try_from_iter<T>(iter: T) -> Result<Self, Self::Error> where Self: Sized, T: IntoIterator<Item=A>;
+    fn try_from_iter<T>(iter: T) -> Result<Self, Self::Error>
+    where
+        Self: Sized,
+        T: IntoIterator<Item = A>;
 }
 
 struct Collect;
-impl<S,A> TryFromIterator<A,Collect> for S where S: FromIterator<A> {
+impl<S, A> TryFromIterator<A, Collect> for S
+where
+    S: FromIterator<A>,
+{
     type Error = ();
-    fn try_from_iter<T>(iter: T) -> Result<Self, Self::Error> where Self: Sized, T: IntoIterator<Item=A> {
+    fn try_from_iter<T>(iter: T) -> Result<Self, Self::Error>
+    where
+        Self: Sized,
+        T: IntoIterator<Item = A>,
+    {
         Ok(FromIterator::from_iter(iter))
     }
 }
 
 struct StringCollect;
-impl TryFromIterator<u8,StringCollect> for String {
+impl TryFromIterator<u8, StringCollect> for String {
     type Error = std::string::FromUtf8Error;
-    fn try_from_iter<T>(iter: T) -> Result<Self, Self::Error> where Self: Sized, T: IntoIterator<Item=u8> {
+    fn try_from_iter<T>(iter: T) -> Result<Self, Self::Error>
+    where
+        Self: Sized,
+        T: IntoIterator<Item = u8>,
+    {
         String::from_utf8(iter.into_iter().collect())
     }
 }
 
 impl<Label: Ord, Value> Trie<Label, Value> {
     /// Return `Some(&value)` if query is an exact match.
-    pub fn exact_match(&self, query: impl AsRef<[Label]>) -> Option<&Value>
-    {
+    pub fn exact_match(&self, query: impl AsRef<[Label]>) -> Option<&Value> {
         self.exact_match_node(query)
             .and_then(move |x| self.value(x))
     }
 
     /// Return `Node` if query is an exact match.
     #[inline]
-    fn exact_match_node(&self, query: impl AsRef<[Label]>) -> Option<LoudsNodeNum>
-    {
+    fn exact_match_node(&self, query: impl AsRef<[Label]>) -> Option<LoudsNodeNum> {
         let mut cur_node_num = LoudsNodeNum(1);
 
         for (i, chr) in query.as_ref().iter().enumerate() {
@@ -65,8 +77,7 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     }
 
     /// Return `Some(&mut value)` if query is an exact match.
-    pub fn exact_match_mut(&mut self, query: impl AsRef<[Label]>) -> Option<&mut Value>
-    {
+    pub fn exact_match_mut(&mut self, query: impl AsRef<[Label]>) -> Option<&mut Value> {
         self.exact_match_node(query)
             .and_then(move |x| self.value_mut(x))
     }
@@ -80,8 +91,7 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     ///
     /// Note: A prefix may be an exact match or not, and an exact match may be a
     /// prefix or not.
-    pub fn is_prefix(&self, query: impl AsRef<[Label]>) -> bool
-    {
+    pub fn is_prefix(&self, query: impl AsRef<[Label]>) -> bool {
         let mut cur_node_num = LoudsNodeNum(1);
 
         for chr in query.as_ref().iter() {
@@ -107,12 +117,7 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     {
         let chunk = self.predictive_search_ref(query);
         chunk
-            .map(|mut v| {
-                (
-                    v.by_ref().cloned().collect(),
-                    v.value().cloned().unwrap(),
-                )
-            })
+            .map(|mut v| (v.by_ref().cloned().collect(), v.value().cloned().unwrap()))
             .into_iter()
             .collect()
     }
@@ -124,8 +129,7 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     pub fn predictive_search_ref(
         &self,
         query: impl AsRef<[Label]>,
-    ) -> Defray<SearchIter<'_, Label, Value>>
-    {
+    ) -> Defray<SearchIter<'_, Label, Value>> {
         assert!(!query.as_ref().is_empty());
         let mut cur_node_num = LoudsNodeNum(1);
         let mut prefix = Vec::new();
@@ -148,19 +152,18 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     ///
     /// # Panics
     /// If `query` is empty.
-    pub fn postfix_search<C,M>(&self,
-        query: impl AsRef<[Label]>) -> Vec<(C, Value)>
+    pub fn postfix_search<C, M>(&self, query: impl AsRef<[Label]>) -> Vec<(C, Value)>
     where
         Label: Clone,
         Value: Clone,
-        C: TryFromIterator<Label,M>
+        C: TryFromIterator<Label, M>,
     {
         let chunk = self.postfix_search_ref(query);
         chunk
             .map(|mut v| {
                 (
                     C::try_from_iter(v.by_ref().cloned()).expect("Could not collect"),
-                    v.value().cloned().unwrap()
+                    v.value().cloned().unwrap(),
                 )
             })
             .into_iter()
@@ -174,8 +177,7 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     pub fn postfix_search_ref(
         &self,
         query: impl AsRef<[Label]>,
-    ) -> Defray<PostfixIter<'_, Label, Value>>
-    {
+    ) -> Defray<PostfixIter<'_, Label, Value>> {
         // assert!(!query.as_ref().is_empty());
         let mut cur_node_num = LoudsNodeNum(1);
 
@@ -201,12 +203,7 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     {
         let chunk = self.common_prefix_search_ref(query.as_ref());
         chunk
-            .map(|mut v| {
-                (
-                    v.by_ref().cloned().collect(),
-                    v.value().cloned().unwrap()
-                )
-            })
+            .map(|mut v| (v.by_ref().cloned().collect(), v.value().cloned().unwrap()))
             .into_iter()
             .collect()
     }
@@ -218,12 +215,13 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     ) -> Defray<PrefixIter<'a, Label, Value, Query>>
     where
         Label: Clone,
-        Query: AsRef<[Label]>// + 'b
+        Query: AsRef<[Label]>, // + 'b
     {
         Defray::new(PrefixIter::new(self, query))
     }
 
-    pub fn find_longest_prefix(&self,
+    pub fn find_longest_prefix(
+        &self,
         query: impl AsRef<[Label]>,
     ) -> LongestPrefixIter<'_, Label, Value>
     where
@@ -247,11 +245,8 @@ impl<Label: Ord, Value> Trie<Label, Value> {
         &self,
         query: &Label,
         children_node_nums: &[LoudsNodeNum],
-    ) -> Result<usize, usize>
-    {
-        children_node_nums.binary_search_by(|child_node_num| {
-            self.label(*child_node_num).cmp(query)
-        })
+    ) -> Result<usize, usize> {
+        children_node_nums.binary_search_by(|child_node_num| self.label(*child_node_num).cmp(query))
     }
 
     pub(crate) fn label(&self, node_num: LoudsNodeNum) -> &Label {
@@ -285,7 +280,6 @@ mod search_tests {
         builder.push("アップル🍎", 5);
         builder.build()
     }
-
 
     fn build_trie2() -> Trie<char, u8> {
         let mut builder: TrieBuilder<char, u8> = TrieBuilder::new();
