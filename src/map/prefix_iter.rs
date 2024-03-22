@@ -1,49 +1,58 @@
 use crate::map::{Trie, Value};
 use louds_rs::LoudsNodeNum;
 
-pub struct PrefixIter<'a, Label, Value> {
+pub struct PrefixIter<'a, Label, Value, Query> {
     trie: &'a Trie<Label, Value>,
-    query: Vec<Label>,
+    query: Query,
+    index: usize,
     node: LoudsNodeNum,
     buffer: Vec<&'a Label>,
     consume: Option<usize>,
 }
 
-impl<'a, Label: Ord, Value> PrefixIter<'a, Label, Value> {
+impl<'a, Label: Ord, Value, Query> PrefixIter<'a, Label, Value, Query> where Query: AsRef<[Label]> {
     #[inline]
-    pub fn new(trie: &'a Trie<Label, Value>, mut query: Vec<Label>) -> Self {
-        query.reverse();
+    // pub fn new(trie: &'a Trie<Label, Value>, query: &'b [Label]) -> Self {
+    pub fn new(trie: &'a Trie<Label, Value>, query: Query) -> Self {
+        let mut v = Vec::new();
+        for x in query.as_ref().iter() {
+            v.push(x);
+        }
         Self {
             trie,
-            node: LoudsNodeNum(1),
+            // query: query.as_ref().into_iter().collect(),
             query,
+            index: 0,
+            node: LoudsNodeNum(1),
             buffer: Vec::new(),
             consume: None,
         }
     }
 
-    #[inline]
-    pub fn empty(trie: &'a Trie<Label, Value>) -> Self {
-        Self {
-            trie,
-            node: LoudsNodeNum(1),
-            query: Vec::new(),
-            buffer: Vec::new(),
-            consume: None,
-        }
-    }
+    // #[inline]
+    // pub fn empty(trie: &'a Trie<Label, Value>) -> Self {
+    //     Self {
+    //         trie,
+    //         query: Vec::new(),
+    //         index: 0,
+    //         node: LoudsNodeNum(1),
+    //         buffer: Vec::new(),
+    //         consume: None,
+    //     }
+    // }
 
     pub fn value(&self) -> Option<&'a Value> {
         self.trie.value(self.node)
     }
 }
 
-impl<'a, Label: Ord, Value> Iterator for PrefixIter<'a, Label, Value>
+impl<'a, Label: Ord, Value, Query> Iterator for PrefixIter<'a, Label, Value, Query>
+where Query: AsRef<[Label]>
 {
     type Item = &'a Label;
     fn next(&mut self) -> Option<Self::Item> {
         while self.consume.is_none() {
-            if let Some(chr) = self.query.pop() {
+            if let Some(chr) = self.query.as_ref().get(self.index) {
                 let children_node_nums: Vec<_> = self.trie.children_node_nums(self.node).collect();
                 let res = self
                     .trie
@@ -62,6 +71,7 @@ impl<'a, Label: Ord, Value> Iterator for PrefixIter<'a, Label, Value>
             } else {
                 return None;
             }
+            self.index += 1;
         }
         if let Some(i) = self.consume.take() {
             if i >= self.buffer.len() {
@@ -76,7 +86,7 @@ impl<'a, Label: Ord, Value> Iterator for PrefixIter<'a, Label, Value>
     }
 }
 
-impl<'a, Label: Ord, V> Value<V> for frayed::defray::Group<'a, PrefixIter<'_, Label, V>> {
+impl<'a, Label: Ord, V, Q> Value<V> for frayed::defray::Group<'a, PrefixIter<'_, Label, V, Q>> where Q: AsRef<[Label]>{
     fn value(&self) -> Option<&V> {
         self.parent.iter_ref().value()
     }

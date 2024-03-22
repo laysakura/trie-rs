@@ -159,7 +159,7 @@ impl<Label: Ord, Value> Trie<Label, Value> {
         chunk
             .map(|mut v| {
                 (
-                    C::try_from_iter(v.by_ref().cloned()).unwrap(),
+                    C::try_from_iter(v.by_ref().cloned()).expect("Could not collect"),
                     v.value().cloned().unwrap()
                 )
             })
@@ -212,14 +212,15 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     }
 
     /// Return the common prefixes and values of `query`.
-    pub fn common_prefix_search_ref(
-        &self,
-        query: impl AsRef<[Label]>,
-    ) -> Defray<PrefixIter<'_, Label, Value>>
+    pub fn common_prefix_search_ref<'a, Query>(
+        &'a self,
+        query: Query,
+    ) -> Defray<PrefixIter<'a, Label, Value, Query>>
     where
         Label: Clone,
+        Query: AsRef<[Label]>// + 'b
     {
-        Defray::new(PrefixIter::new(self, query.as_ref().to_vec()))
+        Defray::new(PrefixIter::new(self, query))
     }
 
     pub fn find_longest_prefix(&self,
@@ -230,8 +231,6 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     {
         LongestPrefixIter::new(self, query.as_ref().to_vec())
     }
-
-    // fn wrap_group<I: Iterator>(iter: I) -> MyIter
 
     pub(crate) fn has_children_node_nums(&self, node_num: LoudsNodeNum) -> bool {
         self.louds

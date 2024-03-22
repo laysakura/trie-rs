@@ -17,12 +17,13 @@ impl<Label: Ord> Trie<Label> {
     }
 
     /// Return the common prefixes of `query`.
-    pub fn common_prefix_search_ref(
-        &self,
-        query: impl AsRef<[Label]>,
-    ) -> Defray<PrefixIter<'_, Label, ()>>
+    pub fn common_prefix_search_ref<'a, Query>(
+        &'a self,
+        query: Query,
+    ) -> Defray<PrefixIter<'a, Label, (), Query>>
     where
         Label: Clone,
+        Query: AsRef<[Label]>// + 'b
     {
         self.inner.common_prefix_search_ref(query)
     }
@@ -33,7 +34,7 @@ impl<Label: Ord> Trie<Label> {
         Label: Clone,
     {
         self.inner
-            .common_prefix_search_ref(query.as_ref())
+            .common_prefix_search_ref(query)
             .into_iter()
             .map(|v| v.into_iter().cloned().collect())
             .collect()
