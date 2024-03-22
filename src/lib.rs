@@ -261,4 +261,6 @@ pub mod inc_search;
 mod internal_data_structure;
 pub mod map;
 mod trie;
+pub mod try_from_iterator;
+// pub use try_from_iterator::TryFromIterator;
 pub use trie::{Trie, TrieBuilder};

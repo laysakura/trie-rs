@@ -1,5 +1,6 @@
 //! A trie map stores a value with each word or key.
-use super::{Trie, Value};
+use derive_deref::{Deref, DerefMut};
+// use super::{Trie, Value};
 use crate::inc_search::IncSearch;
 use crate::map::longest_prefix_iter::LongestPrefixIter;
 use crate::map::postfix_iter::PostfixIter;
@@ -8,68 +9,14 @@ use crate::map::search_iter::SearchIter;
 use frayed::Defray;
 use louds_rs::{self, ChildNodeIter, LoudsNodeNum};
 use crate::try_from_iterator::TryFromIterator;
+use crate::map;
+use crate::map::Value;
+use std::ops::{Deref, DerefMut};
 
-impl<Label: Ord, Value> Trie<Label, Value> {
-    /// Return `Some(&value)` if query is an exact match.
-    pub fn exact_match(&self, query: impl AsRef<[Label]>) -> Option<&Value> {
-        self.exact_match_node(query)
-            .and_then(move |x| self.value(x))
-    }
+#[derive(Deref, DerefMut)]
+struct Trie<Label, Value>(map::Trie<Label, Value>);
 
-    /// Return `Node` if query is an exact match.
-    #[inline]
-    fn exact_match_node(&self, query: impl AsRef<[Label]>) -> Option<LoudsNodeNum> {
-        let mut cur_node_num = LoudsNodeNum(1);
-
-        for (i, chr) in query.as_ref().iter().enumerate() {
-            let children_node_nums: Vec<LoudsNodeNum> =
-                self.children_node_nums(cur_node_num).collect();
-            let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
-
-            match res {
-                Ok(j) => {
-                    let child_node_num = children_node_nums[j];
-                    if i == query.as_ref().len() - 1 && self.is_terminal(child_node_num) {
-                        return Some(child_node_num);
-                    }
-                    cur_node_num = child_node_num;
-                }
-                Err(_) => return None,
-            }
-        }
-        None
-    }
-
-    /// Return `Some(&mut value)` if query is an exact match.
-    pub fn exact_match_mut(&mut self, query: impl AsRef<[Label]>) -> Option<&mut Value> {
-        self.exact_match_node(query)
-            .and_then(move |x| self.value_mut(x))
-    }
-
-    /// Create an incremental search. Useful for interactive applications.
-    pub fn inc_search(&self) -> IncSearch<'_, Label, Value> {
-        IncSearch::new(self)
-    }
-
-    /// Return true if `query` is a prefix.
-    ///
-    /// Note: A prefix may be an exact match or not, and an exact match may be a
-    /// prefix or not.
-    pub fn is_prefix(&self, query: impl AsRef<[Label]>) -> bool {
-        let mut cur_node_num = LoudsNodeNum(1);
-
-        for chr in query.as_ref().iter() {
-            let children_node_nums: Vec<_> = self.children_node_nums(cur_node_num).collect();
-            let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
-            match res {
-                Ok(j) => cur_node_num = children_node_nums[j],
-                Err(_) => return false,
-            }
-        }
-        // Are there more nodes after our query?
-        self.has_children_node_nums(cur_node_num)
-    }
-
+impl<Label: Ord + Clone, Value: Clone> Trie<Label, Value> {
     /// Return all entries and their values that match `query`, cloned.
     ///
     /// # Panics
@@ -79,37 +26,11 @@ impl<Label: Ord, Value> Trie<Label, Value> {
         Label: Clone,
         Value: Clone,
     {
-        let chunk = self.predictive_search_ref(query);
+        let chunk = self.0.predictive_search_ref(query);
         chunk
             .map(|mut v| (v.by_ref().cloned().collect(), v.value().cloned().unwrap()))
             .into_iter()
             .collect()
-    }
-
-    /// Return all entries and their values that match `query`.
-    ///
-    /// # Panics
-    /// If `query` is empty.
-    pub fn predictive_search_ref(
-        &self,
-        query: impl AsRef<[Label]>,
-    ) -> Defray<SearchIter<'_, Label, Value>> {
-        assert!(!query.as_ref().is_empty());
-        let mut cur_node_num = LoudsNodeNum(1);
-        let mut prefix = Vec::new();
-
-        // Consumes query (prefix)
-        for chr in query.as_ref() {
-            let children_node_nums: Vec<_> = self.children_node_nums(cur_node_num).collect();
-            let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
-            match res {
-                Ok(i) => cur_node_num = children_node_nums[i],
-                Err(_) => return Defray::new(SearchIter::empty(self)),
-            }
-            prefix.push(cur_node_num);
-        }
-        let _ = prefix.pop();
-        Defray::new(SearchIter::new(self, prefix, cur_node_num))
     }
 
     /// Return the postfixes and values of all entries that match `query`, cloned.
@@ -122,7 +43,7 @@ impl<Label: Ord, Value> Trie<Label, Value> {
         Value: Clone,
         C: TryFromIterator<Label, M>,
     {
-        let chunk = self.postfix_search_ref(query);
+        let chunk = self.0.postfix_search_ref(query);
         chunk
             .map(|mut v| {
                 (
@@ -134,54 +55,17 @@ impl<Label: Ord, Value> Trie<Label, Value> {
             .collect()
     }
 
-    /// Return the postfixes and values of all entries that match `query`.
-    ///
-    /// # Panics
-    /// If `query` is empty.
-    pub fn postfix_search_ref(
-        &self,
-        query: impl AsRef<[Label]>,
-    ) -> Defray<PostfixIter<'_, Label, Value>> {
-        // assert!(!query.as_ref().is_empty());
-        let mut cur_node_num = LoudsNodeNum(1);
-
-        // Consumes query (prefix)
-        for chr in query.as_ref() {
-            let children_node_nums: Vec<_> = self.children_node_nums(cur_node_num).collect();
-            let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
-            match res {
-                Ok(i) => cur_node_num = children_node_nums[i],
-                Err(_) => {
-                    return Defray::new(PostfixIter::empty(self));
-                }
-            }
-        }
-        Defray::new(PostfixIter::new(self, cur_node_num))
-    }
-
     /// Return the common prefixes of `query`, cloned.
     pub fn common_prefix_search(&self, query: impl AsRef<[Label]>) -> Vec<(Vec<Label>, Value)>
     where
         Label: Clone,
         Value: Clone,
     {
-        let chunk = self.common_prefix_search_ref(query.as_ref());
+        let chunk = self.0.common_prefix_search_ref(query.as_ref());
         chunk
             .map(|mut v| (v.by_ref().cloned().collect(), v.value().cloned().unwrap()))
             .into_iter()
             .collect()
-    }
-
-    /// Return the common prefixes and values of `query`.
-    pub fn common_prefix_search_ref<'a, Query>(
-        &'a self,
-        query: Query,
-    ) -> Defray<PrefixIter<'a, Label, Value, Query>>
-    where
-        Label: Clone,
-        Query: AsRef<[Label]>, // + 'b
-    {
-        Defray::new(PrefixIter::new(self, query))
     }
 
     pub fn find_longest_prefix(
@@ -192,41 +76,6 @@ impl<Label: Ord, Value> Trie<Label, Value> {
         Label: Clone,
     {
         LongestPrefixIter::new(self, query.as_ref().to_vec())
-    }
-
-    pub(crate) fn has_children_node_nums(&self, node_num: LoudsNodeNum) -> bool {
-        self.louds
-            .parent_to_children_indices(node_num)
-            .next()
-            .is_some()
-    }
-
-    pub(crate) fn children_node_nums(&self, node_num: LoudsNodeNum) -> ChildNodeIter {
-        self.louds.parent_to_children_nodes(node_num)
-    }
-
-    pub(crate) fn bin_search_by_children_labels(
-        &self,
-        query: &Label,
-        children_node_nums: &[LoudsNodeNum],
-    ) -> Result<usize, usize> {
-        children_node_nums.binary_search_by(|child_node_num| self.label(*child_node_num).cmp(query))
-    }
-
-    pub(crate) fn label(&self, node_num: LoudsNodeNum) -> &Label {
-        &self.trie_labels[(node_num.0 - 2) as usize].label
-    }
-
-    pub(crate) fn is_terminal(&self, node_num: LoudsNodeNum) -> bool {
-        self.trie_labels[(node_num.0 - 2) as usize].value.is_some()
-    }
-
-    pub(crate) fn value(&self, node_num: LoudsNodeNum) -> Option<&Value> {
-        self.trie_labels[(node_num.0 - 2) as usize].value.as_ref()
-    }
-
-    pub(crate) fn value_mut(&mut self, node_num: LoudsNodeNum) -> Option<&mut Value> {
-        self.trie_labels[(node_num.0 - 2) as usize].value.as_mut()
     }
 }
 
