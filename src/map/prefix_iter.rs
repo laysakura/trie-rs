@@ -1,17 +1,17 @@
 use crate::map::{Trie, Value};
 use louds_rs::LoudsNodeNum;
 
-pub struct PrefixIter<'a, L, Label, Value> {
+pub struct PrefixIter<'a, Label, Value> {
     trie: &'a Trie<Label, Value>,
-    query: Vec<L>,
+    query: Vec<Label>,
     node: LoudsNodeNum,
     buffer: Vec<&'a Label>,
     consume: Option<usize>,
 }
 
-impl<'a, L, Label: Ord, Value> PrefixIter<'a, L, Label, Value> {
+impl<'a, Label: Ord, Value> PrefixIter<'a, Label, Value> {
     #[inline]
-    pub fn new(trie: &'a Trie<Label, Value>, mut query: Vec<L>) -> Self {
+    pub fn new(trie: &'a Trie<Label, Value>, mut query: Vec<Label>) -> Self {
         query.reverse();
         Self {
             trie,
@@ -38,9 +38,7 @@ impl<'a, L, Label: Ord, Value> PrefixIter<'a, L, Label, Value> {
     }
 }
 
-impl<'a, L, Label: Ord, Value> Iterator for PrefixIter<'a, L, Label, Value>
-where
-    Label: PartialOrd<L>,
+impl<'a, Label: Ord, Value> Iterator for PrefixIter<'a, Label, Value>
 {
     type Item = &'a Label;
     fn next(&mut self) -> Option<Self::Item> {
@@ -49,7 +47,7 @@ where
                 let children_node_nums: Vec<_> = self.trie.children_node_nums(self.node).collect();
                 let res = self
                     .trie
-                    .bin_search_by_children_labels::<L>(&chr, &children_node_nums[..]);
+                    .bin_search_by_children_labels(&chr, &children_node_nums[..]);
                 match res {
                     Ok(j) => {
                         let child_node_num = children_node_nums[j];
@@ -78,7 +76,7 @@ where
     }
 }
 
-impl<'a, L, Label: Ord + PartialOrd<L>, V> Value<V> for frayed::defray::Group<'a, PrefixIter<'_, L, Label, V>> {
+impl<'a, Label: Ord, V> Value<V> for frayed::defray::Group<'a, PrefixIter<'_, Label, V>> {
     fn value(&self) -> Option<&V> {
         self.parent.iter_ref().value()
     }

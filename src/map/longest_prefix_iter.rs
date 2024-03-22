@@ -1,16 +1,16 @@
-use crate::map::{Trie, Value};
+use crate::map::{Trie};
 use louds_rs::LoudsNodeNum;
 
-pub struct LongestPrefixIter<'a, L, Label, Value> {
+pub struct LongestPrefixIter<'a, Label, Value> {
     trie: &'a Trie<Label, Value>,
-    query: Vec<L>,
+    query: Vec<Label>,
     node: LoudsNodeNum,
     index: usize,
 }
 
-impl<'a, L, Label: Ord, Value> LongestPrefixIter<'a, L, Label, Value> {
+impl<'a, Label: Ord, Value> LongestPrefixIter<'a, Label, Value> {
     #[inline]
-    pub fn new(trie: &'a Trie<Label, Value>, query: Vec<L>) -> Self {
+    pub fn new(trie: &'a Trie<Label, Value>, query: Vec<Label>) -> Self {
         Self {
             trie,
             node: LoudsNodeNum(1),
@@ -34,9 +34,7 @@ impl<'a, L, Label: Ord, Value> LongestPrefixIter<'a, L, Label, Value> {
     }
 }
 
-impl<'a, L, Label: Ord, Value> Iterator for LongestPrefixIter<'a, L, Label, Value>
-where
-    Label: PartialOrd<L>,
+impl<'a, Label: Ord, Value> Iterator for LongestPrefixIter<'a, Label, Value>
 {
     type Item = &'a Label;
     fn next(&mut self) -> Option<Self::Item> {
@@ -44,7 +42,7 @@ where
             let children_node_nums: Vec<_> = self.trie.children_node_nums(self.node).collect();
             let res = self
                 .trie
-                .bin_search_by_children_labels::<L>(&chr, &children_node_nums[..]);
+                .bin_search_by_children_labels(&chr, &children_node_nums[..]);
             self.index += 1;
             match res {
                 Ok(j) => {
