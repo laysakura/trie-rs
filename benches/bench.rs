@@ -29,7 +29,7 @@ mod trie {
     use std::fs::File;
     use std::io::{BufRead, BufReader};
     use std::str;
-    use trie_rs::clone::{Trie, TrieBuilder};
+    use trie_rs::trie::clone::{Trie, TrieBuilder};
 
     lazy_static! {
         // Construct Japanese dictionary using EDICT (http://www.edrdg.org/jmdict/edict.html).

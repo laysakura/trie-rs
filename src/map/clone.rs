@@ -1,7 +1,7 @@
 //! A trie map stores a value with each word or key.
 use crate::map;
 use crate::map::Value;
-use crate::try_from_iterator::TryFromIterator;
+use crate::try_collect::{TryCollect, TryFromIterator};
 use derive_deref::{Deref, DerefMut};
 
 #[derive(Deref, DerefMut)]
@@ -25,14 +25,15 @@ impl<Label: Ord + Clone, Value: Clone> Trie<Label, Value> {
     ///
     /// # Panics
     /// If `query` is empty.
-    pub fn predictive_search(&self, query: impl AsRef<[Label]>) -> Vec<(Vec<Label>, Value)>
+    pub fn predictive_search<C,M>(&self, query: impl AsRef<[Label]>) -> Vec<(C, Value)>
     where
         Label: Clone,
         Value: Clone,
+        C: TryFromIterator<Label, M>,
     {
         let chunk = self.0.predictive_search(query);
         chunk
-            .map(|mut v| (v.by_ref().cloned().collect(), v.value().cloned().unwrap()))
+            .map(|mut v| (v.by_ref().cloned().try_collect().expect("Could not collect"), v.value().cloned().unwrap()))
             .into_iter()
             .collect()
     }
@@ -51,7 +52,7 @@ impl<Label: Ord + Clone, Value: Clone> Trie<Label, Value> {
         chunk
             .map(|mut v| {
                 (
-                    C::try_from_iter(v.by_ref().cloned()).expect("Could not collect"),
+                    v.by_ref().cloned().try_collect().expect("Could not collect"),
                     v.value().cloned().unwrap(),
                 )
             })
@@ -60,16 +61,28 @@ impl<Label: Ord + Clone, Value: Clone> Trie<Label, Value> {
     }
 
     /// Return the common prefixes of `query`, cloned.
-    pub fn common_prefix_search(&self, query: impl AsRef<[Label]>) -> Vec<(Vec<Label>, Value)>
+    pub fn common_prefix_search<C, M>(&self, query: impl AsRef<[Label]>) -> Vec<(C, Value)>
     where
         Label: Clone,
         Value: Clone,
+        C: TryFromIterator<Label, M>,
     {
         let chunk = self.0.common_prefix_search(query.as_ref());
         chunk
-            .map(|mut v| (v.by_ref().cloned().collect(), v.value().cloned().unwrap()))
+            .map(|mut v| (v.by_ref().cloned().try_collect().expect("Could not collect"), v.value().cloned().unwrap()))
             .into_iter()
             .collect()
+    }
+
+    pub fn find_longest_prefix<Query, C, M>(
+        &self,
+        query: Query,
+    ) -> C
+    where
+        Query: AsRef<[Label]>,
+        C: TryFromIterator<Label, M>,
+    {
+        self.0.find_longest_prefix(query).cloned().try_collect().expect("Could not collect")
     }
 }
 
@@ -180,7 +193,7 @@ mod search_tests {
                 fn $name() {
                     let (query, expected_match) = $value;
                     let trie = super::build_trie();
-                    let result = String::from_utf8(trie.find_longest_prefix(query).cloned().collect::<Vec<u8>>()).unwrap();
+                    let result: String = trie.find_longest_prefix(query);
                     assert_eq!(result, expected_match);
                 }
             )*
@@ -208,8 +221,7 @@ mod search_tests {
                 fn $name() {
                     let (query, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results: Vec<(String, u8)> = trie.predictive_search(query).into_iter().map(|g| (String::from_utf8(g.0).unwrap(), g.1)).collect();
-                                                  // .collect::<Vec<_>>();
+                    let results: Vec<(String, u8)> = trie.predictive_search(query);
                     let expected_results: Vec<(String, u8)> = expected_results.iter().map(|s| (s.0.to_string(), s.1)).collect();
                     assert_eq!(results, expected_results);
                 }
@@ -236,8 +248,8 @@ mod search_tests {
                 fn $name() {
                     let (query, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results = trie.common_prefix_search(query);
-                    let expected_results: Vec<(Vec<u8>, u8)> = expected_results.iter().map(|s| (s.0.as_bytes().to_vec(), s.1)).collect();
+                    let results: Vec<(String, u8)> = trie.common_prefix_search(query);
+                    let expected_results: Vec<(String, u8)> = expected_results.iter().map(|s| (s.0.to_string(), s.1)).collect();
                     assert_eq!(results, expected_results);
                 }
             )*
@@ -264,7 +276,7 @@ mod search_tests {
                 fn $name() {
                     let (query, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results: Vec<(String, u8)> = trie.postfix_search(query);//.into_iter().map(|x| (String::from(x.0), x.1)).collect();
+                    let results: Vec<(String, u8)> = trie.postfix_search(query);
                     let expected_results: Vec<(String, u8)> = expected_results.iter().map(|s| (s.0.to_string(), s.1)).collect();
                     assert_eq!(results, expected_results);
                 }
