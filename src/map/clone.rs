@@ -14,7 +14,7 @@ use crate::map::Value;
 use std::ops::{Deref, DerefMut};
 
 #[derive(Deref, DerefMut)]
-struct TrieBuilder<Label, Value>(map::TrieBuilder<Label, Value>);
+pub struct TrieBuilder<Label, Value>(map::TrieBuilder<Label, Value>);
 
 impl<Label: Ord + Clone, Value: Clone> TrieBuilder<Label, Value> {
     fn new() -> Self {
@@ -27,7 +27,7 @@ impl<Label: Ord + Clone, Value: Clone> TrieBuilder<Label, Value> {
 }
 
 #[derive(Deref, DerefMut)]
-struct Trie<Label, Value>(map::Trie<Label, Value>);
+pub struct Trie<Label, Value>(map::Trie<Label, Value>);
 
 impl<Label: Ord + Clone, Value: Clone> Trie<Label, Value> {
     /// Return all entries and their values that match `query`, cloned.

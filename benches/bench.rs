@@ -29,7 +29,7 @@ mod trie {
     use std::fs::File;
     use std::io::{BufRead, BufReader};
     use std::str;
-    use trie_rs::{Trie, TrieBuilder};
+    use trie_rs::clone::{Trie, TrieBuilder};
 
     lazy_static! {
         // Construct Japanese dictionary using EDICT (http://www.edrdg.org/jmdict/edict.html).
@@ -178,9 +178,9 @@ mod trie {
                         // when `setup` time is far longer than `routine` time.
                         // Tested function takes too short compared to build().
                         // So loop many times.
-                        let results_in_u8s = trie.predictive_search_ref("すし");
+                        let results_in_u8s = trie.inner.predictive_search("すし");
                         for _ in 0..(times - 1) {
-                            for entry in &trie.predictive_search_ref("すし") {
+                            for entry in &trie.inner.predictive_search("すし") {
                                 black_box(entry);
                             }
                         }
@@ -241,7 +241,7 @@ mod trie {
                 b.iter_batched(
                     || &TRIE_EDICT,
                     |trie| {
-                        let results = trie.predictive_search_ref("す");
+                        let results = trie.inner.predictive_search("す");
                         let results_in_u8s = results.into_iter().take(100);
                         assert_eq!(results_in_u8s.into_iter().count(), 100);
                     },
@@ -302,9 +302,9 @@ mod trie {
                         // when `setup` time is far longer than `routine` time.
                         // Tested function takes too short compared to build().
                         // So loop many times.
-                        let results_in_u8s = trie.common_prefix_search_ref("すしをにぎる");
+                        let results_in_u8s = trie.inner.common_prefix_search("すしをにぎる");
                         for _ in 0..(times - 1) {
-                            for entry in &trie.common_prefix_search_ref("すしをにぎる") {
+                            for entry in &trie.inner.common_prefix_search("すしをにぎる") {
                                 black_box(entry);
                             }
                         }
