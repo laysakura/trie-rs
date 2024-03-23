@@ -257,11 +257,11 @@
 //!
 //! Many thanks for these dictionaries and tools.
 
+pub mod clone;
 pub mod inc_search;
 mod internal_data_structure;
 pub mod map;
 mod trie;
 pub mod try_from_iterator;
-pub mod clone;
 // pub use try_from_iterator::TryFromIterator;
 pub use clone::{Trie, TrieBuilder};

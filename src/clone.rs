@@ -1,8 +1,8 @@
 use super::inc_search::IncSearch;
 use super::map::{self};
 
-use std::clone::Clone;
 use derive_deref::*;
+use std::clone::Clone;
 
 #[derive(Deref, DerefMut)]
 pub struct Trie<Label: Clone> {

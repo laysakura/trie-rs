@@ -1,9 +1,8 @@
 //! A trie map stores a value with each word or key.
-use derive_deref::{Deref, DerefMut};
-use crate::try_from_iterator::TryFromIterator;
 use crate::map;
 use crate::map::Value;
-
+use crate::try_from_iterator::TryFromIterator;
+use derive_deref::{Deref, DerefMut};
 
 #[derive(Deref, DerefMut)]
 pub struct TrieBuilder<Label, Value>(map::TrieBuilder<Label, Value>);
@@ -72,7 +71,6 @@ impl<Label: Ord + Clone, Value: Clone> Trie<Label, Value> {
             .into_iter()
             .collect()
     }
-
 }
 
 #[cfg(test)]

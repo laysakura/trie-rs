@@ -8,7 +8,6 @@ use crate::map::search_iter::SearchIter;
 use frayed::Defray;
 use louds_rs::{self, ChildNodeIter, LoudsNodeNum};
 
-
 impl<Label: Ord, Value> Trie<Label, Value> {
     /// Return `Some(&value)` if query is an exact match.
     pub fn exact_match(&self, query: impl AsRef<[Label]>) -> Option<&Value> {
@@ -137,7 +136,7 @@ impl<Label: Ord, Value> Trie<Label, Value> {
         query: Query,
     ) -> LongestPrefixIter<'_, Label, Value, Query>
     where
-        Query: AsRef<[Label]>
+        Query: AsRef<[Label]>,
     {
         LongestPrefixIter::new(self, query)
     }

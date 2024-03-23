@@ -34,7 +34,9 @@ impl<'a, Label: Ord, Value, Query: AsRef<[Label]>> LongestPrefixIter<'a, Label, 
     }
 }
 
-impl<'a, Label: Ord, Value, Query: AsRef<[Label]>> Iterator for LongestPrefixIter<'a, Label, Value, Query> {
+impl<'a, Label: Ord, Value, Query: AsRef<[Label]>> Iterator
+    for LongestPrefixIter<'a, Label, Value, Query>
+{
     type Item = &'a Label;
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(chr) = self.query.as_ref().get(self.index) {

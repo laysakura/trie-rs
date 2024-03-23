@@ -41,10 +41,7 @@ impl<Label: Ord> Trie<Label> {
     ///
     /// # Panics
     /// If `query` is empty.
-    pub fn postfix_search(
-        &self,
-        query: impl AsRef<[Label]>,
-    ) -> Defray<PostfixIter<'_, Label, ()>> {
+    pub fn postfix_search(&self, query: impl AsRef<[Label]>) -> Defray<PostfixIter<'_, Label, ()>> {
         self.inner.postfix_search(query)
     }
 
