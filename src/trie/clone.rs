@@ -22,7 +22,6 @@ impl<Label: Ord + Clone> Trie<Label> {
     /// Return the common prefixes of `query`, cloned.
     pub fn common_prefix_search<C, M>(&self, query: impl AsRef<[Label]>) -> Vec<C>
     where
-        Label: Clone,
         C: TryFromIterator<Label, M>,
     {
         self.inner
@@ -38,7 +37,6 @@ impl<Label: Ord + Clone> Trie<Label> {
     /// If `query` is empty.
     pub fn predictive_search<C, M>(&self, query: impl AsRef<[Label]>) -> Vec<C>
     where
-        Label: Clone,
         C: TryFromIterator<Label, M>,
     {
         let chunk = self.inner.predictive_search(query);
@@ -50,7 +48,6 @@ impl<Label: Ord + Clone> Trie<Label> {
     /// If `query` is empty.
     pub fn postfix_search<C, M>(&self, query: impl AsRef<[Label]>) -> Vec<C>
     where
-        Label: Clone,
         C: TryFromIterator<Label, M>,
     {
         let chunk = self.inner.postfix_search(query);
@@ -185,8 +182,7 @@ mod search_tests {
                 fn $name() {
                     let (query, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results = trie.predictive_search(query).into_iter().map(|g| String::from_utf8(g).unwrap()).collect::<Vec<_>>();
-                    // results.sort_by(|a, b| a.len().cmp(&b.len()));
+                    let results: Vec<String> = trie.predictive_search(query);
                     assert_eq!(results, expected_results);
                 }
             )*

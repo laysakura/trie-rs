@@ -131,9 +131,9 @@ mod trie {
                         // when `setup` time is far longer than `routine` time.
                         // Tested function takes too short compared to build().
                         // So loop many times.
-                        let results_in_u8s = trie.predictive_search("すし");
+                        let results_in_u8s: Vec<Vec<u8>> = trie.predictive_search("すし");
                         for _ in 0..(times - 1) {
-                            for entry in trie.predictive_search("すし") {
+                            for entry in trie.predictive_search::<Vec<u8>,_>("すし") {
                                 black_box(entry);
                             }
                         }
@@ -220,7 +220,7 @@ mod trie {
                 b.iter_batched(
                     || &TRIE_EDICT,
                     |trie| {
-                        let results = trie.predictive_search("す");
+                        let results: Vec<Vec<u8>> = trie.predictive_search("す");
                         assert_eq!(results.len(), 4220);
                         let results_in_u8s = results.into_iter().take(100);
                         assert_eq!(results_in_u8s.len(), 100);

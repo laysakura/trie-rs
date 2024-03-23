@@ -27,8 +27,6 @@ impl<Label: Ord + Clone, Value: Clone> Trie<Label, Value> {
     /// If `query` is empty.
     pub fn predictive_search<C,M>(&self, query: impl AsRef<[Label]>) -> Vec<(C, Value)>
     where
-        Label: Clone,
-        Value: Clone,
         C: TryFromIterator<Label, M>,
     {
         let chunk = self.0.predictive_search(query);
@@ -44,8 +42,6 @@ impl<Label: Ord + Clone, Value: Clone> Trie<Label, Value> {
     /// If `query` is empty.
     pub fn postfix_search<C, M>(&self, query: impl AsRef<[Label]>) -> Vec<(C, Value)>
     where
-        Label: Clone,
-        Value: Clone,
         C: TryFromIterator<Label, M>,
     {
         let chunk = self.0.postfix_search(query);
@@ -63,11 +59,9 @@ impl<Label: Ord + Clone, Value: Clone> Trie<Label, Value> {
     /// Return the common prefixes of `query`, cloned.
     pub fn common_prefix_search<C, M>(&self, query: impl AsRef<[Label]>) -> Vec<(C, Value)>
     where
-        Label: Clone,
-        Value: Clone,
         C: TryFromIterator<Label, M>,
     {
-        let chunk = self.0.common_prefix_search(query.as_ref());
+        let chunk = self.0.common_prefix_search(query);
         chunk
             .map(|mut v| (v.by_ref().cloned().try_collect().expect("Could not collect"), v.value().cloned().unwrap()))
             .into_iter()

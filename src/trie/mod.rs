@@ -23,7 +23,7 @@ impl<Label: Ord> Trie<Label> {
         query: Query,
     ) -> Defray<PrefixIter<'_, Label, (), Query>>
     where
-        Query: AsRef<[Label]>, // + 'b
+        Query: AsRef<[Label]>,
     {
         self.inner.common_prefix_search(query)
     }
