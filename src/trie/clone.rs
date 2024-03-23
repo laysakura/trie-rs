@@ -1,4 +1,5 @@
 use crate::inc_search::IncSearch;
+use crate::try_collect::{TryCollect, TryFromIterator};
 use super::map::{self};
 
 use derive_deref::*;
@@ -19,14 +20,15 @@ impl<Label: Ord + Clone> Trie<Label> {
     }
 
     /// Return the common prefixes of `query`, cloned.
-    pub fn common_prefix_search(&self, query: impl AsRef<[Label]>) -> Vec<Vec<Label>>
+    pub fn common_prefix_search<C, M>(&self, query: impl AsRef<[Label]>) -> Vec<C>
     where
         Label: Clone,
+        C: TryFromIterator<Label, M>,
     {
         self.inner
             .common_prefix_search(query)
             .into_iter()
-            .map(|v| v.into_iter().cloned().collect())
+            .map(|v| v.into_iter().cloned().try_collect().expect("Could not collect"))
             .collect()
     }
 
@@ -34,23 +36,25 @@ impl<Label: Ord + Clone> Trie<Label> {
     ///
     /// # Panics
     /// If `query` is empty.
-    pub fn predictive_search(&self, query: impl AsRef<[Label]>) -> Vec<Vec<Label>>
+    pub fn predictive_search<C, M>(&self, query: impl AsRef<[Label]>) -> Vec<C>
     where
         Label: Clone,
+        C: TryFromIterator<Label, M>,
     {
         let chunk = self.inner.predictive_search(query);
-        chunk.map(|v| v.cloned().collect()).into_iter().collect()
+        chunk.map(|v| v.cloned().try_collect().expect("Could not collect")).into_iter().collect()
     }
     /// Return the postfixes of all entries that match `query`, cloned.
     ///
     /// # Panics
     /// If `query` is empty.
-    pub fn postfix_search(&self, query: impl AsRef<[Label]>) -> Vec<Vec<Label>>
+    pub fn postfix_search<C, M>(&self, query: impl AsRef<[Label]>) -> Vec<C>
     where
         Label: Clone,
+        C: TryFromIterator<Label, M>,
     {
         let chunk = self.inner.postfix_search(query);
-        chunk.map(|v| v.cloned().collect()).into_iter().collect()
+        chunk.map(|v| v.cloned().try_collect().expect("Could not collect")).into_iter().collect()
     }
 
     /// Return true if `query` is a prefix.
@@ -208,8 +212,8 @@ mod search_tests {
                 fn $name() {
                     let (query, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results = trie.common_prefix_search(query);
-                    let expected_results: Vec<Vec<u8>> = expected_results.iter().map(|s| s.as_bytes().to_vec()).collect();
+                    let results: Vec<String> = trie.common_prefix_search(query);
+                    let expected_results: Vec<String> = expected_results.iter().map(|s| s.to_string()).collect();
                     assert_eq!(results, expected_results);
                 }
             )*
@@ -233,7 +237,7 @@ mod search_tests {
         #[test]
         fn postfix_no_match() {
             let trie = super::build_trie();
-            let postfixes = trie.postfix_search("NOT-THERE");
+            let postfixes: Vec<String> = trie.postfix_search("NOT-THERE");
             let chunks = postfixes.into_iter();
             assert_eq!(chunks.count(), 0);
         }

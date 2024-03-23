@@ -115,14 +115,14 @@
 //!     true
 //! );
 //! assert_eq!(
-//!     trie.predictive_search(vec!["a", "woman", "on"]),
+//!     trie.predictive_search::<Vec<&str>, _>(vec!["a", "woman", "on"]),
 //!     vec![
 //!         ["a", "woman", "on", "the", "beach"],
 //!         ["a", "woman", "on", "the", "run"],
 //!     ],
 //! );
 //! assert_eq!(
-//!     trie.common_prefix_search(vec!["a", "woman", "on", "the", "beach"]),
+//!     trie.common_prefix_search::<Vec<&str>, _>(vec!["a", "woman", "on", "the", "beach"]),
 //!     vec![vec!["a", "woman"], vec!["a", "woman", "on", "the", "beach"]],
 //! );
 //! ```
@@ -154,14 +154,14 @@
 //!
 //! assert_eq!(trie.exact_match([5, 3, 5, 9, 4, 0, 8, 1, 2, 8]), true);
 //! assert_eq!(
-//!     trie.predictive_search([3]),
+//!     trie.predictive_search::<Vec<u8>,_>([3]),
 //!     vec![
 //!         [3, 2, 8, 2, 3, 0, 6, 6, 4, 7],
 //!         [3, 4, 2, 1, 1, 7, 0, 6, 7, 9],
 //!     ],
 //! );
 //! assert_eq!(
-//!     trie.common_prefix_search([1, 4, 1, 5, 9, 2, 6, 5, 3, 5]),
+//!     trie.common_prefix_search::<Vec<u8>, _>([1, 4, 1, 5, 9, 2, 6, 5, 3, 5]),
 //!     vec![[1, 4, 1, 5, 9, 2, 6, 5, 3, 5]],
 //! );
 //! ```
