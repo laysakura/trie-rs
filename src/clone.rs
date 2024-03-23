@@ -1,6 +1,6 @@
 use super::inc_search::IncSearch;
-use super::map::{self, PostfixIter, PrefixIter, SearchIter};
-use frayed::Defray;
+use super::map::{self};
+
 use std::clone::Clone;
 use derive_deref::*;
 

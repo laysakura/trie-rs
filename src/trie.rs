@@ -16,10 +16,10 @@ impl<Label: Ord> Trie<Label> {
     }
 
     /// Return the common prefixes of `query`.
-    pub fn common_prefix_search<'a, Query>(
-        &'a self,
+    pub fn common_prefix_search<Query>(
+        &self,
         query: Query,
-    ) -> Defray<PrefixIter<'a, Label, (), Query>>
+    ) -> Defray<PrefixIter<'_, Label, (), Query>>
     where
         Query: AsRef<[Label]>, // + 'b
     {

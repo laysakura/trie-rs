@@ -1,27 +1,19 @@
 //! A trie map stores a value with each word or key.
 use derive_deref::{Deref, DerefMut};
-// use super::{Trie, Value};
-use crate::inc_search::IncSearch;
-use crate::map::longest_prefix_iter::LongestPrefixIter;
-use crate::map::postfix_iter::PostfixIter;
-use crate::map::prefix_iter::PrefixIter;
-use crate::map::search_iter::SearchIter;
-use frayed::Defray;
-use louds_rs::{self, ChildNodeIter, LoudsNodeNum};
 use crate::try_from_iterator::TryFromIterator;
 use crate::map;
 use crate::map::Value;
-use std::ops::{Deref, DerefMut};
+
 
 #[derive(Deref, DerefMut)]
 pub struct TrieBuilder<Label, Value>(map::TrieBuilder<Label, Value>);
 
 impl<Label: Ord + Clone, Value: Clone> TrieBuilder<Label, Value> {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self(map::TrieBuilder::new())
     }
 
-    fn build(self) -> Trie<Label, Value> {
+    pub fn build(self) -> Trie<Label, Value> {
         Trie(self.0.build())
     }
 }

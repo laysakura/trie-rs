@@ -41,7 +41,7 @@ impl<'a, Label: Ord, Value, Query: AsRef<[Label]>> Iterator for LongestPrefixIte
             let children_node_nums: Vec<_> = self.trie.children_node_nums(self.node).collect();
             let res = self
                 .trie
-                .bin_search_by_children_labels(&chr, &children_node_nums[..]);
+                .bin_search_by_children_labels(chr, &children_node_nums[..]);
             self.index += 1;
             match res {
                 Ok(j) => {
@@ -55,20 +55,18 @@ impl<'a, Label: Ord, Value, Query: AsRef<[Label]>> Iterator for LongestPrefixIte
                 }
                 Err(_) => None,
             }
+        } else if self.trie.is_terminal(self.node) {
+            None
         } else {
-            if self.trie.is_terminal(self.node) {
-                None
-            } else {
-                let mut iter = self.trie.children_node_nums(self.node);
-                let first = iter.next();
-                let second = iter.next();
-                match (first, second) {
-                    (Some(child_node_num), None) => {
-                        self.node = child_node_num;
-                        Some(self.trie.label(child_node_num))
-                    }
-                    _ => None,
+            let mut iter = self.trie.children_node_nums(self.node);
+            let first = iter.next();
+            let second = iter.next();
+            match (first, second) {
+                (Some(child_node_num), None) => {
+                    self.node = child_node_num;
+                    Some(self.trie.label(child_node_num))
                 }
+                _ => None,
             }
         }
     }

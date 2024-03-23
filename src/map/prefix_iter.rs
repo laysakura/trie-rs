@@ -60,7 +60,7 @@ where
                 let children_node_nums: Vec<_> = self.trie.children_node_nums(self.node).collect();
                 let res = self
                     .trie
-                    .bin_search_by_children_labels(&chr, &children_node_nums[..]);
+                    .bin_search_by_children_labels(chr, &children_node_nums[..]);
                 match res {
                     Ok(j) => {
                         let child_node_num = children_node_nums[j];
