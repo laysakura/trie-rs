@@ -5,7 +5,7 @@ use crate::try_collect::{TryCollect, TryFromIterator};
 use derive_deref::{Deref, DerefMut};
 
 #[derive(Deref, DerefMut)]
-pub struct TrieBuilder<Label, Value>(map::TrieBuilder<Label, Value>);
+pub struct TrieBuilder<Label, Value>(pub map::TrieBuilder<Label, Value>);
 
 impl<Label: Ord + Clone, Value: Clone> TrieBuilder<Label, Value> {
     pub fn new() -> Self {

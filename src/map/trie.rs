@@ -179,7 +179,7 @@ impl<Label: Ord, Value> Trie<Label, Value> {
 
 #[cfg(test)]
 mod search_tests {
-    use crate::try_collect::{TryCollect, TryFromIterator};
+    use crate::try_collect::TryCollect;
     use crate::map::{Trie, TrieBuilder};
     use crate::map::Value;
 
@@ -211,10 +211,10 @@ mod search_tests {
         let search = trie.predictive_search("apple");
         let mut i = search.into_iter();
         let mut entry = i.next().unwrap();
-        let str: String = entry.by_ref().cloned().try_collect().unwrap();
-        let value = entry.value().cloned();
+        let s: String = entry.by_ref().cloned().try_collect().unwrap();
+        let value = entry.value().cloned().unwrap();
         assert_eq!(
-            (&str, value),
+            (s.as_str(), value),
             ("apple", 2)
         );
     }
@@ -312,6 +312,9 @@ mod search_tests {
     }
 
     mod predictive_search_tests {
+        use crate::map::Value;
+        use crate::try_collect::TryCollect;
+
         macro_rules! parameterized_tests {
             ($($name:ident: $value:expr,)*) => {
             $(
@@ -319,8 +322,10 @@ mod search_tests {
                 fn $name() {
                     let (query, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results: Vec<(String, u8)> = trie.predictive_search(query).into_iter().map(|g| (String::from_utf8(g.0).unwrap(), g.1)).collect();
-                                                  // .collect::<Vec<_>>();
+                    let results: Vec<(String, u8)> = trie.predictive_search(query)
+                                                         .into_iter()
+                                                         .map(|mut g| (g.by_ref().cloned().try_collect().unwrap(),
+                                                                   g.value().cloned().unwrap())).collect();
                     let expected_results: Vec<(String, u8)> = expected_results.iter().map(|s| (s.0.to_string(), s.1)).collect();
                     assert_eq!(results, expected_results);
                 }
@@ -340,6 +345,8 @@ mod search_tests {
     }
 
     mod common_prefix_search_tests {
+        use crate::try_collect::TryCollect;
+        use crate::map::Value;
         macro_rules! parameterized_tests {
             ($($name:ident: $value:expr,)*) => {
             $(
@@ -347,7 +354,7 @@ mod search_tests {
                 fn $name() {
                     let (query, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results = trie.common_prefix_search(query);
+                    let results: Vec<_> = trie.common_prefix_search(query).into_iter().map(|mut g| (g.by_ref().cloned().try_collect().unwrap(), g.value().cloned().unwrap())).collect();
                     let expected_results: Vec<(Vec<u8>, u8)> = expected_results.iter().map(|s| (s.0.as_bytes().to_vec(), s.1)).collect();
                     assert_eq!(results, expected_results);
                 }
@@ -368,6 +375,8 @@ mod search_tests {
     }
 
     mod postfix_search_tests {
+        use crate::map::Value;
+        use crate::try_collect::TryCollect;
         macro_rules! parameterized_tests {
             ($($name:ident: $value:expr,)*) => {
             $(
@@ -375,7 +384,7 @@ mod search_tests {
                 fn $name() {
                     let (query, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results: Vec<(String, u8)> = trie.postfix_search(query);//.into_iter().map(|x| (String::from(x.0), x.1)).collect();
+                    let results: Vec<(String, u8)> = trie.postfix_search(query).into_iter().map(|mut g| (g.by_ref().cloned().try_collect().unwrap(), g.value().cloned().unwrap())).collect();
                     let expected_results: Vec<(String, u8)> = expected_results.iter().map(|s| (s.0.to_string(), s.1)).collect();
                     assert_eq!(results, expected_results);
                 }
@@ -396,6 +405,8 @@ mod search_tests {
     }
 
     mod postfix_search_char_tests {
+        use crate::map::Value;
+        use crate::try_collect::TryCollect;
         macro_rules! parameterized_tests {
             ($($name:ident: $value:expr,)*) => {
             $(
@@ -404,7 +415,7 @@ mod search_tests {
                     let (query, expected_results) = $value;
                     let trie = super::build_trie2();
                     let chars: Vec<char> = query.chars().collect();
-                    let results: Vec<(String, u8)> = trie.postfix_search(chars);
+                    let results: Vec<(String, u8)> = trie.postfix_search(chars).into_iter().map(|mut g| (g.by_ref().cloned().try_collect().unwrap(), g.value().cloned().unwrap())).collect();
                     let expected_results: Vec<(String, u8)> = expected_results.iter().map(|s| (s.0.to_string(), s.1)).collect();
                     assert_eq!(results, expected_results);
                 }
