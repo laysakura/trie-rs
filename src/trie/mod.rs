@@ -12,7 +12,6 @@ impl<Label: Ord> Trie<Label> {
     pub fn exact_match(&self, query: impl AsRef<[Label]>) -> bool {
         self.0.exact_match(query).is_some()
     }
-
 }
 
 impl<Label: Ord> Default for TrieBuilder<Label> {

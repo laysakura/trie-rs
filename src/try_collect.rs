@@ -16,9 +16,9 @@ use std::iter::FromIterator;
 /// ```
 pub trait TryCollect: Iterator {
     /// Use this iterator as a prefix for a frayed iterator with many postfixes.
-    fn try_collect<C,M>(self) -> Result<C, C::Error>
+    fn try_collect<C, M>(self) -> Result<C, C::Error>
     where
-        C: TryFromIterator<Self::Item,M>,
+        C: TryFromIterator<Self::Item, M>,
         Self: Sized,
     {
         C::try_from_iter(self)

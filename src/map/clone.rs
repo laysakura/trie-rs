@@ -25,13 +25,21 @@ impl<Label: Ord + Clone, Value: Clone> Trie<Label, Value> {
     ///
     /// # Panics
     /// If `query` is empty.
-    pub fn predictive_search<C,M>(&self, query: impl AsRef<[Label]>) -> Vec<(C, Value)>
+    pub fn predictive_search<C, M>(&self, query: impl AsRef<[Label]>) -> Vec<(C, Value)>
     where
         C: TryFromIterator<Label, M>,
     {
         let chunk = self.0.predictive_search(query);
         chunk
-            .map(|mut v| (v.by_ref().cloned().try_collect().expect("Could not collect"), v.value().cloned().unwrap()))
+            .map(|mut v| {
+                (
+                    v.by_ref()
+                        .cloned()
+                        .try_collect()
+                        .expect("Could not collect"),
+                    v.value().cloned().unwrap(),
+                )
+            })
             .into_iter()
             .collect()
     }
@@ -48,7 +56,10 @@ impl<Label: Ord + Clone, Value: Clone> Trie<Label, Value> {
         chunk
             .map(|mut v| {
                 (
-                    v.by_ref().cloned().try_collect().expect("Could not collect"),
+                    v.by_ref()
+                        .cloned()
+                        .try_collect()
+                        .expect("Could not collect"),
                     v.value().cloned().unwrap(),
                 )
             })
@@ -63,20 +74,29 @@ impl<Label: Ord + Clone, Value: Clone> Trie<Label, Value> {
     {
         let chunk = self.0.common_prefix_search(query);
         chunk
-            .map(|mut v| (v.by_ref().cloned().try_collect().expect("Could not collect"), v.value().cloned().unwrap()))
+            .map(|mut v| {
+                (
+                    v.by_ref()
+                        .cloned()
+                        .try_collect()
+                        .expect("Could not collect"),
+                    v.value().cloned().unwrap(),
+                )
+            })
             .into_iter()
             .collect()
     }
 
-    pub fn find_longest_prefix<Query, C, M>(
-        &self,
-        query: Query,
-    ) -> C
+    pub fn find_longest_prefix<Query, C, M>(&self, query: Query) -> C
     where
         Query: AsRef<[Label]>,
         C: TryFromIterator<Label, M>,
     {
-        self.0.find_longest_prefix(query).cloned().try_collect().expect("Could not collect")
+        self.0
+            .find_longest_prefix(query)
+            .cloned()
+            .try_collect()
+            .expect("Could not collect")
     }
 }
 

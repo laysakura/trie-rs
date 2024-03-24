@@ -179,9 +179,9 @@ impl<Label: Ord, Value> Trie<Label, Value> {
 
 #[cfg(test)]
 mod search_tests {
-    use crate::try_collect::TryCollect;
-    use crate::map::{Trie, TrieBuilder};
     use crate::map::Value;
+    use crate::map::{Trie, TrieBuilder};
+    use crate::try_collect::TryCollect;
 
     fn build_trie() -> Trie<u8, u8> {
         let mut builder = TrieBuilder::new();
@@ -213,10 +213,7 @@ mod search_tests {
         let mut entry = i.next().unwrap();
         let s: String = entry.by_ref().cloned().try_collect().unwrap();
         let value = entry.value().cloned().unwrap();
-        assert_eq!(
-            (s.as_str(), value),
-            ("apple", 2)
-        );
+        assert_eq!((s.as_str(), value), ("apple", 2));
     }
 
     #[test]
@@ -345,8 +342,8 @@ mod search_tests {
     }
 
     mod common_prefix_search_tests {
-        use crate::try_collect::TryCollect;
         use crate::map::Value;
+        use crate::try_collect::TryCollect;
         macro_rules! parameterized_tests {
             ($($name:ident: $value:expr,)*) => {
             $(

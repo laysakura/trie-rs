@@ -1,5 +1,5 @@
-use crate::try_collect::{TryCollect, TryFromIterator};
 use super::map::{self};
+use crate::try_collect::{TryCollect, TryFromIterator};
 
 use derive_deref::{Deref, DerefMut};
 use std::clone::Clone;
@@ -22,7 +22,12 @@ impl<Label: Ord + Clone> Trie<Label> {
         self.0
             .common_prefix_search(query)
             .into_iter()
-            .map(|v| v.into_iter().cloned().try_collect().expect("Could not collect"))
+            .map(|v| {
+                v.into_iter()
+                    .cloned()
+                    .try_collect()
+                    .expect("Could not collect")
+            })
             .collect()
     }
 
@@ -35,7 +40,10 @@ impl<Label: Ord + Clone> Trie<Label> {
         C: TryFromIterator<Label, M>,
     {
         let chunk = self.0.predictive_search(query);
-        chunk.map(|v| v.cloned().try_collect().expect("Could not collect")).into_iter().collect()
+        chunk
+            .map(|v| v.cloned().try_collect().expect("Could not collect"))
+            .into_iter()
+            .collect()
     }
     /// Return the postfixes of all entries that match `query`, cloned.
     ///
@@ -46,7 +54,10 @@ impl<Label: Ord + Clone> Trie<Label> {
         C: TryFromIterator<Label, M>,
     {
         let chunk = self.0.postfix_search(query);
-        chunk.map(|v| v.cloned().try_collect().expect("Could not collect")).into_iter().collect()
+        chunk
+            .map(|v| v.cloned().try_collect().expect("Could not collect"))
+            .into_iter()
+            .collect()
     }
 }
 
@@ -78,9 +89,7 @@ impl<Label: Ord + Clone> TrieBuilder<Label> {
 
     /// Build a [Trie].
     pub fn build(self) -> Trie<Label> {
-        Trie {
-            0: self.0.build(),
-        }
+        Trie { 0: self.0.build() }
     }
 }
 
