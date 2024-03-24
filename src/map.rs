@@ -13,7 +13,6 @@ pub use postfix_iter::PostfixIter;
 pub use prefix_iter::PrefixIter;
 pub use search_iter::SearchIter;
 pub mod clone;
-// pub use inc_search::IncSearch;
 
 /// A trie for sequences of the type `Label`; each sequence has an associated `Value`.
 pub struct Trie<Label, Value> {

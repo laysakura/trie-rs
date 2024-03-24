@@ -262,5 +262,4 @@ mod internal_data_structure;
 pub mod map;
 pub mod trie;
 pub mod try_collect;
-// pub use try_from_iterator::TryFromIterator;
 pub use trie::clone::{Trie, TrieBuilder};
