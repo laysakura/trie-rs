@@ -1,21 +1,16 @@
 use super::map;
-use derive_deref::{Deref, DerefMut};
+use derive_deref::Deref;
 
 pub mod clone;
 
 #[derive(Deref)]
-pub struct Trie<Label> {
-    inner: map::Trie<Label, ()>,
-}
-
-pub struct TrieBuilder<Label> {
-    inner: map::TrieBuilder<Label, ()>,
-}
+pub struct Trie<Label>(pub map::Trie<Label, ()>);
+pub struct TrieBuilder<Label>(map::TrieBuilder<Label, ()>);
 
 impl<Label: Ord> Trie<Label> {
     /// Return true if `query` is an exact match.
     pub fn exact_match(&self, query: impl AsRef<[Label]>) -> bool {
-        self.inner.exact_match(query).is_some()
+        self.0.exact_match(query).is_some()
     }
 
 }
@@ -28,9 +23,7 @@ impl<Label: Ord> Default for TrieBuilder<Label> {
 
 impl<Label: Ord> TrieBuilder<Label> {
     pub fn new() -> Self {
-        Self {
-            inner: map::TrieBuilder::new(),
-        }
+        Self(map::TrieBuilder::new())
     }
 
     /// Add a cloneable entry.
@@ -38,19 +31,17 @@ impl<Label: Ord> TrieBuilder<Label> {
     where
         Label: Clone,
     {
-        self.inner.push(entry, ());
+        self.0.push(entry, ());
     }
 
     /// Add an entry.
     pub fn insert<Arr: IntoIterator<Item = Label>>(&mut self, entry: Arr) {
-        self.inner.insert(entry, ());
+        self.0.insert(entry, ());
     }
 
     /// Build a [Trie].
     pub fn build(self) -> Trie<Label> {
-        Trie {
-            inner: self.inner.build(),
-        }
+        Trie(self.0.build())
     }
 }
 

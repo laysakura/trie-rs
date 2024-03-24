@@ -1,22 +1,17 @@
-use crate::inc_search::IncSearch;
 use crate::try_collect::{TryCollect, TryFromIterator};
 use super::map::{self};
 
-use derive_deref::*;
+use derive_deref::{Deref, DerefMut};
 use std::clone::Clone;
 
 #[derive(Deref, DerefMut)]
-pub struct Trie<Label: Clone> {
-    pub inner: map::Trie<Label, ()>,
-}
-pub struct TrieBuilder<Label: Clone> {
-    inner: map::TrieBuilder<Label, ()>,
-}
+pub struct Trie<Label: Clone>(pub map::Trie<Label, ()>);
+pub struct TrieBuilder<Label: Clone>(map::TrieBuilder<Label, ()>);
 
 impl<Label: Ord + Clone> Trie<Label> {
     /// Return true if `query` is an exact match.
     pub fn exact_match(&self, query: impl AsRef<[Label]>) -> bool {
-        self.inner.exact_match(query).is_some()
+        self.0.exact_match(query).is_some()
     }
 
     /// Return the common prefixes of `query`, cloned.
@@ -24,7 +19,7 @@ impl<Label: Ord + Clone> Trie<Label> {
     where
         C: TryFromIterator<Label, M>,
     {
-        self.inner
+        self.0
             .common_prefix_search(query)
             .into_iter()
             .map(|v| v.into_iter().cloned().try_collect().expect("Could not collect"))
@@ -39,7 +34,7 @@ impl<Label: Ord + Clone> Trie<Label> {
     where
         C: TryFromIterator<Label, M>,
     {
-        let chunk = self.inner.predictive_search(query);
+        let chunk = self.0.predictive_search(query);
         chunk.map(|v| v.cloned().try_collect().expect("Could not collect")).into_iter().collect()
     }
     /// Return the postfixes of all entries that match `query`, cloned.
@@ -50,7 +45,7 @@ impl<Label: Ord + Clone> Trie<Label> {
     where
         C: TryFromIterator<Label, M>,
     {
-        let chunk = self.inner.postfix_search(query);
+        let chunk = self.0.postfix_search(query);
         chunk.map(|v| v.cloned().try_collect().expect("Could not collect")).into_iter().collect()
     }
 }
@@ -64,7 +59,7 @@ impl<Label: Ord + Clone> Default for TrieBuilder<Label> {
 impl<Label: Ord + Clone> TrieBuilder<Label> {
     pub fn new() -> Self {
         Self {
-            inner: map::TrieBuilder::new(),
+            0: map::TrieBuilder::new(),
         }
     }
 
@@ -73,18 +68,18 @@ impl<Label: Ord + Clone> TrieBuilder<Label> {
     where
         Label: Clone,
     {
-        self.inner.push(entry, ());
+        self.0.push(entry, ());
     }
 
     /// Add an entry.
     pub fn insert<Arr: IntoIterator<Item = Label>>(&mut self, entry: Arr) {
-        self.inner.insert(entry, ());
+        self.0.insert(entry, ());
     }
 
     /// Build a [Trie].
     pub fn build(self) -> Trie<Label> {
         Trie {
-            inner: self.inner.build(),
+            0: self.0.build(),
         }
     }
 }
