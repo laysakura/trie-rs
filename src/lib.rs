@@ -240,7 +240,7 @@
 //! - **Generic type support**: As the above examples show, trie-rs can be used for searching not only UTF-8 string but also other data types.
 //! - **Based on [louds-rs](https://crates.io/crates/louds-rs)**, which is fast, parallelized, and memory efficient.
 //! - **Latest benchmark results are always accessible**: trie-rs is continuously benchmarked in Travis CI using [Criterion.rs](https://crates.io/crates/criterion). Graphical benchmark results are published [here](https://laysakura.github.io/trie-rs/criterion/report/).
-//! - [map::Trie][crate::map::Trie] associates a `Value` with each entry
+//! - [map::Trie] associates a `Value` with each entry
 //! - `Clone` not required for `Label` or `Value`
 //! - Search via iterators is lazy, requires less memory, and can be short circuited
 //! - Supports incremental search

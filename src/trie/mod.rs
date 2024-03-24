@@ -1,12 +1,13 @@
-use super::inc_search::IncSearch;
-use super::map::{self, PostfixIter, PrefixIter, SearchIter};
-use frayed::Defray;
+use super::map;
+use derive_deref::{Deref, DerefMut};
 
 pub mod clone;
 
+#[derive(Deref)]
 pub struct Trie<Label> {
     inner: map::Trie<Label, ()>,
 }
+
 pub struct TrieBuilder<Label> {
     inner: map::TrieBuilder<Label, ()>,
 }
@@ -17,47 +18,6 @@ impl<Label: Ord> Trie<Label> {
         self.inner.exact_match(query).is_some()
     }
 
-    /// Return the common prefixes of `query`.
-    pub fn common_prefix_search<Query>(
-        &self,
-        query: Query,
-    ) -> Defray<PrefixIter<'_, Label, (), Query>>
-    where
-        Query: AsRef<[Label]>,
-    {
-        self.inner.common_prefix_search(query)
-    }
-
-    /// Return all entries that match `query`.
-    ///
-    /// # Panics
-    /// If `query` is empty.
-    pub fn predictive_search(
-        &self,
-        query: impl AsRef<[Label]>,
-    ) -> Defray<SearchIter<'_, Label, ()>> {
-        self.inner.predictive_search(query)
-    }
-
-    /// Return the postfixes of all entries that match `query`.
-    ///
-    /// # Panics
-    /// If `query` is empty.
-    pub fn postfix_search(&self, query: impl AsRef<[Label]>) -> Defray<PostfixIter<'_, Label, ()>> {
-        self.inner.postfix_search(query)
-    }
-
-    /// Return true if `query` is a prefix.
-    ///
-    /// Note: A prefix may be an exact match or not, and an exact match may be a
-    /// prefix or not.
-    pub fn is_prefix(&self, query: impl AsRef<[Label]>) -> bool {
-        self.inner.is_prefix(query)
-    }
-
-    pub fn inc_search(&self) -> IncSearch<'_, Label, ()> {
-        IncSearch::new(&self.inner)
-    }
 }
 
 impl<Label: Ord> Default for TrieBuilder<Label> {

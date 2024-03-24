@@ -53,18 +53,6 @@ impl<Label: Ord + Clone> Trie<Label> {
         let chunk = self.inner.postfix_search(query);
         chunk.map(|v| v.cloned().try_collect().expect("Could not collect")).into_iter().collect()
     }
-
-    /// Return true if `query` is a prefix.
-    ///
-    /// Note: A prefix may be an exact match or not, and an exact match may be a
-    /// prefix or not.
-    pub fn is_prefix(&self, query: impl AsRef<[Label]>) -> bool {
-        self.inner.is_prefix(query)
-    }
-
-    pub fn inc_search(&self) -> IncSearch<'_, Label, ()> {
-        IncSearch::new(&self.inner)
-    }
 }
 
 impl<Label: Ord + Clone> Default for TrieBuilder<Label> {

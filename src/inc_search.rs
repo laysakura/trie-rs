@@ -7,9 +7,10 @@ use louds_rs::LoudsNodeNum;
 ///
 /// The motivation for this struct is for "online" or interactive use cases. One
 /// often accumulates input to match against a trie. Using the standard
-/// [`exact_match()`] faculties which has a time complexity of _O(m log n)_
-/// where _m_ is the query string length and _n_ is the number of entries in the
-/// trie. Consider this loop where we simulate accumulating a query.
+/// [`exact_match()`][crate::trie::Trie::exact_match] faculties which has a time
+/// complexity of _O(m log n)_ where _m_ is the query string length and _n_ is
+/// the number of entries in the trie. Consider this loop where we simulate
+/// accumulating a query.
 ///
 /// ```ignore
 /// let q = "appli"; // query string
