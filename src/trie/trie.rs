@@ -65,9 +65,7 @@ impl<Label: Ord + Clone> Default for TrieBuilder<Label> {
 
 impl<Label: Ord + Clone> TrieBuilder<Label> {
     pub fn new() -> Self {
-        Self {
-            0: map::TrieBuilder::new(),
-        }
+        Self(map::TrieBuilder::new())
     }
 
     /// Add a cloneable entry.
@@ -85,6 +83,6 @@ impl<Label: Ord + Clone> TrieBuilder<Label> {
 
     /// Build a [Trie].
     pub fn build(self) -> Trie<Label> {
-        Trie { 0: self.0.build() }
+        Trie(self.0.build())
     }
 }

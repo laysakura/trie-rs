@@ -237,7 +237,7 @@ mod trie {
                     |trie| {
                         let results_in_u8s: Vec<(Vec<u8>, &())> =
                             trie.0.predictive_search("す").take(100).collect();
-                        assert_eq!(results_in_u8s.into_iter().count(), 100);
+                        assert_eq!(results_in_u8s.len(), 100);
                     },
                     BatchSize::SmallInput,
                 )

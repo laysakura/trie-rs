@@ -81,7 +81,7 @@ impl<Label: Ord, Value> Trie<Label, Value> {
         C: TryFromIterator<Label, M> + Clone,
         Label: Clone,
     {
-        SearchIter::new(&self, query)
+        SearchIter::new(self, query)
     }
 
     /// Return the postfixes and values of all entries that match `query`, cloned.
@@ -105,12 +105,12 @@ impl<Label: Ord, Value> Trie<Label, Value> {
             match res {
                 Ok(i) => cur_node_num = children_node_nums[i],
                 Err(_) => {
-                    return PostfixIter::empty(&self);
+                    return PostfixIter::empty(self);
                 }
             }
         }
 
-        PostfixIter::new(&self, cur_node_num)
+        PostfixIter::new(self, cur_node_num)
     }
 
     /// Return the common prefixes of `query`, cloned.
@@ -123,7 +123,7 @@ impl<Label: Ord, Value> Trie<Label, Value> {
         C: TryFromIterator<Label, M>,
         Label: Clone,
     {
-        PrefixIter::new(&self, query)
+        PrefixIter::new(self, query)
     }
 
     pub fn find_longest_prefix<Query, C, M>(&self, query: Query) -> C
@@ -132,7 +132,7 @@ impl<Label: Ord, Value> Trie<Label, Value> {
         C: TryFromIterator<Label, M>,
         Label: Clone,
     {
-        LongestPrefixIter::new(&self, query)
+        LongestPrefixIter::new(self, query)
             .cloned()
             .try_collect()
             .expect("Could not collect")

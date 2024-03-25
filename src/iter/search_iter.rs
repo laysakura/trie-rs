@@ -80,7 +80,7 @@ where
             // None => None,
             None => self.postfix_iter.next().map(|(postfix, v)| {
                 let entry =
-                    C::try_from_iter(self.prefix.clone().into_iter().chain(postfix.into_iter()))
+                    C::try_from_iter(self.prefix.clone().into_iter().chain(postfix))
                         .expect("Could not collect postfix");
                 // let mut entry = self.prefix.clone();
                 // let ext: C = postfix.into_iter().try_collect().expect("Could not collect postfix");
