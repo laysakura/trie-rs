@@ -1,6 +1,6 @@
 use crate::map;
 use crate::try_collect::{TryFromIterator};
-
+use crate::iter::Entries;
 use derive_deref::{Deref, DerefMut};
 use std::clone::Clone;
 
@@ -20,9 +20,11 @@ impl<Label: Ord> Trie<Label> {
         C: TryFromIterator<Label, M>,
         Label: Clone,
     {
-        self.0
-            .common_prefix_search(query)
-            .map(|x: (C, &())| x.0)
+        // self.0
+        //     .common_prefix_search(query)
+        //     .map(|x: (C, &())| x.0)
+        //     .collect()
+        Entries::new(self.0.common_prefix_search(query))
             .collect()
     }
 
