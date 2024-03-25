@@ -1,5 +1,5 @@
-use crate::iter::Entries;
 use crate::inc_search::IncSearch;
+use crate::iter::Entries;
 use crate::map;
 use crate::try_collect::TryFromIterator;
 use std::clone::Clone;
@@ -20,8 +20,7 @@ impl<Label: Ord> Trie<Label> {
         Label: Clone,
     {
         // TODO: We could return Entries iterators instead of collecting.
-        Entries::new(self.0.common_prefix_search(query))
-            .collect()
+        Entries::new(self.0.common_prefix_search(query)).collect()
     }
 
     /// Return all entries that match `query`.
@@ -33,8 +32,7 @@ impl<Label: Ord> Trie<Label> {
         C: TryFromIterator<Label, M> + Clone,
         Label: Clone,
     {
-        Entries::new(self.0.predictive_search(query))
-            .collect()
+        Entries::new(self.0.predictive_search(query)).collect()
     }
     /// Return the postfixes of all entries that match `query`.
     ///
@@ -45,8 +43,7 @@ impl<Label: Ord> Trie<Label> {
         C: TryFromIterator<Label, M>,
         Label: Clone,
     {
-        Entries::new(self.0.postfix_search(query))
-            .collect()
+        Entries::new(self.0.postfix_search(query)).collect()
     }
 
     /// Create an incremental search. Useful for interactive applications. See
@@ -73,4 +70,3 @@ impl<Label: Ord> Trie<Label> {
         self.0.longest_prefix(query)
     }
 }
-

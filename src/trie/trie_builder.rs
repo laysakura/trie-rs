@@ -1,5 +1,5 @@
-use crate::map;
 use super::Trie;
+use crate::map;
 
 /// A trie builder for [Trie].
 pub struct TrieBuilder<Label>(map::TrieBuilder<Label, ()>);

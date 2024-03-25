@@ -63,7 +63,6 @@ impl Answer {
         matches!(self, Answer::Match | Answer::PrefixAndMatch)
     }
 
-
     fn new(is_prefix: bool, is_match: bool) -> Option<Self> {
         match (is_prefix, is_match) {
             (true, false) => Some(Answer::Prefix),
