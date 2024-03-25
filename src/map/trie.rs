@@ -1,10 +1,10 @@
 //! A trie map stores a value with each word or key.
 use super::Trie;
 use crate::inc_search::IncSearch;
-use crate::map::longest_prefix_iter::LongestPrefixIter;
-use crate::map::postfix_iter::PostfixIter;
-use crate::map::prefix_iter::PrefixIter;
-use crate::map::search_iter::SearchIter;
+use crate::iter::LongestPrefixIter;
+use crate::iter::PostfixIter;
+use crate::iter::PrefixIter;
+use crate::iter::SearchIter;
 use crate::try_collect::{TryCollect, TryFromIterator};
 use louds_rs::{self, ChildNodeIter, LoudsNodeNum};
 

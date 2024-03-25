@@ -262,4 +262,5 @@ mod internal_data_structure;
 pub mod map;
 mod trie;
 pub mod try_collect;
+pub mod iter;
 pub use trie::{Trie, TrieBuilder};
