@@ -19,11 +19,9 @@ impl<Label: Ord> Trie<Label> {
         C: TryFromIterator<Label, M>,
         Label: Clone,
     {
-        // self.0
-        //     .common_prefix_search(query)
-        //     .map(|x: (C, &())| x.0)
-        //     .collect()
-        Entries::new(self.0.common_prefix_search(query)).collect()
+        // TODO: We could return Entries iterators instead of collecting.
+        Entries::new(self.0.common_prefix_search(query))
+            .collect()
     }
 
     /// Return all entries that match `query`.
@@ -35,9 +33,7 @@ impl<Label: Ord> Trie<Label> {
         C: TryFromIterator<Label, M> + Clone,
         Label: Clone,
     {
-        self.0
-            .predictive_search(query)
-            .map(|x: (C, &())| x.0)
+        Entries::new(self.0.predictive_search(query))
             .collect()
     }
     /// Return the postfixes of all entries that match `query`.
@@ -49,9 +45,7 @@ impl<Label: Ord> Trie<Label> {
         C: TryFromIterator<Label, M>,
         Label: Clone,
     {
-        self.0
-            .postfix_search(query)
-            .map(|x: (C, &())| x.0)
+        Entries::new(self.0.postfix_search(query))
             .collect()
     }
 
