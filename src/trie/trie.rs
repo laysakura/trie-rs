@@ -1,5 +1,5 @@
 use crate::inc_search::IncSearch;
-use crate::iter::Entries;
+use crate::iter::{Entries, PostfixIter, PrefixIter, SearchIter};
 use crate::map;
 use crate::try_collect::TryFromIterator;
 use std::clone::Clone;
@@ -14,36 +14,46 @@ impl<Label: Ord> Trie<Label> {
     }
 
     /// Return the common prefixes of `query`.
-    pub fn common_prefix_search<C, M>(&self, query: impl AsRef<[Label]>) -> Vec<C>
+    pub fn common_prefix_search<Query, C, M>(
+        &self,
+        query: Query,
+    ) -> Entries<PrefixIter<'_, Label, (), Query, C, M>>
     where
+        Query: AsRef<[Label]>,
         C: TryFromIterator<Label, M>,
         Label: Clone,
     {
         // TODO: We could return Entries iterators instead of collecting.
-        Entries::new(self.0.common_prefix_search(query)).collect()
+        Entries::new(self.0.common_prefix_search(query))
     }
 
     /// Return all entries that match `query`.
     ///
     /// # Panics
     /// If `query` is empty.
-    pub fn predictive_search<C, M>(&self, query: impl AsRef<[Label]>) -> Vec<C>
+    pub fn predictive_search<C, M>(
+        &self,
+        query: impl AsRef<[Label]>,
+    ) -> Entries<SearchIter<'_, Label, (), C, M>>
     where
         C: TryFromIterator<Label, M> + Clone,
         Label: Clone,
     {
-        Entries::new(self.0.predictive_search(query)).collect()
+        Entries::new(self.0.predictive_search(query))
     }
     /// Return the postfixes of all entries that match `query`.
     ///
     /// # Panics
     /// If `query` is empty.
-    pub fn postfix_search<C, M>(&self, query: impl AsRef<[Label]>) -> Vec<C>
+    pub fn postfix_search<C, M>(
+        &self,
+        query: impl AsRef<[Label]>,
+    ) -> Entries<PostfixIter<'_, Label, (), C, M>>
     where
         C: TryFromIterator<Label, M>,
         Label: Clone,
     {
-        Entries::new(self.0.postfix_search(query)).collect()
+        Entries::new(self.0.postfix_search(query))
     }
 
     /// Create an incremental search. Useful for interactive applications. See

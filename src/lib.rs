@@ -48,8 +48,8 @@
 //! assert_eq!(trie.exact_match("🍜"), false);
 //!
 //! // predictive_search(): Find words which include `query` as their prefix.
-//! let results_in_u8s: Vec<Vec<u8>> = trie.predictive_search("すし");
-//! let results_in_str: Vec<String> = trie.predictive_search("すし");
+//! let results_in_u8s: Vec<Vec<u8>> = trie.predictive_search("すし").collect();
+//! let results_in_str: Vec<String> = trie.predictive_search("すし").collect();
 //! assert_eq!(
 //!     results_in_str,
 //!     vec![
@@ -63,8 +63,8 @@
 //! );
 //!
 //! // common_prefix_search(): Find words which is included in `query`'s prefix.
-//! let results_in_u8s: Vec<Vec<u8>> = trie.common_prefix_search("すしや");
-//! let results_in_str: Vec<String> = trie.common_prefix_search("すしや");
+//! let results_in_u8s: Vec<Vec<u8>> = trie.common_prefix_search("すしや").collect();
+//! let results_in_str: Vec<String> = trie.common_prefix_search("すしや").collect();
 //! assert_eq!(
 //!     results_in_str,
 //!     vec![
@@ -108,15 +108,17 @@
 //!     trie.exact_match(vec!["a", "woman", "on", "the", "beach"]),
 //!     true
 //! );
+//! let r: Vec<Vec<&str>> = trie.predictive_search(vec!["a", "woman", "on"]).collect();
 //! assert_eq!(
-//!     trie.predictive_search::<Vec<&str>, _>(vec!["a", "woman", "on"]),
+//!     r,
 //!     vec![
 //!         ["a", "woman", "on", "the", "beach"],
 //!         ["a", "woman", "on", "the", "run"],
 //!     ],
 //! );
+//! let s: Vec<Vec<&str>> = trie.common_prefix_search(vec!["a", "woman", "on", "the", "beach"]).collect();
 //! assert_eq!(
-//!     trie.common_prefix_search::<Vec<&str>, _>(vec!["a", "woman", "on", "the", "beach"]),
+//!     s,
 //!     vec![vec!["a", "woman"], vec!["a", "woman", "on", "the", "beach"]],
 //! );
 //! ```
@@ -147,15 +149,18 @@
 //! let trie = builder.build();
 //!
 //! assert_eq!(trie.exact_match([5, 3, 5, 9, 4, 0, 8, 1, 2, 8]), true);
+//!
+//! let t: Vec<Vec<u8>> = trie.predictive_search([3]).collect();
 //! assert_eq!(
-//!     trie.predictive_search::<Vec<u8>,_>([3]),
+//!     t,
 //!     vec![
 //!         [3, 2, 8, 2, 3, 0, 6, 6, 4, 7],
 //!         [3, 4, 2, 1, 1, 7, 0, 6, 7, 9],
 //!     ],
 //! );
+//! let u: Vec<Vec<u8>> = trie.common_prefix_search([1, 4, 1, 5, 9, 2, 6, 5, 3, 5]).collect();
 //! assert_eq!(
-//!     trie.common_prefix_search::<Vec<u8>, _>([1, 4, 1, 5, 9, 2, 6, 5, 3, 5]),
+//!     u,
 //!     vec![[1, 4, 1, 5, 9, 2, 6, 5, 3, 5]],
 //! );
 //! ```

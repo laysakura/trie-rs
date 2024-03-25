@@ -131,7 +131,7 @@ mod trie {
                         // when `setup` time is far longer than `routine` time.
                         // Tested function takes too short compared to build().
                         // So loop many times.
-                        let results_in_u8s: Vec<Vec<u8>> = trie.predictive_search("すし");
+                        let results_in_u8s: Vec<Vec<u8>> = trie.predictive_search("すし").collect();
                         for _ in 0..(times - 1) {
                             for entry in trie.predictive_search::<Vec<u8>, _>("すし") {
                                 black_box(entry);
@@ -178,7 +178,7 @@ mod trie {
                         // when `setup` time is far longer than `routine` time.
                         // Tested function takes too short compared to build().
                         // So loop many times.
-                        let results_in_str: Vec<String> = trie.predictive_search("すし");
+                        let results_in_str: Vec<String> = trie.predictive_search("すし").collect();
                         for _ in 0..(times - 1) {
                             for entry in trie.predictive_search("すし") {
                                 black_box::<Vec<u8>>(entry);
@@ -214,7 +214,7 @@ mod trie {
                 b.iter_batched(
                     || &TRIE_EDICT,
                     |trie| {
-                        let results: Vec<Vec<u8>> = trie.predictive_search("す");
+                        let results: Vec<Vec<u8>> = trie.predictive_search("す").collect();
                         assert_eq!(results.len(), 4220);
                         let results_in_u8s = results.into_iter().take(100);
                         assert_eq!(results_in_u8s.len(), 100);
@@ -263,9 +263,9 @@ mod trie {
                         // Tested function takes too short compared to build().
                         // So loop many times.
                         let results_in_u8s: Vec<Vec<u8>> =
-                            trie.common_prefix_search("すしをにぎる");
+                            trie.common_prefix_search("すしをにぎる").collect();
                         for _ in 0..(times - 1) {
-                            black_box(trie.common_prefix_search::<Vec<u8>, _>("すしをにぎる"));
+                            black_box(trie.common_prefix_search::<Vec<u8>, _>("すしをにぎる").collect());
                         }
 
                         let results_in_str: Vec<&str> = results_in_u8s
@@ -297,7 +297,7 @@ mod trie {
                         // when `setup` time is far longer than `routine` time.
                         // Tested function takes too short compared to build().
                         // So loop many times.
-                        let results_in_str: Vec<String> = trie.common_prefix_search("すしをにぎる");
+                        let results_in_str: Vec<String> = trie.common_prefix_search("すしをにぎる").collect();
                         for _ in 0..(times - 1) {
                             for entry in trie.common_prefix_search("すしをにぎる") {
                                 black_box::<Vec<u8>>(entry);
