@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 use louds_rs::LoudsNodeNum;
 use crate::try_collect::{TryFromIterator, TryCollect, Collect};
-use crate::map::clone::postfix_iter::PostfixIter;
+use crate::map::postfix_iter::PostfixIter;
 use crate::map::{Trie};
 
 pub struct SearchIter<'a, Label, Value, C, M> {

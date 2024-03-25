@@ -18,10 +18,6 @@ impl<'a, Label: Ord, Value, Query: AsRef<[Label]>> LongestPrefixIter<'a, Label, 
             index: 0,
         }
     }
-
-    pub fn value(&self) -> Option<&'a Value> {
-        self.trie.value(self.node)
-    }
 }
 
 impl<'a, Label: Ord, Value, Query: AsRef<[Label]>> Iterator

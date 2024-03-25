@@ -2,9 +2,9 @@
 use super::Trie;
 use crate::inc_search::IncSearch;
 use crate::map::longest_prefix_iter::LongestPrefixIter;
-use crate::map::clone::postfix_iter::PostfixIter;
-use crate::map::clone::prefix_iter::PrefixIter;
-use crate::map::clone::search_iter::SearchIter;
+use crate::map::postfix_iter::PostfixIter;
+use crate::map::prefix_iter::PrefixIter;
+use crate::map::search_iter::SearchIter;
 use crate::try_collect::{TryCollect, TryFromIterator};
 use louds_rs::{self, ChildNodeIter, LoudsNodeNum};
 
@@ -85,14 +85,12 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     ///
     /// # Panics
     /// If `query` is empty.
-    pub fn postfix_search<Query, C, M>(&self, query: Query)
+    pub fn postfix_search<C, M>(&self, query: impl AsRef<[Label]>)
                                 -> PostfixIter<'_, Label, Value, C, M>
     where
-        Query: AsRef<[Label]>,
         C: TryFromIterator<Label, M>,
         Label: Clone,
     {
-
         let mut cur_node_num = LoudsNodeNum(1);
 
         // Consumes query (prefix)
