@@ -7,20 +7,20 @@ pub struct PostfixIter<'a, Label, Value, C, M> {
     trie: &'a Trie<Label, Value>,
     queue: Vec<(usize, LoudsNodeNum)>,
     buffer: Vec<&'a Label>,
-    consume: Option<usize>,
     value: Option<&'a Value>,
     col: PhantomData<(C, M)>,
 }
 
-impl<'a, Label, Value, C, M> PostfixIter<'a, Label, Value, C, M>
+impl<'a, Label: Ord, Value, C, M> PostfixIter<'a, Label, Value, C, M>
 where C: TryFromIterator<Label, M> {
     #[inline]
     pub fn new(trie: &'a Trie<Label, Value>, root: LoudsNodeNum) -> Self {
+        let mut children: Vec<_> = trie.children_node_nums(root).map(|n| (0, n)).collect();
+        children.reverse();
         Self {
             trie,
-            queue: vec![(0, root)],
+            queue: children,
             buffer: Vec::new(),
-            consume: None,
             value: None,
             col: PhantomData,
         }
@@ -32,14 +32,9 @@ where C: TryFromIterator<Label, M> {
             trie,
             queue: Vec::new(),
             buffer: Vec::new(),
-            consume: None,
             value: None,
             col: PhantomData,
         }
-    }
-
-    pub fn value(&self) -> Option<&'a Value> {
-        self.value
     }
 }
 
@@ -49,7 +44,7 @@ where C: TryFromIterator<Label, M> {
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         use std::cmp::Ordering;
-        while self.consume.is_none() {
+        while self.value.is_none() {
             if let Some((depth, node)) = self.queue.pop() {
                 let children = self.trie.children_node_nums(node);
                 self.queue
@@ -67,18 +62,12 @@ where C: TryFromIterator<Label, M> {
                     }
                 }
                 self.value = self.trie.value(node);
-                if self.value.is_some() {
-                    self.consume = Some(0);
-                }
-            } else if self.value.is_some() {
-                return None;
             } else {
-                self.value = None;
                 break;
             }
         }
-        if let Some(i) = self.consume.take() {
-            Some((self.buffer[i..].iter().cloned().cloned().try_collect().expect("Could not collect"), self.value.cloned().expect("No value at terminal")))
+        if let Some(v) = self.value.take() {
+            Some((self.buffer.iter().cloned().cloned().try_collect().expect("Could not collect"), v.clone()))
         } else {
             None
         }

@@ -1,22 +1,19 @@
 use std::marker::PhantomData;
 use louds_rs::LoudsNodeNum;
-// use crate::try_collect::{TryFromIterator, TryCollect};
-use crate::try_collect::*;
+use crate::try_collect::{TryFromIterator, TryCollect, Collect};
 use crate::map::clone::postfix_iter::PostfixIter;
 use crate::map::{Trie};
 
 pub struct SearchIter<'a, Label, Value, C, M> {
-    trie: &'a Trie<Label, Value>,
     prefix: C,
-    index: usize,
-    first: Option<&'a Label>,
+    first: Option<(C, Value)>,
     postfix_iter: PostfixIter<'a, Label, Value, Vec<Label>, Collect>,
     value: Option<&'a Value>,
     col: PhantomData<(C, M)>,
 }
 
-impl<'a, Label: Ord + Clone, Value, C, M> SearchIter<'a, Label, Value, C, M>
-where C: TryFromIterator<Label, M> + Extend<Label> + Clone + Default,
+impl<'a, Label: Ord + Clone, Value: Clone, C, M> SearchIter<'a, Label, Value, C, M>
+where C: TryFromIterator<Label, M> + Extend<C> + Clone,
 {
     pub fn new(
         trie: &'a Trie<Label, Value>,
@@ -32,23 +29,28 @@ where C: TryFromIterator<Label, M> + Extend<Label> + Clone + Default,
             let res = trie.bin_search_by_children_labels(chr, &children_node_nums[..]);
             match res {
                 Ok(i) => cur_node_num = children_node_nums[i],
-                Err(_) => {
-                    prefix.clear();
-                    break;
-                }
+                Err(_) => return Self::empty(trie),
             }
             prefix.push(trie.label(cur_node_num).clone());
         }
-        let _ = prefix.pop();
-
-
+        let prefix: C = prefix.into_iter().try_collect().expect("Could not collect");
+        let first = trie.value(cur_node_num).map(|v| (prefix.clone(), v.clone()));
         SearchIter {
-            trie,
-            prefix: prefix.into_iter().try_collect().expect("Could not collect"),
-            index: 0,
-            first: None,
+            prefix,
+            first,
             value: None,
             postfix_iter: PostfixIter::new(trie, cur_node_num),
+            col: PhantomData,
+        }
+    }
+
+    pub fn empty(trie: &'a Trie<Label, Value>) -> Self {
+        let prefix = C::try_from_iter(std::iter::empty::<Label>()).expect("Could not make empty prefix");
+        SearchIter {
+            prefix,
+            first: None,
+            value: None,
+            postfix_iter: PostfixIter::empty(trie),
             col: PhantomData,
         }
     }
@@ -59,17 +61,22 @@ where C: TryFromIterator<Label, M> + Extend<Label> + Clone + Default,
 }
 
 impl<'a, Label: Ord + Clone, Value: Clone, C, M> Iterator for SearchIter<'a, Label, Value, C, M>
-where C: TryFromIterator<Label, M> + Extend<Label> + Clone,
+where C: TryFromIterator<Label, M> + Extend<C> + Clone,
 Vec<Label>: TryFromIterator<Label, Collect>
 {
     type Item = (C, Value);
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        self.postfix_iter.next().map(|(postfix, V)| {
-            let mut entry = self.prefix.clone();
-            entry.extend(postfix.into_iter());
-            (entry, V)
-        })
+        match self.first.take() {
+            // None => None,
+            None => self.postfix_iter.next().map(|(postfix, v)| {
+                let mut entry = self.prefix.clone();
+                let ext: C = postfix.into_iter().try_collect().expect("Could not collect postfix");
+                entry.extend([ext]);
+                (entry, v)
+            }),
+            x => x
+        }
     }
 }
 

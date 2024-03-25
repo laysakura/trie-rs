@@ -103,7 +103,7 @@ impl<Label: Ord, Value> Trie<Label, Value> {
         &self,
         query: impl AsRef<[Label]>,
     ) -> Defray<PostfixIter<'_, Label, Value>> {
-        // assert!(!query.as_ref().is_empty());
+        assert!(!query.as_ref().is_empty());
         let mut cur_node_num = LoudsNodeNum(1);
 
         // Consumes query (prefix)
@@ -169,7 +169,11 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     }
 
     pub(crate) fn value(&self, node_num: LoudsNodeNum) -> Option<&Value> {
-        self.trie_labels[(node_num.0 - 2) as usize].value.as_ref()
+        if node_num.0 >= 2 {
+            self.trie_labels[(node_num.0 - 2) as usize].value.as_ref()
+        } else {
+            None
+        }
     }
 
     pub(crate) fn value_mut(&mut self, node_num: LoudsNodeNum) -> Option<&mut Value> {
