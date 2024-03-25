@@ -1,2 +1,3 @@
-pub mod clone;
+mod trie;
 
+pub use trie::{Trie, TrieBuilder};

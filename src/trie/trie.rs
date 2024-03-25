@@ -87,4 +87,3 @@ impl<Label: Ord + Clone> TrieBuilder<Label> {
         Trie { 0: self.0.build() }
     }
 }
-

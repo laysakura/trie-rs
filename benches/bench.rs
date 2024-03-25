@@ -29,7 +29,7 @@ mod trie {
     use std::fs::File;
     use std::io::{BufRead, BufReader};
     use std::str;
-    use trie_rs::trie::clone::{Trie, TrieBuilder};
+    use trie_rs::{Trie, TrieBuilder};
 
     lazy_static! {
         // Construct Japanese dictionary using EDICT (http://www.edrdg.org/jmdict/edict.html).
@@ -178,19 +178,13 @@ mod trie {
                         // when `setup` time is far longer than `routine` time.
                         // Tested function takes too short compared to build().
                         // So loop many times.
-                        let results_in_u8s = trie.0.predictive_search("すし");
+                        let results_in_str: Vec<String> = trie.predictive_search("すし");
                         for _ in 0..(times - 1) {
-                            for entry in &trie.0.predictive_search("すし") {
-                                black_box(entry);
+                            for entry in trie.predictive_search("すし") {
+                                black_box::<Vec<u8>>(entry);
                             }
                         }
 
-                        let results_in_str: Vec<String> = results_in_u8s
-                            .into_iter()
-                            .map(|u8s| {
-                                String::from_utf8(u8s.cloned().collect::<Vec<u8>>()).unwrap()
-                            })
-                            .collect();
                         assert_eq!(
                             results_in_str,
                             vec![
@@ -241,8 +235,7 @@ mod trie {
                 b.iter_batched(
                     || &TRIE_EDICT,
                     |trie| {
-                        let results = trie.0.predictive_search("す");
-                        let results_in_u8s = results.into_iter().take(100);
+                        let results_in_u8s: Vec<(Vec<u8>, &())> = trie.0.predictive_search("す").take(100).collect();
                         assert_eq!(results_in_u8s.into_iter().count(), 100);
                     },
                     BatchSize::SmallInput,
@@ -303,19 +296,12 @@ mod trie {
                         // when `setup` time is far longer than `routine` time.
                         // Tested function takes too short compared to build().
                         // So loop many times.
-                        let results_in_u8s = trie.0.common_prefix_search("すしをにぎる");
+                        let results_in_str: Vec<String> = trie.common_prefix_search("すしをにぎる");
                         for _ in 0..(times - 1) {
-                            for entry in &trie.0.common_prefix_search("すしをにぎる") {
-                                black_box(entry);
+                            for entry in trie.common_prefix_search("すしをにぎる") {
+                                black_box::<Vec<u8>>(entry);
                             }
                         }
-
-                        let results_in_str: Vec<String> = results_in_u8s
-                            .into_iter()
-                            .map(|u8s| {
-                                String::from_utf8(u8s.cloned().collect::<Vec<u8>>()).unwrap()
-                            })
-                            .collect();
                         assert_eq!(results_in_str, vec!["す", "すし", "すしをにぎる"]);
                     },
                     BatchSize::SmallInput,

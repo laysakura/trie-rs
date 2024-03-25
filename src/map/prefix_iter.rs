@@ -1,4 +1,4 @@
-use crate::map::{Trie, Value};
+use crate::map::Trie;
 use louds_rs::LoudsNodeNum;
 
 pub struct PrefixIter<'a, Label, Value, Query> {
@@ -90,11 +90,3 @@ where
     }
 }
 
-impl<'a, Label: Ord, V, Q> Value<V> for frayed::defray::Group<'a, PrefixIter<'_, Label, V, Q>>
-where
-    Q: AsRef<[Label]>,
-{
-    fn value(&self) -> Option<&V> {
-        self.parent.iter_ref().value()
-    }
-}
