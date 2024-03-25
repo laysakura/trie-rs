@@ -5,11 +5,34 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-Add `is_prefix()` and `trie_rs::map::{Trie, TrieBuilder}`.
+- Use iterators for results
+
+  Some benefits are that they're lazy, short-circuitable, and require less
+  memory.
+
+```
+let a: Vec<Vec<u8>> = trie.predictive_search("ech").take(10).collect();
+```
+
+- Allow `Label` collection type to be specified
+
+```
+let a: Vec<Vec<u8>> = trie.predictive_search("ech").collect();
+let b: Vec<String> = trie.predictive_search("ech").collect();
+```
+
+- Add incremental search
+  
+  If your search can be _O(log n)_ instead of _O(m log n)_, do that.
+
+- Add postfix search
+- Add `map::Trie::exact_match_mut()` to mutate map `Value`s
+- Add longest shared prefix feature
 
 ## [v0.2.0]
 
 - feat: Add trie_rs::map::{Trie, TrieBuilder} ([#20](https://github.com/laysakura/trie-rs/pull/20))
+- feat: Add `is_prefix()`.
 
 ## [v0.1.1]
 Only internal data type change.
