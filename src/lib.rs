@@ -49,10 +49,7 @@
 //!
 //! // predictive_search(): Find words which include `query` as their prefix.
 //! let results_in_u8s: Vec<Vec<u8>> = trie.predictive_search("すし");
-//! let results_in_str: Vec<&str> = results_in_u8s
-//!     .iter()
-//!     .map(|u8s| str::from_utf8(u8s).unwrap())
-//!     .collect();
+//! let results_in_str: Vec<String> = trie.predictive_search("すし");
 //! assert_eq!(
 //!     results_in_str,
 //!     vec![
@@ -67,10 +64,7 @@
 //!
 //! // common_prefix_search(): Find words which is included in `query`'s prefix.
 //! let results_in_u8s: Vec<Vec<u8>> = trie.common_prefix_search("すしや");
-//! let results_in_str: Vec<&str> = results_in_u8s
-//!     .iter()
-//!     .map(|u8s| str::from_utf8(u8s).unwrap())
-//!     .collect();
+//! let results_in_str: Vec<String> = trie.common_prefix_search("すしや");
 //! assert_eq!(
 //!     results_in_str,
 //!     vec![
