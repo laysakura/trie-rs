@@ -1,17 +1,17 @@
 
+use louds_rs::LoudsNodeNum;
+use derive_deref::{Deref, DerefMut};
 use super::postfix_iter::PostfixIter;
 use super::search_iter::SearchIter;
 use super::prefix_iter::PrefixIter;
-use louds_rs::LoudsNodeNum;
 use crate::map;
 use crate::try_collect::{TryCollect, TryFromIterator};
-use derive_deref::{Deref, DerefMut};
 
 
 #[derive(Deref, DerefMut)]
 pub struct TrieBuilder<Label, Value>(pub map::TrieBuilder<Label, Value>);
 
-impl<Label: Ord + Clone, Value: Clone> TrieBuilder<Label, Value> {
+impl<Label: Ord + Clone, Value> TrieBuilder<Label, Value> {
     pub fn new() -> Self {
         Self(map::TrieBuilder::new())
     }
@@ -24,7 +24,7 @@ impl<Label: Ord + Clone, Value: Clone> TrieBuilder<Label, Value> {
 #[derive(Deref, DerefMut)]
 pub struct Trie<Label, Value>(map::Trie<Label, Value>);
 
-impl<Label: Ord + Clone, Value: Clone> Trie<Label, Value> {
+impl<Label: Ord + Clone, Value> Trie<Label, Value> {
     /// Return all entries and their values that match `query`, cloned.
     ///
     /// # Panics
@@ -114,10 +114,10 @@ mod search_tests {
     #[test]
     fn sanity_check() {
         let trie = build_trie();
-        let v: Vec<(String, u8)> = trie.predictive_search("apple").collect();
+        let v: Vec<(String, &u8)> = trie.predictive_search("apple").collect();
         assert_eq!(
             v,
-            vec![("apple".to_string(), 2)]
+            vec![("apple".to_string(), &2)]
         );
     }
 
@@ -221,8 +221,8 @@ mod search_tests {
                 fn $name() {
                     let (query, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results: Vec<(String, u8)> = trie.predictive_search(query).collect();
-                    let expected_results: Vec<(String, u8)> = expected_results.iter().map(|s| (s.0.to_string(), s.1)).collect();
+                    let results: Vec<(String, &u8)> = trie.predictive_search(query).collect();
+                    let expected_results: Vec<(String, &u8)> = expected_results.iter().map(|s| (s.0.to_string(), &s.1)).collect();
                     assert_eq!(results, expected_results);
                 }
             )*
@@ -276,8 +276,8 @@ mod search_tests {
                 fn $name() {
                     let (query, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results: Vec<(String, u8)> = trie.postfix_search(query).collect();
-                    let expected_results: Vec<(String, u8)> = expected_results.iter().map(|s| (s.0.to_string(), s.1)).collect();
+                    let results: Vec<(String, &u8)> = trie.postfix_search(query).collect();
+                    let expected_results: Vec<(String, &u8)> = expected_results.iter().map(|s| (s.0.to_string(), &s.1)).collect();
                     assert_eq!(results, expected_results);
                 }
             )*
@@ -305,8 +305,8 @@ mod search_tests {
                     let (query, expected_results) = $value;
                     let trie = super::build_trie2();
                     let chars: Vec<char> = query.chars().collect();
-                    let results: Vec<(String, u8)> = trie.postfix_search(chars).collect();
-                    let expected_results: Vec<(String, u8)> = expected_results.iter().map(|s| (s.0.to_string(), s.1)).collect();
+                    let results: Vec<(String, &u8)> = trie.postfix_search(chars).collect();
+                    let expected_results: Vec<(String, &u8)> = expected_results.iter().map(|s| (s.0.to_string(), &s.1)).collect();
                     assert_eq!(results, expected_results);
                 }
             )*

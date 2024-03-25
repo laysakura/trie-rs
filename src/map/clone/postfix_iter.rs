@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 use louds_rs::LoudsNodeNum;
 use crate::try_collect::{TryFromIterator, TryCollect};
-use crate::map::{Trie, Value};
+use crate::map::Trie;
 
 pub struct PostfixIter<'a, Label, Value, C, M> {
     trie: &'a Trie<Label, Value>,
@@ -38,9 +38,9 @@ where C: TryFromIterator<Label, M> {
     }
 }
 
-impl<'a, Label: Ord + Clone, Value: Clone, C, M> Iterator for PostfixIter<'a, Label, Value, C, M>
+impl<'a, Label: Ord + Clone, Value, C, M> Iterator for PostfixIter<'a, Label, Value, C, M>
 where C: TryFromIterator<Label, M> {
-    type Item = (C, Value);
+    type Item = (C, &'a Value);
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         use std::cmp::Ordering;
@@ -67,15 +67,15 @@ where C: TryFromIterator<Label, M> {
             }
         }
         if let Some(v) = self.value.take() {
-            Some((self.buffer.iter().cloned().cloned().try_collect().expect("Could not collect"), v.clone()))
+            Some((self.buffer.iter().cloned().cloned().try_collect().expect("Could not collect"), v))
         } else {
             None
         }
     }
 }
 
-impl<Label: Ord, V, C, M> Value<V> for PostfixIter<'_, Label, V, C, M> {
-    fn value(&self) -> Option<&V> {
-        self.value
-    }
-}
+// impl<Label: Ord, V, C, M> Value<V> for PostfixIter<'_, Label, V, C, M> {
+//     fn value(&self) -> Option<&V> {
+//         self.value
+//     }
+// }

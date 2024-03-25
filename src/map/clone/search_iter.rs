@@ -6,13 +6,13 @@ use crate::map::{Trie};
 
 pub struct SearchIter<'a, Label, Value, C, M> {
     prefix: C,
-    first: Option<(C, Value)>,
+    first: Option<(C, &'a Value)>,
     postfix_iter: PostfixIter<'a, Label, Value, Vec<Label>, Collect>,
     value: Option<&'a Value>,
     col: PhantomData<(C, M)>,
 }
 
-impl<'a, Label: Ord + Clone, Value: Clone, C, M> SearchIter<'a, Label, Value, C, M>
+impl<'a, Label: Ord + Clone, Value, C, M> SearchIter<'a, Label, Value, C, M>
 where C: TryFromIterator<Label, M> + Extend<C> + Clone,
 {
     pub fn new(
@@ -34,7 +34,7 @@ where C: TryFromIterator<Label, M> + Extend<C> + Clone,
             prefix.push(trie.label(cur_node_num).clone());
         }
         let prefix: C = prefix.into_iter().try_collect().expect("Could not collect");
-        let first = trie.value(cur_node_num).map(|v| (prefix.clone(), v.clone()));
+        let first = trie.value(cur_node_num).map(|v| (prefix.clone(), v));
         SearchIter {
             prefix,
             first,
@@ -60,11 +60,11 @@ where C: TryFromIterator<Label, M> + Extend<C> + Clone,
     }
 }
 
-impl<'a, Label: Ord + Clone, Value: Clone, C, M> Iterator for SearchIter<'a, Label, Value, C, M>
+impl<'a, Label: Ord + Clone, Value, C, M> Iterator for SearchIter<'a, Label, Value, C, M>
 where C: TryFromIterator<Label, M> + Extend<C> + Clone,
 Vec<Label>: TryFromIterator<Label, Collect>
 {
-    type Item = (C, Value);
+    type Item = (C, &'a Value);
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         match self.first.take() {
