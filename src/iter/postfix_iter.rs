@@ -3,6 +3,7 @@ use crate::try_collect::{TryCollect, TryFromIterator};
 use louds_rs::LoudsNodeNum;
 use std::marker::PhantomData;
 
+/// Iterates through all the postfixes of a matching query.
 pub struct PostfixIter<'a, Label, Value, C, M> {
     trie: &'a Trie<Label, Value>,
     queue: Vec<(usize, LoudsNodeNum)>,
@@ -16,7 +17,7 @@ where
     C: TryFromIterator<Label, M>,
 {
     #[inline]
-    pub fn new(trie: &'a Trie<Label, Value>, root: LoudsNodeNum) -> Self {
+    pub(crate) fn new(trie: &'a Trie<Label, Value>, root: LoudsNodeNum) -> Self {
         let mut children: Vec<_> = trie.children_node_nums(root).map(|n| (0, n)).collect();
         children.reverse();
         Self {
@@ -29,7 +30,7 @@ where
     }
 
     #[inline]
-    pub fn empty(trie: &'a Trie<Label, Value>) -> Self {
+    pub(crate) fn empty(trie: &'a Trie<Label, Value>) -> Self {
         Self {
             trie,
             queue: Vec::new(),

@@ -1,8 +1,7 @@
+//! Try to collect from an iterator that may fail.
 use std::fmt::Debug;
 use std::iter::FromIterator;
 
-/// Try to collect from an iterator that may fail.
-///
 /// # Motivation
 ///
 /// I really wanted to be able to turn a `Iterator<Item = u8>` into a String
@@ -29,7 +28,9 @@ impl<T> TryCollect for T where T: Iterator + ?Sized {}
 
 /// Try to create an object from an iterator.
 pub trait TryFromIterator<A, Marker> {
+    /// Error type of [TryFromIterator::try_from_iter].
     type Error: Debug;
+    /// Try to turn the given iterator into `Self`.
     fn try_from_iter<T>(iter: T) -> Result<Self, Self::Error>
     where
         Self: Sized,

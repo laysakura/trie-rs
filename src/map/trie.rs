@@ -45,7 +45,8 @@ impl<Label: Ord, Value> Trie<Label, Value> {
             .and_then(move |x| self.value_mut(x))
     }
 
-    /// Create an incremental search. Useful for interactive applications.
+    /// Create an incremental search. Useful for interactive applications. See
+    /// [crate::inc_search] for details.
     pub fn inc_search(&self) -> IncSearch<'_, Label, Value> {
         IncSearch::new(self)
     }
@@ -69,7 +70,7 @@ impl<Label: Ord, Value> Trie<Label, Value> {
         self.has_children_node_nums(cur_node_num)
     }
 
-    /// Return all entries and their values that match `query`, cloned.
+    /// Return all entries and their values that match `query`.
     ///
     /// # Panics
     /// If `query` is empty.
@@ -84,7 +85,7 @@ impl<Label: Ord, Value> Trie<Label, Value> {
         SearchIter::new(self, query)
     }
 
-    /// Return the postfixes and values of all entries that match `query`, cloned.
+    /// Return the postfixes and values of all entries that match `query`.
     ///
     /// # Panics
     /// If `query` is empty.
@@ -113,7 +114,7 @@ impl<Label: Ord, Value> Trie<Label, Value> {
         PostfixIter::new(self, cur_node_num)
     }
 
-    /// Return the common prefixes of `query`, cloned.
+    /// Return the common prefixes of `query`.
     pub fn common_prefix_search<Query, C, M>(
         &self,
         query: Query,
@@ -126,7 +127,8 @@ impl<Label: Ord, Value> Trie<Label, Value> {
         PrefixIter::new(self, query)
     }
 
-    pub fn find_longest_prefix<Query, C, M>(&self, query: Query) -> C
+    /// Return the longest shared prefix of `query`.
+    pub fn longest_prefix<Query, C, M>(&self, query: Query) -> C
     where
         Query: AsRef<[Label]>,
         C: TryFromIterator<Label, M>,
@@ -283,7 +285,7 @@ mod search_tests {
                 fn $name() {
                     let (query, expected_match) = $value;
                     let trie = super::build_trie();
-                    let result: String = trie.find_longest_prefix(query);
+                    let result: String = trie.longest_prefix(query);
                     assert_eq!(result, expected_match);
                 }
             )*

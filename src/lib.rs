@@ -1,4 +1,4 @@
-// #![forbid(missing_docs)]
+#![forbid(missing_docs)]
 //! Memory efficient trie (prefix tree) and map library based on LOUDS.
 //!
 //! [Master API Docs](https://laysakura.github.io/trie-rs/trie_rs/)

@@ -1,42 +1,41 @@
+//! # Motivation
+//!
+//! The motivation for this struct is for "online" or interactive use cases. One
+//! often accumulates input to match against a trie. Using the standard
+//! [`exact_match()`][crate::trie::Trie::exact_match] faculties which has a time
+//! complexity of _O(m log n)_ where _m_ is the query string length and _n_ is
+//! the number of entries in the trie. Consider this loop where we simulate
+//! accumulating a query.
+//!
+//! ```ignore
+//! let q = "appli"; // query string
+//! let mut is_match: bool;
+//! for i = 0..q.len() {
+//!     is_match = trie.exact_match(q[0..i]);
+//! }
+//! ```
+//!
+//! Building the query one "character" at a time and `exact_match()`ing each
+//! time, the loop has effectively complexity of _O(m<sup>2</sup> log n)_.
+//!
+//! Using the incremental search, the time complexity of each query is _O(log
+//! n)_ which returns an [Answer] enum.
+//!
+//! ```ignore
+//! let q = "appli"; // query string
+//! let inc_search = trie.inc_search();
+//! let mut is_match: bool;
+//! for i = 0..q.len() {
+//!     is_match = inc_search.query(q[i]).unwrap().is_match();
+//! }
+//! ```
+//!
+//! This means the above code restores the time complexity of _O(m log n)_ for
+//! the loop.
 use crate::map::Trie;
 use louds_rs::LoudsNodeNum;
 
 /// An incremental search of the trie.
-///
-/// # Motivation
-///
-/// The motivation for this struct is for "online" or interactive use cases. One
-/// often accumulates input to match against a trie. Using the standard
-/// [`exact_match()`][crate::trie::Trie::exact_match] faculties which has a time
-/// complexity of _O(m log n)_ where _m_ is the query string length and _n_ is
-/// the number of entries in the trie. Consider this loop where we simulate
-/// accumulating a query.
-///
-/// ```ignore
-/// let q = "appli"; // query string
-/// let mut is_match: bool;
-/// for i = 0..q.len() {
-///     is_match = trie.exact_match(q[0..i]);
-/// }
-/// ```
-///
-/// Building the query one "character" at a time and `exact_match()`ing each
-/// time, the loop has effectively complexity of _O(m<sup>2</sup> log n)_.
-///
-/// Using the incremental search, the time complexity of each query is _O(log
-/// n)_ which returns an [Answer] enum.
-///
-/// ```ignore
-/// let q = "appli"; // query string
-/// let inc_search = trie.inc_search();
-/// let mut is_match: bool;
-/// for i = 0..q.len() {
-///     is_match = inc_search.query(q[i]).unwrap().is_match();
-/// }
-/// ```
-///
-/// This means the above code restores the time complexity of _O(m log n)_ for
-/// the loop.
 pub struct IncSearch<'a, Label, Value> {
     trie: &'a Trie<Label, Value>,
     node: LoudsNodeNum,
@@ -64,6 +63,7 @@ impl Answer {
         matches!(self, Answer::Match | Answer::PrefixAndMatch)
     }
 
+
     fn new(is_prefix: bool, is_match: bool) -> Option<Self> {
         match (is_prefix, is_match) {
             (true, false) => Some(Answer::Prefix),
@@ -75,6 +75,7 @@ impl Answer {
 }
 
 impl<'a, Label: Ord, Value> IncSearch<'a, Label, Value> {
+    /// Create a new incremental search for a trie.
     pub fn new(trie: &'a Trie<Label, Value>) -> Self {
         Self {
             trie,

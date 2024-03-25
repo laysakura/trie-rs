@@ -1,3 +1,4 @@
+//! Trie iterators
 mod entries;
 mod longest_prefix_iter;
 mod postfix_iter;

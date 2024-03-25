@@ -1,6 +1,8 @@
 use crate::map::Trie;
 use louds_rs::LoudsNodeNum;
 
+/// An iterator to find the longest shared prefix. This is useful in cases where
+/// one wants to offer tab-completion.
 pub struct LongestPrefixIter<'a, Label, Value, Query> {
     trie: &'a Trie<Label, Value>,
     query: Query,
@@ -10,7 +12,7 @@ pub struct LongestPrefixIter<'a, Label, Value, Query> {
 
 impl<'a, Label: Ord, Value, Query: AsRef<[Label]>> LongestPrefixIter<'a, Label, Value, Query> {
     #[inline]
-    pub fn new(trie: &'a Trie<Label, Value>, query: Query) -> Self {
+    pub(crate) fn new(trie: &'a Trie<Label, Value>, query: Query) -> Self {
         Self {
             trie,
             query,

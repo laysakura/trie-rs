@@ -4,11 +4,11 @@ use crate::try_collect::{Collect, TryCollect, TryFromIterator};
 use louds_rs::LoudsNodeNum;
 use std::marker::PhantomData;
 
+/// Iterates through all the matches of a query.
 pub struct SearchIter<'a, Label, Value, C, M> {
     prefix: Vec<Label>,
     first: Option<(C, &'a Value)>,
     postfix_iter: PostfixIter<'a, Label, Value, Vec<Label>, Collect>,
-    value: Option<&'a Value>,
     col: PhantomData<(C, M)>,
 }
 
@@ -16,7 +16,7 @@ impl<'a, Label: Ord + Clone, Value, C, M> SearchIter<'a, Label, Value, C, M>
 where
     C: TryFromIterator<Label, M> + Clone,
 {
-    pub fn new(trie: &'a Trie<Label, Value>, query: impl AsRef<[Label]>) -> Self {
+    pub(crate) fn new(trie: &'a Trie<Label, Value>, query: impl AsRef<[Label]>) -> Self {
         let mut cur_node_num = LoudsNodeNum(1);
         let mut prefix = Vec::new();
 
@@ -44,29 +44,20 @@ where
         SearchIter {
             prefix,
             first,
-            value: None,
             postfix_iter: PostfixIter::new(trie, cur_node_num),
             col: PhantomData,
         }
     }
 
-    pub fn empty(trie: &'a Trie<Label, Value>) -> Self {
+    fn empty(trie: &'a Trie<Label, Value>) -> Self {
         SearchIter {
             prefix: Vec::new(),
             first: None,
-            value: None,
             postfix_iter: PostfixIter::empty(trie),
             col: PhantomData,
         }
     }
-
-    pub fn value(&self) -> Option<&'a Value> {
-        self.value
-    }
 }
-
-// pub struct ExtendC;
-// pub struct ExtendLabel;
 
 impl<'a, Label: Ord + Clone, Value, C, M> Iterator for SearchIter<'a, Label, Value, C, M>
 where
