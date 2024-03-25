@@ -19,16 +19,6 @@ impl<'a, Label: Ord, Value, Query: AsRef<[Label]>> LongestPrefixIter<'a, Label, 
         }
     }
 
-    // #[inline]
-    // pub fn empty(trie: &'a Trie<Label, Value>) -> Self {
-    //     Self {
-    //         trie,
-    //         node: LoudsNodeNum(1),
-    //         query: Vec::new(),
-    //         index: 0,
-    //     }
-    // }
-
     pub fn value(&self) -> Option<&'a Value> {
         self.trie.value(self.node)
     }

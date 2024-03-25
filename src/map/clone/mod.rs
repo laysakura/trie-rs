@@ -1,8 +1,14 @@
 //! A trie map stores a value with each word or key.
+mod postfix_iter;
+mod search_iter;
+
+use postfix_iter::PostfixIter;
+use louds_rs::LoudsNodeNum;
 use crate::map;
 use crate::map::Value;
 use crate::try_collect::{TryCollect, TryFromIterator};
 use derive_deref::{Deref, DerefMut};
+
 
 #[derive(Deref, DerefMut)]
 pub struct TrieBuilder<Label, Value>(pub map::TrieBuilder<Label, Value>);
@@ -25,21 +31,13 @@ impl<Label: Ord + Clone, Value: Clone> Trie<Label, Value> {
     ///
     /// # Panics
     /// If `query` is empty.
-    pub fn predictive_search<C, M>(&self, query: impl AsRef<[Label]>) -> Vec<(C, Value)>
+    pub fn predictive_search<C,M>(&self, query: impl AsRef<[Label]>) -> Vec<(C, Value)>
     where
         C: TryFromIterator<Label, M>,
     {
         let chunk = self.0.predictive_search(query);
         chunk
-            .map(|mut v| {
-                (
-                    v.by_ref()
-                        .cloned()
-                        .try_collect()
-                        .expect("Could not collect"),
-                    v.value().cloned().unwrap(),
-                )
-            })
+            .map(|mut v| (v.by_ref().cloned().try_collect().expect("Could not collect"), v.value().cloned().unwrap()))
             .into_iter()
             .collect()
     }
@@ -48,23 +46,38 @@ impl<Label: Ord + Clone, Value: Clone> Trie<Label, Value> {
     ///
     /// # Panics
     /// If `query` is empty.
-    pub fn postfix_search<C, M>(&self, query: impl AsRef<[Label]>) -> Vec<(C, Value)>
+    pub fn postfix_search<Query, C, M>(&self, query: Query)
+                                -> PostfixIter<'_, Label, Value, C, M>
     where
+        Query: AsRef<[Label]>,
         C: TryFromIterator<Label, M>,
     {
-        let chunk = self.0.postfix_search(query);
-        chunk
-            .map(|mut v| {
-                (
-                    v.by_ref()
-                        .cloned()
-                        .try_collect()
-                        .expect("Could not collect"),
-                    v.value().cloned().unwrap(),
-                )
-            })
-            .into_iter()
-            .collect()
+
+        let mut cur_node_num = LoudsNodeNum(1);
+
+        // Consumes query (prefix)
+        for chr in query.as_ref() {
+            let children_node_nums: Vec<_> = self.children_node_nums(cur_node_num).collect();
+            let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
+            match res {
+                Ok(i) => cur_node_num = children_node_nums[i],
+                Err(_) => {
+                    return PostfixIter::empty(&self.0);
+                }
+            }
+        }
+
+        PostfixIter::new(&self.0, cur_node_num)
+        // let chunk = self.0.postfix_search(query);
+        // chunk
+        //     .map(|mut v| {
+        //         (
+        //             v.by_ref().cloned().try_collect().expect("Could not collect"),
+        //             v.value().cloned().unwrap(),
+        //         )
+        //     })
+        //     .into_iter()
+        //     .collect()
     }
 
     /// Return the common prefixes of `query`, cloned.
@@ -74,29 +87,20 @@ impl<Label: Ord + Clone, Value: Clone> Trie<Label, Value> {
     {
         let chunk = self.0.common_prefix_search(query);
         chunk
-            .map(|mut v| {
-                (
-                    v.by_ref()
-                        .cloned()
-                        .try_collect()
-                        .expect("Could not collect"),
-                    v.value().cloned().unwrap(),
-                )
-            })
+            .map(|mut v| (v.by_ref().cloned().try_collect().expect("Could not collect"), v.value().cloned().unwrap()))
             .into_iter()
             .collect()
     }
 
-    pub fn find_longest_prefix<Query, C, M>(&self, query: Query) -> C
+    pub fn find_longest_prefix<Query, C, M>(
+        &self,
+        query: Query,
+    ) -> C
     where
         Query: AsRef<[Label]>,
         C: TryFromIterator<Label, M>,
     {
-        self.0
-            .find_longest_prefix(query)
-            .cloned()
-            .try_collect()
-            .expect("Could not collect")
+        self.0.find_longest_prefix(query).cloned().try_collect().expect("Could not collect")
     }
 }
 
@@ -290,7 +294,7 @@ mod search_tests {
                 fn $name() {
                     let (query, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results: Vec<(String, u8)> = trie.postfix_search(query);
+                    let results: Vec<(String, u8)> = trie.postfix_search(query).collect();
                     let expected_results: Vec<(String, u8)> = expected_results.iter().map(|s| (s.0.to_string(), s.1)).collect();
                     assert_eq!(results, expected_results);
                 }
@@ -319,7 +323,7 @@ mod search_tests {
                     let (query, expected_results) = $value;
                     let trie = super::build_trie2();
                     let chars: Vec<char> = query.chars().collect();
-                    let results: Vec<(String, u8)> = trie.postfix_search(chars);
+                    let results: Vec<(String, u8)> = trie.postfix_search(chars).collect();
                     let expected_results: Vec<(String, u8)> = expected_results.iter().map(|s| (s.0.to_string(), s.1)).collect();
                     assert_eq!(results, expected_results);
                 }
