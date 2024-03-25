@@ -1,8 +1,8 @@
-use std::marker::PhantomData;
-use louds_rs::LoudsNodeNum;
-use crate::try_collect::{TryFromIterator, TryCollect, Collect};
 use crate::iter::PostfixIter;
-use crate::map::{Trie};
+use crate::map::Trie;
+use crate::try_collect::{Collect, TryCollect, TryFromIterator};
+use louds_rs::LoudsNodeNum;
+use std::marker::PhantomData;
 
 pub struct SearchIter<'a, Label, Value, C, M> {
     prefix: Vec<Label>,
@@ -13,13 +13,10 @@ pub struct SearchIter<'a, Label, Value, C, M> {
 }
 
 impl<'a, Label: Ord + Clone, Value, C, M> SearchIter<'a, Label, Value, C, M>
-where C: TryFromIterator<Label, M> + Clone,
+where
+    C: TryFromIterator<Label, M> + Clone,
 {
-    pub fn new(
-        trie: &'a Trie<Label, Value>,
-        query: impl AsRef<[Label]>,
-    ) -> Self {
-
+    pub fn new(trie: &'a Trie<Label, Value>, query: impl AsRef<[Label]>) -> Self {
         let mut cur_node_num = LoudsNodeNum(1);
         let mut prefix = Vec::new();
 
@@ -34,10 +31,16 @@ where C: TryFromIterator<Label, M> + Clone,
             prefix.push(trie.label(cur_node_num).clone());
         }
         // let prefix:  = prefix.into_iter().try_collect().expect("Could not collect");
-        let first = trie.value(cur_node_num)
-                        .map(|v|
-                             (prefix.clone().into_iter().try_collect().expect("Could not collect"),
-                              v));
+        let first = trie.value(cur_node_num).map(|v| {
+            (
+                prefix
+                    .clone()
+                    .into_iter()
+                    .try_collect()
+                    .expect("Could not collect"),
+                v,
+            )
+        });
         SearchIter {
             prefix,
             first,
@@ -66,8 +69,9 @@ where C: TryFromIterator<Label, M> + Clone,
 // pub struct ExtendLabel;
 
 impl<'a, Label: Ord + Clone, Value, C, M> Iterator for SearchIter<'a, Label, Value, C, M>
-where C: TryFromIterator<Label, M> + Clone,
-Vec<Label>: TryFromIterator<Label, Collect>
+where
+    C: TryFromIterator<Label, M> + Clone,
+    Vec<Label>: TryFromIterator<Label, Collect>,
 {
     type Item = (C, &'a Value);
     #[inline]
@@ -75,13 +79,15 @@ Vec<Label>: TryFromIterator<Label, Collect>
         match self.first.take() {
             // None => None,
             None => self.postfix_iter.next().map(|(postfix, v)| {
-                let entry = C::try_from_iter(self.prefix.clone().into_iter().chain(postfix.into_iter())).expect("Could not collect postfix");
+                let entry =
+                    C::try_from_iter(self.prefix.clone().into_iter().chain(postfix.into_iter()))
+                        .expect("Could not collect postfix");
                 // let mut entry = self.prefix.clone();
                 // let ext: C = postfix.into_iter().try_collect().expect("Could not collect postfix");
                 // entry.extend([ext]);
                 (entry, v)
             }),
-            x => x
+            x => x,
         }
     }
 }

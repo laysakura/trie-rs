@@ -73,7 +73,10 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     ///
     /// # Panics
     /// If `query` is empty.
-    pub fn predictive_search<C, M>(&self, query: impl AsRef<[Label]>) -> SearchIter<'_, Label, Value, C, M>
+    pub fn predictive_search<C, M>(
+        &self,
+        query: impl AsRef<[Label]>,
+    ) -> SearchIter<'_, Label, Value, C, M>
     where
         C: TryFromIterator<Label, M> + Clone,
         Label: Clone,
@@ -85,8 +88,10 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     ///
     /// # Panics
     /// If `query` is empty.
-    pub fn postfix_search<C, M>(&self, query: impl AsRef<[Label]>)
-                                -> PostfixIter<'_, Label, Value, C, M>
+    pub fn postfix_search<C, M>(
+        &self,
+        query: impl AsRef<[Label]>,
+    ) -> PostfixIter<'_, Label, Value, C, M>
     where
         C: TryFromIterator<Label, M>,
         Label: Clone,
@@ -109,7 +114,10 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     }
 
     /// Return the common prefixes of `query`, cloned.
-    pub fn common_prefix_search<Query, C, M>(&self, query: Query) -> PrefixIter<'_, Label, Value, Query, C, M>
+    pub fn common_prefix_search<Query, C, M>(
+        &self,
+        query: Query,
+    ) -> PrefixIter<'_, Label, Value, Query, C, M>
     where
         Query: AsRef<[Label]>,
         C: TryFromIterator<Label, M>,
@@ -118,16 +126,16 @@ impl<Label: Ord, Value> Trie<Label, Value> {
         PrefixIter::new(&self, query)
     }
 
-    pub fn find_longest_prefix<Query, C, M>(
-        &self,
-        query: Query,
-    ) -> C
+    pub fn find_longest_prefix<Query, C, M>(&self, query: Query) -> C
     where
         Query: AsRef<[Label]>,
         C: TryFromIterator<Label, M>,
         Label: Clone,
     {
-        LongestPrefixIter::new(&self, query).cloned().try_collect().expect("Could not collect")
+        LongestPrefixIter::new(&self, query)
+            .cloned()
+            .try_collect()
+            .expect("Could not collect")
     }
 
     pub(crate) fn has_children_node_nums(&self, node_num: LoudsNodeNum) -> bool {
@@ -200,10 +208,7 @@ mod search_tests {
     fn sanity_check() {
         let trie = build_trie();
         let v: Vec<(String, &u8)> = trie.predictive_search("apple").collect();
-        assert_eq!(
-            v,
-            vec![("apple".to_string(), &2)]
-        );
+        assert_eq!(v, vec![("apple".to_string(), &2)]);
     }
 
     #[test]

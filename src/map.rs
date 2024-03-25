@@ -21,4 +21,3 @@ struct TrieLabel<Label, Value> {
     label: Label,
     value: Option<Value>,
 }
-

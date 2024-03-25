@@ -1,6 +1,6 @@
 use crate::map::Trie;
+use crate::try_collect::{TryCollect, TryFromIterator};
 use louds_rs::LoudsNodeNum;
-use crate::try_collect::{TryFromIterator, TryCollect};
 use std::marker::PhantomData;
 
 pub struct PrefixIter<'a, Label, Value, Query, C, M> {
@@ -42,10 +42,10 @@ where
     //         consume: None,
     //     }
     // }
-
 }
 
-impl<'a, Label: Ord + Clone, Value, Query, C, M> Iterator for PrefixIter<'a, Label, Value, Query, C, M>
+impl<'a, Label: Ord + Clone, Value, Query, C, M> Iterator
+    for PrefixIter<'a, Label, Value, Query, C, M>
 where
     C: TryFromIterator<Label, M>,
     Query: AsRef<[Label]>,
@@ -74,7 +74,13 @@ where
         }
         if let Some(v) = self.consume.take() {
             let col = self.buffer.clone();
-            Some((col.into_iter().cloned().try_collect().expect("Could not collect"), v))
+            Some((
+                col.into_iter()
+                    .cloned()
+                    .try_collect()
+                    .expect("Could not collect"),
+                v,
+            ))
         } else {
             None
         }
