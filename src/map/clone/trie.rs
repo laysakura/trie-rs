@@ -31,7 +31,7 @@ impl<Label: Ord + Clone, Value> Trie<Label, Value> {
     /// If `query` is empty.
     pub fn predictive_search<C,M>(&self, query: impl AsRef<[Label]>) -> SearchIter<'_, Label, Value, C, M>
     where
-        C: TryFromIterator<Label, M> + Extend<C> + Clone,
+        C: TryFromIterator<Label, M> + Clone,
     {
         SearchIter::new(&self.0, query)
     }

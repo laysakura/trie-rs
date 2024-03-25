@@ -43,17 +43,14 @@ where
     //     }
     // }
 
-    pub fn value(&self) -> Option<&'a Value> {
-        self.trie.value(self.node)
-    }
 }
 
-impl<'a, Label: Ord + Clone, Value: Clone, Query, C, M> Iterator for PrefixIter<'a, Label, Value, Query, C, M>
+impl<'a, Label: Ord + Clone, Value, Query, C, M> Iterator for PrefixIter<'a, Label, Value, Query, C, M>
 where
-    C: TryFromIterator<Label, M> + Extend<C> + Clone,
+    C: TryFromIterator<Label, M>,
     Query: AsRef<[Label]>,
 {
-    type Item = (C, Value);
+    type Item = (C, &'a Value);
     fn next(&mut self) -> Option<Self::Item> {
         while self.consume.is_none() {
             if let Some(chr) = self.query.as_ref().get(self.index) {
@@ -77,7 +74,7 @@ where
         }
         if let Some(v) = self.consume.take() {
             let col = self.buffer.clone();
-            Some((col.into_iter().cloned().try_collect().expect("Could not collect"), v.clone()))
+            Some((col.into_iter().cloned().try_collect().expect("Could not collect"), v))
         } else {
             None
         }
