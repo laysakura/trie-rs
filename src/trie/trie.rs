@@ -5,7 +5,7 @@ use crate::try_collect::TryFromIterator;
 use std::clone::Clone;
 
 /// A trie for sequences of the type `Label`.
-pub struct Trie<Label>(pub map::Trie<Label, ()>);
+pub struct Trie<Label>(pub(crate) map::Trie<Label, ()>);
 
 impl<Label: Ord> Trie<Label> {
     /// Return true if `query` is an exact match.
@@ -14,12 +14,11 @@ impl<Label: Ord> Trie<Label> {
     }
 
     /// Return the common prefixes of `query`.
-    pub fn common_prefix_search<Query, C, M>(
+    pub fn common_prefix_search<C, M>(
         &self,
-        query: Query,
-    ) -> Entries<PrefixIter<'_, Label, (), Query, C, M>>
+        query: impl AsRef<[Label]>,
+    ) -> Entries<PrefixIter<'_, Label, (), C, M>>
     where
-        Query: AsRef<[Label]>,
         C: TryFromIterator<Label, M>,
         Label: Clone,
     {
@@ -71,9 +70,8 @@ impl<Label: Ord> Trie<Label> {
     }
 
     /// Return the longest shared prefix of `query`.
-    pub fn longest_prefix<Query, C, M>(&self, query: Query) -> C
+    pub fn longest_prefix<C, M>(&self, query: impl AsRef<[Label]>) -> C
     where
-        Query: AsRef<[Label]>,
         C: TryFromIterator<Label, M>,
         Label: Clone,
     {

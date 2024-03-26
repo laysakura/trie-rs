@@ -4,7 +4,7 @@ use crate::map;
 /// A trie builder for [Trie].
 pub struct TrieBuilder<Label>(map::TrieBuilder<Label, ()>);
 
-impl<Label: Ord + Clone> TrieBuilder<Label> {
+impl<Label: Ord> TrieBuilder<Label> {
     /// Return a [TrieBuilder].
     pub fn new() -> Self {
         Self(map::TrieBuilder::new())
@@ -29,7 +29,7 @@ impl<Label: Ord + Clone> TrieBuilder<Label> {
     }
 }
 
-impl<Label: Ord + Clone> Default for TrieBuilder<Label> {
+impl<Label: Ord> Default for TrieBuilder<Label> {
     fn default() -> Self {
         Self::new()
     }
