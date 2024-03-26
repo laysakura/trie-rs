@@ -115,12 +115,11 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     }
 
     /// Return the common prefixes of `query`.
-    pub fn common_prefix_search<Query, C, M>(
+    pub fn common_prefix_search<C, M>(
         &self,
-        query: Query,
-    ) -> PrefixIter<'_, Label, Value, Query, C, M>
+        query: impl AsRef<[Label]>,
+    ) -> PrefixIter<'_, Label, Value, C, M>
     where
-        Query: AsRef<[Label]>,
         C: TryFromIterator<Label, M>,
         Label: Clone,
     {
@@ -128,9 +127,8 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     }
 
     /// Return the longest shared prefix of `query`.
-    pub fn longest_prefix<Query, C, M>(&self, query: Query) -> C
+    pub fn longest_prefix<C, M>(&self, query: impl AsRef<[Label]>) -> C
     where
-        Query: AsRef<[Label]>,
         C: TryFromIterator<Label, M>,
         Label: Clone,
     {

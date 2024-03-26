@@ -235,8 +235,8 @@ mod trie {
                 b.iter_batched(
                     || &TRIE_EDICT,
                     |trie| {
-                        let results_in_u8s: Vec<(Vec<u8>, &())> =
-                            trie.0.predictive_search("す").take(100).collect();
+                        let results_in_u8s: Vec<Vec<u8>> =
+                            trie.predictive_search("す").take(100).collect();
                         assert_eq!(results_in_u8s.len(), 100);
                     },
                     BatchSize::SmallInput,
@@ -265,7 +265,7 @@ mod trie {
                         let results_in_u8s: Vec<Vec<u8>> =
                             trie.common_prefix_search("すしをにぎる").collect();
                         for _ in 0..(times - 1) {
-                            black_box(trie.common_prefix_search::<Vec<u8>, _>("すしをにぎる").collect());
+                            black_box::<Vec<Vec<u8>>>(trie.common_prefix_search("すしをにぎる").collect());
                         }
 
                         let results_in_str: Vec<&str> = results_in_u8s
