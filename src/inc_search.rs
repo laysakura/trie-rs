@@ -1,3 +1,5 @@
+//! Incremental search
+//!
 //! # Motivation
 //!
 //! The motivation for this struct is for "online" or interactive use cases. One

@@ -3,6 +3,8 @@ use louds_rs::LoudsNodeNum;
 
 /// An iterator to find the longest shared prefix. This is useful in cases where
 /// one wants to offer tab-completion.
+///
+/// Not public because it is not exposed via any API.
 pub(crate) struct LongestPrefixIter<'a, Label, Value, Query> {
     trie: &'a Trie<Label, Value>,
     query: Query,
