@@ -1,8 +1,8 @@
+use std::iter::FromIterator;
 use crate::inc_search::IncSearch;
 use crate::iter::{Keys, KeysExt, PostfixIter, PrefixIter, SearchIter};
 use crate::map;
 use crate::try_collect::TryFromIterator;
-use std::clone::Clone;
 
 /// A trie for sequences of the type `Label`.
 pub struct Trie<Label>(pub(crate) map::Trie<Label, ()>);
@@ -76,5 +76,21 @@ impl<Label: Ord> Trie<Label> {
         Label: Clone,
     {
         self.0.longest_prefix(query)
+    }
+}
+
+impl<Label, C> FromIterator<C> for Trie<Label>
+where C: AsRef<[Label]>,
+      Label: Ord + Clone,
+{
+    fn from_iter<T>(iter: T) -> Self
+    where
+        Self: Sized,
+        T: IntoIterator<Item = C> {
+        let mut builder = super::TrieBuilder::new();
+        for k in iter {
+            builder.push(k)
+        }
+        builder.build()
     }
 }

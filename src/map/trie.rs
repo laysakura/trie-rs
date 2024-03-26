@@ -1,4 +1,5 @@
 //! A trie map stores a value with each word or key.
+use std::iter::FromIterator;
 use super::Trie;
 use crate::inc_search::IncSearch;
 use crate::iter::LongestPrefixIter;
@@ -175,6 +176,23 @@ impl<Label: Ord, Value> Trie<Label, Value> {
 
     pub(crate) fn value_mut(&mut self, node_num: LoudsNodeNum) -> Option<&mut Value> {
         self.trie_labels[(node_num.0 - 2) as usize].value.as_mut()
+    }
+}
+
+impl<Label, Value, C> FromIterator<(C, Value)> for Trie<Label, Value>
+where C: AsRef<[Label]>,
+      Label: Ord + Clone,
+{
+
+    fn from_iter<T>(iter: T) -> Self
+    where
+        Self: Sized,
+        T: IntoIterator<Item = (C, Value)> {
+        let mut builder = super::TrieBuilder::new();
+        for (k, v) in iter {
+            builder.push(k, v)
+        }
+        builder.build()
     }
 }
 
