@@ -199,6 +199,7 @@ where C: AsRef<[Label]>,
 #[cfg(test)]
 mod search_tests {
     use crate::map::{Trie, TrieBuilder};
+    use std::iter::FromIterator;
 
     fn build_trie() -> Trie<u8, u8> {
         let mut builder = TrieBuilder::new();
@@ -237,6 +238,21 @@ mod search_tests {
         *v = 10;
         assert_eq!(trie.exact_match("apple"), Some(&10));
     }
+
+    #[test]
+    fn trie_from_iter() {
+        let trie = Trie::<u8, u8>::from_iter([("a", 0), ("app", 1), ("apple", 2), ("better", 3), ("application", 4)]);
+        assert_eq!(trie.exact_match("application"), Some(&4));
+    }
+
+    #[test]
+    fn collect_a_trie() {
+        // Does not work with arrays in rust 2018 because into_iter() returns references instead of owned types.
+        // let trie: Trie<u8, u8> = [("a", 0), ("app", 1), ("apple", 2), ("better", 3), ("application", 4)].into_iter().collect();
+        let trie: Trie<u8, u8> = vec![("a", 0), ("app", 1), ("apple", 2), ("better", 3), ("application", 4)].into_iter().collect();
+        assert_eq!(trie.exact_match("application"), Some(&4));
+    }
+
 
     mod exact_match_tests {
         macro_rules! parameterized_tests {

@@ -94,3 +94,142 @@ where C: AsRef<[Label]>,
         builder.build()
     }
 }
+
+#[cfg(test)]
+mod search_tests {
+    use crate::{Trie, TrieBuilder};
+    use std::iter::FromIterator;
+
+    fn build_trie() -> Trie<u8> {
+        let mut builder = TrieBuilder::new();
+        builder.push("a");
+        builder.push("app");
+        builder.push("apple");
+        builder.push("better");
+        builder.push("application");
+        builder.push("アップル🍎");
+        builder.build()
+    }
+    #[test]
+    fn trie_from_iter() {
+        let trie = Trie::<u8>::from_iter(["a", "app", "apple", "better", "application"]);
+        assert!(trie.exact_match("application"));
+    }
+
+    #[test]
+    fn collect_a_trie() {
+        let trie: Trie<u8> = ["a", "app", "apple", "better", "application"].into_iter().collect();
+        assert!(trie.exact_match("application"));
+    }
+
+    mod exact_match_tests {
+        macro_rules! parameterized_tests {
+            ($($name:ident: $value:expr,)*) => {
+            $(
+                #[test]
+                fn $name() {
+                    let (query, expected_match) = $value;
+                    let trie = super::build_trie();
+                    let result = trie.exact_match(query);
+                    assert_eq!(result, expected_match);
+                }
+            )*
+            }
+        }
+
+        parameterized_tests! {
+            t1: ("a", true),
+            t2: ("app", true),
+            t3: ("apple", true),
+            t4: ("application", true),
+            t5: ("better", true),
+            t6: ("アップル🍎", true),
+            t7: ("appl", false),
+            t8: ("appler", false),
+        }
+    }
+
+    mod is_prefix_tests {
+        macro_rules! parameterized_tests {
+            ($($name:ident: $value:expr,)*) => {
+            $(
+                #[test]
+                fn $name() {
+                    let (query, expected_match) = $value;
+                    let trie = super::build_trie();
+                    let result = trie.is_prefix(query);
+                    assert_eq!(result, expected_match);
+                }
+            )*
+            }
+        }
+
+        parameterized_tests! {
+            t1: ("a", true),
+            t2: ("app", true),
+            t3: ("apple", false),
+            t4: ("application", false),
+            t5: ("better", false),
+            t6: ("アップル🍎", false),
+            t7: ("appl", true),
+            t8: ("appler", false),
+            t9: ("アップル", true),
+            t10: ("ed", false),
+            t11: ("e", false),
+            t12: ("", true),
+        }
+    }
+
+    mod predictive_search_tests {
+        macro_rules! parameterized_tests {
+            ($($name:ident: $value:expr,)*) => {
+            $(
+                #[test]
+                fn $name() {
+                    let (query, expected_results) = $value;
+                    let trie = super::build_trie();
+                    let results: Vec<String> = trie.predictive_search(query).collect();
+                    assert_eq!(results, expected_results);
+                }
+            )*
+            }
+        }
+
+        parameterized_tests! {
+            t1: ("a", vec!["a", "app", "apple", "application"]),
+            t2: ("app", vec!["app", "apple", "application"]),
+            t3: ("appl", vec!["apple", "application"]),
+            t4: ("apple", vec!["apple"]),
+            t5: ("b", vec!["better"]),
+            t6: ("c", Vec::<&str>::new()),
+            t7: ("アップ", vec!["アップル🍎"]),
+        }
+    }
+
+    mod common_prefix_search_tests {
+        macro_rules! parameterized_tests {
+            ($($name:ident: $value:expr,)*) => {
+            $(
+                #[test]
+                fn $name() {
+                    let (query, expected_results) = $value;
+                    let trie = super::build_trie();
+                    let results: Vec<String> = trie.common_prefix_search(query).collect();
+                    assert_eq!(results, expected_results);
+                }
+            )*
+            }
+        }
+
+        parameterized_tests! {
+            t1: ("a", vec!["a"]),
+            t2: ("ap", vec!["a"]),
+            t3: ("appl", vec!["a", "app"]),
+            t4: ("appler", vec!["a", "app", "apple"]),
+            t5: ("bette", Vec::<&str>::new()),
+            t6: ("betterment", vec!["better"]),
+            t7: ("c", Vec::<&str>::new()),
+            t8: ("アップル🍎🍏", vec!["アップル🍎"]),
+        }
+    }
+}
