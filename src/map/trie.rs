@@ -2,14 +2,12 @@
 use std::iter::FromIterator;
 use super::Trie;
 use crate::inc_search::IncSearch;
-use crate::iter::PostfixIter;
-use crate::iter::PrefixIter;
-use crate::iter::SearchIter;
+use crate::iter::{PrefixIter, PostfixIter, SearchIter};
 use crate::try_collect::{TryCollect, TryFromIterator};
-use louds_rs::{self, ChildNodeIter, LoudsNodeNum};
+use louds_rs::{ChildNodeIter, LoudsNodeNum};
 
 impl<Label: Ord, Value> Trie<Label, Value> {
-    /// Return `Some(&value)` if query is an exact match.
+    /// Return `Some(&Value)` if query is an exact match.
     pub fn exact_match(&self, query: impl AsRef<[Label]>) -> Option<&Value> {
         self.exact_match_node(query)
             .and_then(move |x| self.value(x))
@@ -132,7 +130,6 @@ impl<Label: Ord, Value> Trie<Label, Value> {
         C: TryFromIterator<Label, M>,
         Label: Clone,
     {
-
         let mut cur_node_num = LoudsNodeNum(1);
         let mut buffer = Vec::new();
 
@@ -162,7 +159,11 @@ impl<Label: Ord, Value> Trie<Label, Value> {
                 _ => break,
             }
         }
-        Some(buffer.into_iter().map(|x| self.label(x).clone()).try_collect().expect("Could not collect"))
+        if buffer.is_empty() {
+            None
+        } else {
+            Some(buffer.into_iter().map(|x| self.label(x).clone()).try_collect().expect("Could not collect"))
+        }
     }
 
     pub(crate) fn has_children_node_nums(&self, node_num: LoudsNodeNum) -> bool {
@@ -189,7 +190,11 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     }
 
     pub(crate) fn is_terminal(&self, node_num: LoudsNodeNum) -> bool {
-        self.trie_labels[(node_num.0 - 2) as usize].value.is_some()
+        if node_num.0 >= 2 {
+            self.trie_labels[(node_num.0 - 2) as usize].value.is_some()
+        } else {
+            false
+        }
     }
 
     pub(crate) fn value(&self, node_num: LoudsNodeNum) -> Option<&Value> {
@@ -335,7 +340,7 @@ mod search_tests {
         }
     }
 
-    mod find_longest_prefix_tests {
+    mod longest_prefix_tests {
         macro_rules! parameterized_tests {
             ($($name:ident: $value:expr,)*) => {
             $(
@@ -362,6 +367,7 @@ mod search_tests {
             t8: ("アップル", Some("アップル🍎")),
             t9: ("z", None),
             t10: ("applesDONTEXIST", None),
+            t11: ("", None),
         }
     }
 
