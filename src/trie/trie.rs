@@ -27,9 +27,6 @@ impl<Label: Ord> Trie<Label> {
     }
 
     /// Return all entries that match `query`.
-    ///
-    /// # Panics
-    /// If `query` is empty.
     pub fn predictive_search<C, M>(
         &self,
         query: impl AsRef<[Label]>,
@@ -41,9 +38,6 @@ impl<Label: Ord> Trie<Label> {
         self.0.predictive_search(query).keys()
     }
     /// Return the postfixes of all entries that match `query`.
-    ///
-    /// # Panics
-    /// If `query` is empty.
     pub fn postfix_search<C, M>(
         &self,
         query: impl AsRef<[Label]>,
@@ -120,6 +114,15 @@ mod search_tests {
     fn collect_a_trie() {
         let trie: Trie<u8> = ["a", "app", "apple", "better", "application"].into_iter().collect();
         assert!(trie.exact_match("application"));
+    }
+
+    #[test]
+    fn use_empty_queries() {
+        let trie = build_trie();
+        assert!(!trie.exact_match(""));
+        let _ = trie.predictive_search::<String, _>("").next();
+        let _ = trie.postfix_search::<String, _>("").next();
+        let _ = trie.common_prefix_search::<String, _>("").next();
     }
 
     mod exact_match_tests {

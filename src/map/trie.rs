@@ -69,9 +69,6 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     }
 
     /// Return all entries and their values that match `query`.
-    ///
-    /// # Panics
-    /// If `query` is empty.
     pub fn predictive_search<C, M>(
         &self,
         query: impl AsRef<[Label]>,
@@ -84,9 +81,6 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     }
 
     /// Return the postfixes and values of all entries that match `query`.
-    ///
-    /// # Panics
-    /// If `query` is empty.
     pub fn postfix_search<C, M>(
         &self,
         query: impl AsRef<[Label]>,
@@ -284,6 +278,14 @@ mod search_tests {
         assert_eq!(trie.exact_match("application"), Some(&4));
     }
 
+    #[test]
+    fn use_empty_queries() {
+        let trie = build_trie();
+        assert!(!trie.exact_match("").is_some());
+        let _ = trie.predictive_search::<String, _>("").next();
+        let _ = trie.postfix_search::<String, _>("").next();
+        let _ = trie.common_prefix_search::<String, _>("").next();
+    }
 
     mod exact_match_tests {
         macro_rules! parameterized_tests {
