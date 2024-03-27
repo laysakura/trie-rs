@@ -5,7 +5,7 @@ use crate::map;
 use crate::try_collect::TryFromIterator;
 
 /// A trie for sequences of the type `Label`.
-pub struct Trie<Label>(pub(crate) map::Trie<Label, ()>);
+pub struct Trie<Label>(pub map::Trie<Label, ()>);
 
 impl<Label: Ord> Trie<Label> {
     /// Return true if `query` is an exact match.
@@ -70,7 +70,7 @@ impl<Label: Ord> Trie<Label> {
     }
 
     /// Return the longest shared prefix of `query`.
-    pub fn longest_prefix<C, M>(&self, query: impl AsRef<[Label]>) -> C
+    pub fn longest_prefix<C, M>(&self, query: impl AsRef<[Label]>) -> Option<C>
     where
         C: TryFromIterator<Label, M>,
         Label: Clone,

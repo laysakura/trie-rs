@@ -2,7 +2,6 @@
 use std::iter::FromIterator;
 use super::Trie;
 use crate::inc_search::IncSearch;
-use crate::iter::LongestPrefixIter;
 use crate::iter::PostfixIter;
 use crate::iter::PrefixIter;
 use crate::iter::SearchIter;
@@ -127,16 +126,43 @@ impl<Label: Ord, Value> Trie<Label, Value> {
         PrefixIter::new(self, query)
     }
 
-    /// Return the longest shared prefix of `query`.
-    pub fn longest_prefix<C, M>(&self, query: impl AsRef<[Label]>) -> C
+    /// Return the longest shared prefix or terminal of `query`.
+    pub fn longest_prefix<C, M>(&self, query: impl AsRef<[Label]>) -> Option<C>
     where
         C: TryFromIterator<Label, M>,
         Label: Clone,
     {
-        LongestPrefixIter::new(self, query)
-            .cloned()
-            .try_collect()
-            .expect("Could not collect")
+
+        let mut cur_node_num = LoudsNodeNum(1);
+        let mut buffer = Vec::new();
+
+        // Consumes query (prefix)
+        for chr in query.as_ref() {
+            let children_node_nums: Vec<_> = self.children_node_nums(cur_node_num).collect();
+            let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
+            match res {
+                Ok(i) => {
+                    cur_node_num = children_node_nums[i];
+                    buffer.push(cur_node_num);
+                }
+                Err(_) => { return None; }
+            }
+        }
+
+        // Walk the trie as long as there is only one path and it isn't a terminal value.
+        while !self.is_terminal(cur_node_num) {
+            let mut iter = self.children_node_nums(cur_node_num);
+            let first = iter.next();
+            let second = iter.next();
+            match (first, second) {
+                (Some(child_node_num), None) => {
+                    cur_node_num = child_node_num;
+                    buffer.push(child_node_num);
+                }
+                _ => break,
+            }
+        }
+        Some(buffer.into_iter().map(|x| self.label(x).clone()).try_collect().expect("Could not collect"))
     }
 
     pub(crate) fn has_children_node_nums(&self, node_num: LoudsNodeNum) -> bool {
@@ -317,7 +343,8 @@ mod search_tests {
                 fn $name() {
                     let (query, expected_match) = $value;
                     let trie = super::build_trie();
-                    let result: String = trie.longest_prefix(query);
+                    let result: Option<String> = trie.longest_prefix(query);
+                    let expected_match = expected_match.map(str::to_string);
                     assert_eq!(result, expected_match);
                 }
             )*
@@ -325,15 +352,16 @@ mod search_tests {
         }
 
         parameterized_tests! {
-            t1: ("a", "a"),
-            t2: ("ap", "app"),
-            t3: ("appl", "appl"),
-            t4: ("appli", "application"),
-            t5: ("b", "better"),
-            t6: ("アップル🍎", "アップル🍎"),
-            t7: ("appler", "apple"),
-            t8: ("アップル", "アップル🍎"),
-            t9: ("z", ""),
+            t1: ("a", Some("a")),
+            t2: ("ap", Some("app")),
+            t3: ("appl", Some("appl")),
+            t4: ("appli", Some("application")),
+            t5: ("b", Some("better")),
+            t6: ("アップル🍎", Some("アップル🍎")),
+            t7: ("appler", None),
+            t8: ("アップル", Some("アップル🍎")),
+            t9: ("z", None),
+            t10: ("applesDONTEXIST", None),
         }
     }
 
