@@ -25,13 +25,14 @@ let b: Vec<String> = trie.predictive_search("ech").collect();
   
   If your search can be _O(log n)_ instead of _O(m log n)_, do that.
 
-- Add postfix search
+- Add `Trie::postfix_search()`
 - Add `map::Trie::exact_match_mut()` to mutate map `Value`s
-- Add longest shared prefix feature
+- Add `Trie::longest_prefix()`
+- No longer panics on zero-length string queries
 
 ## [v0.2.0]
 
-- feat: Add trie_rs::map::{Trie, TrieBuilder} ([#20](https://github.com/laysakura/trie-rs/pull/20))
+- feat: Add `trie_rs::map::{Trie, TrieBuilder}` ([#20](https://github.com/laysakura/trie-rs/pull/20))
 - feat: Add `is_prefix()`.
 
 ## [v0.1.1]
