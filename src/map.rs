@@ -22,3 +22,13 @@ struct TrieLabel<Label, Value> {
     label: Label,
     value: Option<Value>,
 }
+
+impl<Label, Value> Clone for TrieLabel<Label, Value>
+where Label: Clone,
+Value: Clone {
+    fn clone(&self) -> Self {
+        Self { label: self.label.clone(),
+               value: self.value.clone()
+        }
+    }
+}
