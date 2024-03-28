@@ -12,7 +12,7 @@ categories = ["compression", "data-structures"]
 edition = "2018"
 
 [dependencies]
-louds-rs = { version = "0.5.0" }
+louds-rs = { version = "0.5.0", path = "../louds-rs" }
 
 [dev-dependencies]
 criterion = "0.2"

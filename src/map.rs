@@ -32,3 +32,13 @@ Value: Clone {
         }
     }
 }
+
+impl<Label, Value> Clone for Trie<Label, Value>
+where Label: Clone, Value: Clone {
+    fn clone(&self) -> Self {
+        Self {
+            louds: self.louds.clone(),
+            trie_labels: self.trie_labels.clone(),
+        }
+    }
+}
