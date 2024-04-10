@@ -43,9 +43,9 @@ assert_eq!(Answer::Match, search.query(&b'e').unwrap());
   
   If your search can be _O(log n)_ instead of _O(m log n)_, do that.
 
-- Add `Trie::postfix_search()`
-- Add `map::Trie::exact_match_mut()` to mutate map `Value`s
-- Add `Trie::longest_prefix()`
+- Add `Trie::postfix_search()`.
+- Add `map::Trie::exact_match_mut()` to mutate map `Value`s.
+- Add `Trie::longest_prefix()`.
   
   Find the longest prefix. This is the kind of behavior one would want to implement tab completion for instance.
 
@@ -58,6 +58,7 @@ assert_eq!(Answer::Match, search.query(&b'e').unwrap());
 ```
 let b: Vec<String> = trie.predictive_search("").take(100).collect();
 ```
+- Make Trie cloneable.
 
 ## [v0.2.0]
 
