@@ -25,7 +25,7 @@ let b: Vec<String> = trie.predictive_search("ech").collect();
 
 - Add incremental search.
 
-  Let's the user build their query one label at a time.
+  Lets the user build their query one label at a time.
 ```
 let mut builder = TrieBuilder::new();
 builder.push("a", 0);
@@ -44,7 +44,7 @@ assert_eq!(Answer::Match, search.query(&b'e').unwrap());
   If your search can be _O(log n)_ instead of _O(m log n)_, do that.
 
 - Add `Trie::postfix_search()`.
-- Add `map::Trie::exact_match_mut()` to mutate map `Value`s.
+- Add `map::Trie::exact_match_mut()` to mutate `Value`s.
 - Add `Trie::longest_prefix()`.
   
   Find the longest prefix. This is the kind of behavior one would want to implement tab completion for instance.
@@ -62,8 +62,8 @@ let b: Vec<String> = trie.predictive_search("").take(100).collect();
 
 ## [v0.2.0]
 
-- feat: Add `trie_rs::map::{Trie, TrieBuilder}` ([#20](https://github.com/laysakura/trie-rs/pull/20))
-- feat: Add `is_prefix()`.
+- Add `trie_rs::map::{Trie, TrieBuilder}` ([#20](https://github.com/laysakura/trie-rs/pull/20))
+- Add `is_prefix()`.
 
 ## [v0.1.1]
 Only internal data type change.
