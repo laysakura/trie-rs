@@ -23,6 +23,3 @@ lazy_static = "1.3"
 [[bench]]
 name = "bench"
 harness = false
-
-[package.metadata.release]
-tag-prefix = "v"
