@@ -24,7 +24,10 @@ where
 /// Strip an iterator items `(K, V)` to only have `K`.
 pub trait KeysExt: Iterator {
     /// Use [entries] to strip values from a [crate::iter] iterator.
-    fn keys(self) -> Keys<Self> where Self: Sized {
+    fn keys(self) -> Keys<Self>
+    where
+        Self: Sized,
+    {
         Keys::new(self)
     }
 }

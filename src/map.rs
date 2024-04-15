@@ -24,17 +24,23 @@ struct TrieLabel<Label, Value> {
 }
 
 impl<Label, Value> Clone for TrieLabel<Label, Value>
-where Label: Clone,
-Value: Clone {
+where
+    Label: Clone,
+    Value: Clone,
+{
     fn clone(&self) -> Self {
-        Self { label: self.label.clone(),
-               value: self.value.clone()
+        Self {
+            label: self.label.clone(),
+            value: self.value.clone(),
         }
     }
 }
 
 impl<Label, Value> Clone for Trie<Label, Value>
-where Label: Clone, Value: Clone {
+where
+    Label: Clone,
+    Value: Clone,
+{
     fn clone(&self) -> Self {
         Self {
             louds: self.louds.clone(),

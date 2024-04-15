@@ -1,8 +1,8 @@
-use std::iter::FromIterator;
 use crate::inc_search::IncSearch;
 use crate::iter::{Keys, KeysExt, PostfixIter, PrefixIter, SearchIter};
 use crate::map;
 use crate::try_collect::TryFromIterator;
+use std::iter::FromIterator;
 
 /// A trie for sequences of the type `Label`.
 pub struct Trie<Label>(pub map::Trie<Label, ()>);
@@ -74,13 +74,15 @@ impl<Label: Ord> Trie<Label> {
 }
 
 impl<Label, C> FromIterator<C> for Trie<Label>
-where C: AsRef<[Label]>,
-      Label: Ord + Clone,
+where
+    C: AsRef<[Label]>,
+    Label: Ord + Clone,
 {
     fn from_iter<T>(iter: T) -> Self
     where
         Self: Sized,
-        T: IntoIterator<Item = C> {
+        T: IntoIterator<Item = C>,
+    {
         let mut builder = super::TrieBuilder::new();
         for k in iter {
             builder.push(k)
@@ -110,6 +112,7 @@ mod search_tests {
         builder.push("アップル🍎");
         builder.build()
     }
+
     #[test]
     fn trie_from_iter() {
         let trie = Trie::<u8>::from_iter(["a", "app", "apple", "better", "application"]);

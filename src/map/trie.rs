@@ -1,10 +1,10 @@
 //! A trie map stores a value with each word or key.
-use std::iter::FromIterator;
 use super::Trie;
 use crate::inc_search::IncSearch;
-use crate::iter::{PrefixIter, PostfixIter, SearchIter};
+use crate::iter::{PostfixIter, PrefixIter, SearchIter};
 use crate::try_collect::{TryCollect, TryFromIterator};
 use louds_rs::{ChildNodeIter, LoudsNodeNum};
+use std::iter::FromIterator;
 
 impl<Label: Ord, Value> Trie<Label, Value> {
     /// Return `Some(&Value)` if query is an exact match.
@@ -136,7 +136,9 @@ impl<Label: Ord, Value> Trie<Label, Value> {
                     cur_node_num = children_node_nums[i];
                     buffer.push(cur_node_num);
                 }
-                Err(_) => { return None; }
+                Err(_) => {
+                    return None;
+                }
             }
         }
 
@@ -156,7 +158,13 @@ impl<Label: Ord, Value> Trie<Label, Value> {
         if buffer.is_empty() {
             None
         } else {
-            Some(buffer.into_iter().map(|x| self.label(x).clone()).try_collect().expect("Could not collect"))
+            Some(
+                buffer
+                    .into_iter()
+                    .map(|x| self.label(x).clone())
+                    .try_collect()
+                    .expect("Could not collect"),
+            )
         }
     }
 
@@ -205,14 +213,15 @@ impl<Label: Ord, Value> Trie<Label, Value> {
 }
 
 impl<Label, Value, C> FromIterator<(C, Value)> for Trie<Label, Value>
-where C: AsRef<[Label]>,
-      Label: Ord + Clone,
+where
+    C: AsRef<[Label]>,
+    Label: Ord + Clone,
 {
-
     fn from_iter<T>(iter: T) -> Self
     where
         Self: Sized,
-        T: IntoIterator<Item = (C, Value)> {
+        T: IntoIterator<Item = (C, Value)>,
+    {
         let mut builder = super::TrieBuilder::new();
         for (k, v) in iter {
             builder.push(k, v)
@@ -272,7 +281,13 @@ mod search_tests {
 
     #[test]
     fn trie_from_iter() {
-        let trie = Trie::<u8, u8>::from_iter([("a", 0), ("app", 1), ("apple", 2), ("better", 3), ("application", 4)]);
+        let trie = Trie::<u8, u8>::from_iter([
+            ("a", 0),
+            ("app", 1),
+            ("apple", 2),
+            ("better", 3),
+            ("application", 4),
+        ]);
         assert_eq!(trie.exact_match("application"), Some(&4));
     }
 
@@ -280,7 +295,15 @@ mod search_tests {
     fn collect_a_trie() {
         // Does not work with arrays in rust 2018 because into_iter() returns references instead of owned types.
         // let trie: Trie<u8, u8> = [("a", 0), ("app", 1), ("apple", 2), ("better", 3), ("application", 4)].into_iter().collect();
-        let trie: Trie<u8, u8> = vec![("a", 0), ("app", 1), ("apple", 2), ("better", 3), ("application", 4)].into_iter().collect();
+        let trie: Trie<u8, u8> = vec![
+            ("a", 0),
+            ("app", 1),
+            ("apple", 2),
+            ("better", 3),
+            ("application", 4),
+        ]
+        .into_iter()
+        .collect();
         assert_eq!(trie.exact_match("application"), Some(&4));
     }
 

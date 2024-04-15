@@ -14,8 +14,7 @@ pub struct PrefixIter<'a, Label, Value, C, M> {
     col: PhantomData<(C, M)>,
 }
 
-impl<'a, Label: Ord + Clone, Value, C, M> PrefixIter<'a, Label, Value, C, M>
-{
+impl<'a, Label: Ord + Clone, Value, C, M> PrefixIter<'a, Label, Value, C, M> {
     #[inline]
     pub(crate) fn new(trie: &'a Trie<Label, Value>, query: impl AsRef<[Label]>) -> Self {
         Self {
@@ -30,8 +29,7 @@ impl<'a, Label: Ord + Clone, Value, C, M> PrefixIter<'a, Label, Value, C, M>
     }
 }
 
-impl<'a, Label: Ord + Clone, Value, C, M> Iterator
-    for PrefixIter<'a, Label, Value, C, M>
+impl<'a, Label: Ord + Clone, Value, C, M> Iterator for PrefixIter<'a, Label, Value, C, M>
 where
     C: TryFromIterator<Label, M>,
 {

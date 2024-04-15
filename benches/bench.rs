@@ -218,7 +218,8 @@ mod trie {
                         // when `setup` time is far longer than `routine` time.
                         // Tested function takes too short compared to build().
                         // So loop many times.
-                        let results_in_str: Vec<String> = trie.common_prefix_search("すしをにぎる").collect();
+                        let results_in_str: Vec<String> =
+                            trie.common_prefix_search("すしをにぎる").collect();
                         for _ in 0..(times - 1) {
                             for entry in trie.common_prefix_search("すしをにぎる") {
                                 black_box::<Vec<u8>>(entry);
