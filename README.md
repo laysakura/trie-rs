@@ -23,7 +23,7 @@ To use trie-rs, add the following to your `Cargo.toml` file:
 
 ```toml
 [dependencies]
-trie-rs = "0.1"  # NOTE: Replace to latest minor version.
+trie-rs = "0.3"
 ```
 
 ### Usage Overview
@@ -49,11 +49,8 @@ assert_eq!(trie.exact_match("🍣"), true);
 assert_eq!(trie.exact_match("🍜"), false);
 
 // predictive_search(): Find words which include `query` as their prefix.
-let results_in_u8s: Vec<Vec<u8>> = trie.predictive_search("すし");
-let results_in_str: Vec<&str> = results_in_u8s
-    .iter()
-    .map(|u8s| str::from_utf8(u8s).unwrap())
-    .collect();
+let results_in_u8s: Vec<Vec<u8>> = trie.predictive_search("すし").collect();
+let results_in_str: Vec<String> = trie.predictive_search("すし").collect();
 assert_eq!(
     results_in_str,
     vec![
@@ -67,11 +64,8 @@ assert_eq!(
 );
 
 // common_prefix_search(): Find words which is included in `query`'s prefix.
-let results_in_u8s: Vec<Vec<u8>> = trie.common_prefix_search("すしや");
-let results_in_str: Vec<&str> = results_in_u8s
-    .iter()
-    .map(|u8s| str::from_utf8(u8s).unwrap())
-    .collect();
+let results_in_u8s: Vec<Vec<u8>> = trie.common_prefix_search("すしや").collect();
+let results_in_str: Vec<String> = trie.common_prefix_search("すしや").collect();
 assert_eq!(
     results_in_str,
     vec![
@@ -115,15 +109,17 @@ assert_eq!(
     trie.exact_match(vec!["a", "woman", "on", "the", "beach"]),
     true
 );
+let r: Vec<Vec<&str>> = trie.predictive_search(vec!["a", "woman", "on"]).collect();
 assert_eq!(
-    trie.predictive_search(vec!["a", "woman", "on"]),
+    r,
     vec![
         ["a", "woman", "on", "the", "beach"],
         ["a", "woman", "on", "the", "run"],
     ],
 );
+let s: Vec<Vec<&str>> = trie.common_prefix_search(vec!["a", "woman", "on", "the", "beach"]).collect();
 assert_eq!(
-    trie.common_prefix_search(vec!["a", "woman", "on", "the", "beach"]),
+    s,
     vec![vec!["a", "woman"], vec!["a", "woman", "on", "the", "beach"]],
 );
 ```
@@ -154,15 +150,18 @@ builder.push([5, 3, 5, 9, 4, 0, 8, 1, 2, 8]);
 let trie = builder.build();
 
 assert_eq!(trie.exact_match([5, 3, 5, 9, 4, 0, 8, 1, 2, 8]), true);
+
+let t: Vec<Vec<u8>> = trie.predictive_search([3]).collect();
 assert_eq!(
-    trie.predictive_search([3]),
+    t,
     vec![
         [3, 2, 8, 2, 3, 0, 6, 6, 4, 7],
         [3, 4, 2, 1, 1, 7, 0, 6, 7, 9],
     ],
 );
+let u: Vec<Vec<u8>> = trie.common_prefix_search([1, 4, 1, 5, 9, 2, 6, 5, 3, 5]).collect();
 assert_eq!(
-    trie.common_prefix_search([1, 4, 1, 5, 9, 2, 6, 5, 3, 5]),
+    u,
     vec![[1, 4, 1, 5, 9, 2, 6, 5, 3, 5]],
 );
 ```
@@ -241,10 +240,11 @@ assert_eq!(search.query_until("ab-NO-MATCH-"), Err(2)); // No match on byte at i
 - **Generic type support**: As the above examples show, trie-rs can be used for searching not only UTF-8 string but also other data types.
 - **Based on [louds-rs](https://crates.io/crates/louds-rs)**, which is fast, parallelized, and memory efficient.
 - **Latest benchmark results are always accessible**: trie-rs is continuously benchmarked in Travis CI using [Criterion.rs](https://crates.io/crates/criterion). Graphical benchmark results are published [here](https://laysakura.github.io/trie-rs/criterion/report/).
-- [map::Trie][crate::map::Trie] associates a `Value` with each entry
-- `Clone` not required for `Label` or `Value`
-- Search via iterators is lazy, requires less memory, and can be short circuited
-- Supports incremental search
+- `map::Trie` associates a `Value` with each entry.
+- `Value` does not require any traits.
+- `Label: Clone` not required to create `Trie<Label>` but useful for many reifying search operations like `predictive_search()`.
+- Many search operations are implemented via iterators which are lazy, require less memory, and can be short circuited.
+- Incremental search available for "online" applications, i.e., searching one `Label` at a time.
 
 ## Acknowledgments
 [`edict.furigana`](https://github.com/laysakura/trie-rs/blob/master/benches/edict.furigana) is used for benchmark.
