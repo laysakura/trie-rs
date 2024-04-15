@@ -240,11 +240,11 @@
 //! - **Generic type support**: As the above examples show, trie-rs can be used for searching not only UTF-8 string but also other data types.
 //! - **Based on [louds-rs](https://crates.io/crates/louds-rs)**, which is fast, parallelized, and memory efficient.
 //! - **Latest benchmark results are always accessible**: trie-rs is continuously benchmarked in Travis CI using [Criterion.rs](https://crates.io/crates/criterion). Graphical benchmark results are published [here](https://laysakura.github.io/trie-rs/criterion/report/).
-//! - [map::Trie] associates a `Value` with each entry
-//! - `Value` does not require any traits including `Clone`
-//! - `Label: Clone` not required to create `Trie<Label>` but useful for many reifying search operations like `predictive_search()`
-//! - Many search operations are implemented via iterators which are lazy, require less memory, and can be short circuited
-//! - Supports incremental search for "online" applications
+//! - `map::Trie` associates a `Value` with each entry.
+//! - `Value` does not require any traits.
+//! - `Label: Clone` not required to create `Trie<Label>` but useful for many reifying search operations like `predictive_search()`.
+//! - Many search operations are implemented via iterators which are lazy, require less memory, and can be short circuited.
+//! - Incremental search available for "online" applications, i.e., searching one `Label` at a time.
 //!
 //! # Acknowledgments
 //! [`edict.furigana`](https://github.com/laysakura/trie-rs/blob/master/benches/edict.furigana) is used for benchmark.
