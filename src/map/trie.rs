@@ -256,6 +256,12 @@ mod search_tests {
     }
 
     #[test]
+    fn clone() {
+        let trie = build_trie();
+        let _c: Trie<u8, u8> = trie.clone();
+    }
+
+    #[test]
     fn value_mut() {
         let mut trie = build_trie();
         assert_eq!(trie.exact_match("apple"), Some(&2));

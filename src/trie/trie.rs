@@ -118,7 +118,8 @@ mod search_tests {
 
     #[test]
     fn collect_a_trie() {
-        let trie: Trie<u8> = ["a", "app", "apple", "better", "application"].into_iter().collect();
+        let trie: Trie<u8> = IntoIterator::into_iter(["a", "app", "apple", "better", "application"])
+            .collect();
         assert!(trie.exact_match("application"));
     }
 
