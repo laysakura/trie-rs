@@ -19,7 +19,7 @@ impl<'a, Label: Ord + Clone, Value, C, M> PrefixIter<'a, Label, Value, C, M> {
     pub(crate) fn new(trie: &'a Trie<Label, Value>, query: impl AsRef<[Label]>) -> Self {
         Self {
             trie,
-            query: query.as_ref().iter().cloned().collect(),
+            query: query.as_ref().to_vec(),
             index: 0,
             node: LoudsNodeNum(1),
             buffer: Vec::new(),
