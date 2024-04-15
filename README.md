@@ -10,7 +10,8 @@ Memory efficient trie (prefix tree) and map library based on LOUDS.
 |
 [Changelog](https://github.com/laysakura/trie-rs/blob/master/CHANGELOG.md)
 
-[![Build Status](https://travis-ci.com/laysakura/trie-rs.svg?branch=master)](https://travis-ci.com/laysakura/trie-rs)
+[![GitHub Actions Status](https://github.com/laysakura/trie-rs/actions/workflows/clippy.yml/badge.svg)](https://github.com/laysakura/trie-rs/actions)
+[![Travis Status](https://travis-ci.com/laysakura/trie-rs.svg?branch=master)](https://travis-ci.com/laysakura/trie-rs)
 [![Crates.io Version](https://img.shields.io/crates/v/trie-rs.svg)](https://crates.io/crates/trie-rs)
 [![Crates.io Downloads](https://img.shields.io/crates/d/trie-rs.svg)](https://crates.io/crates/trie-rs)
 [![Minimum rustc version](https://img.shields.io/badge/rustc-1.33+-lightgray.svg)](https://github.com/laysakura/trie-rs#rust-version-supports)
