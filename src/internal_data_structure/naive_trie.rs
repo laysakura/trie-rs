@@ -1,4 +1,4 @@
-pub mod naive_trie;
+pub mod naive_trie_impl;
 pub mod naive_trie_b_f_iter;
 
 #[cfg(feature = "mem_dbg")]
