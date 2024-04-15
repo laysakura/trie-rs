@@ -1,3 +1,4 @@
+#![doc(html_root_url = "https://docs.rs/trie-rs/0.3.0")]
 #![forbid(missing_docs)]
 //! Memory efficient trie (prefix tree) and map library based on LOUDS.
 //!
@@ -22,7 +23,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! trie-rs = "0.1"  # NOTE: Replace to latest minor version.
+//! trie-rs = "0.3"
 //! ```
 //!
 //! ## Usage Overview
@@ -48,11 +49,8 @@
 //! assert_eq!(trie.exact_match("🍜"), false);
 //!
 //! // predictive_search(): Find words which include `query` as their prefix.
-//! let results_in_u8s: Vec<Vec<u8>> = trie.predictive_search("すし");
-//! let results_in_str: Vec<&str> = results_in_u8s
-//!     .iter()
-//!     .map(|u8s| str::from_utf8(u8s).unwrap())
-//!     .collect();
+//! let results_in_u8s: Vec<Vec<u8>> = trie.predictive_search("すし").collect();
+//! let results_in_str: Vec<String> = trie.predictive_search("すし").collect();
 //! assert_eq!(
 //!     results_in_str,
 //!     vec![
@@ -66,11 +64,8 @@
 //! );
 //!
 //! // common_prefix_search(): Find words which is included in `query`'s prefix.
-//! let results_in_u8s: Vec<Vec<u8>> = trie.common_prefix_search("すしや");
-//! let results_in_str: Vec<&str> = results_in_u8s
-//!     .iter()
-//!     .map(|u8s| str::from_utf8(u8s).unwrap())
-//!     .collect();
+//! let results_in_u8s: Vec<Vec<u8>> = trie.common_prefix_search("すしや").collect();
+//! let results_in_str: Vec<String> = trie.common_prefix_search("すしや").collect();
 //! assert_eq!(
 //!     results_in_str,
 //!     vec![
@@ -83,15 +78,17 @@
 //! ## Using with Various Data Types
 //! `TrieBuilder` is implemented using generic type like following:
 //!
-//! ```text
-//! impl<Label: Ord + Clone> TrieBuilder<Label> {
+//! ```ignore
+//! impl<Label: Ord> TrieBuilder<Label> {
 //!     ...
-//!     pub fn push<Arr: AsRef<[Label]>>(&mut self, word: Arr) { ... }
+//!     pub fn push<Arr: AsRef<[Label]>>(&mut self, word: Arr) where Label: Clone { ... }
 //!     ...
 //! }
 //! ```
 //!
-//! In the above `Usage Overview` example, we used `Label=u8, Arr=&str`.
+//! In the above `Usage Overview` example, we used `Label=u8, Arr=&str`. If
+//! `Label` does not implement `Clone`, use
+//! [`insert()`][crate::trie::TrieBuilder::insert].
 //!
 //! Here shows other `Label` and `Arr` type examples.
 //!
@@ -112,15 +109,17 @@
 //!     trie.exact_match(vec!["a", "woman", "on", "the", "beach"]),
 //!     true
 //! );
+//! let r: Vec<Vec<&str>> = trie.predictive_search(vec!["a", "woman", "on"]).collect();
 //! assert_eq!(
-//!     trie.predictive_search(vec!["a", "woman", "on"]),
+//!     r,
 //!     vec![
 //!         ["a", "woman", "on", "the", "beach"],
 //!         ["a", "woman", "on", "the", "run"],
 //!     ],
 //! );
+//! let s: Vec<Vec<&str>> = trie.common_prefix_search(vec!["a", "woman", "on", "the", "beach"]).collect();
 //! assert_eq!(
-//!     trie.common_prefix_search(vec!["a", "woman", "on", "the", "beach"]),
+//!     s,
 //!     vec![vec!["a", "woman"], vec!["a", "woman", "on", "the", "beach"]],
 //! );
 //! ```
@@ -151,15 +150,18 @@
 //! let trie = builder.build();
 //!
 //! assert_eq!(trie.exact_match([5, 3, 5, 9, 4, 0, 8, 1, 2, 8]), true);
+//!
+//! let t: Vec<Vec<u8>> = trie.predictive_search([3]).collect();
 //! assert_eq!(
-//!     trie.predictive_search([3]),
+//!     t,
 //!     vec![
 //!         [3, 2, 8, 2, 3, 0, 6, 6, 4, 7],
 //!         [3, 4, 2, 1, 1, 7, 0, 6, 7, 9],
 //!     ],
 //! );
+//! let u: Vec<Vec<u8>> = trie.common_prefix_search([1, 4, 1, 5, 9, 2, 6, 5, 3, 5]).collect();
 //! assert_eq!(
-//!     trie.common_prefix_search([1, 4, 1, 5, 9, 2, 6, 5, 3, 5]),
+//!     u,
 //!     vec![[1, 4, 1, 5, 9, 2, 6, 5, 3, 5]],
 //! );
 //! ```
@@ -182,18 +184,67 @@
 //! builder.push("すし", 6);  // Word `push`ed twice is just ignored.
 //! builder.push("🍣", 7);
 //!
-//! let trie = builder.build();
+//! let mut trie = builder.build();
 //!
 //! // exact_match(): Find a word exactly match to query.
-//! assert_eq!(trie.exact_match("すし"), Some(0));
-//! assert_eq!(trie.exact_match("🍣"), Some(7));
+//! assert_eq!(trie.exact_match("すし"), Some(&0));
+//! assert_eq!(trie.exact_match("🍣"), Some(&7));
 //! assert_eq!(trie.exact_match("🍜"), None);
+//!
+//! // Values can be modified.
+//! let v = trie.exact_match_mut("🍣").unwrap();
+//! *v = 8;
+//! assert_eq!(trie.exact_match("🍣"), Some(&8));
+//! ```
+//!
+//! ## Incremental Search
+//!
+//! For interactive applications, one can use an incremental search to get the
+//! best performance. See [IncSearch][crate::inc_search::IncSearch].
+//!
+//! ```rust
+//! use std::str;
+//! use trie_rs::{TrieBuilder, inc_search::Answer};
+//!
+//! let mut builder = TrieBuilder::new();  // Inferred `TrieBuilder<u8, u8>` automatically
+//! builder.push("ab");
+//! builder.push("すし");
+//! builder.push("すしや");
+//! builder.push("すしだね");
+//! builder.push("すしづめ");
+//! builder.push("すしめし");
+//! builder.push("すしをにぎる");
+//! let trie = builder.build();
+//! let mut search = trie.inc_search();
+//!
+//! // Query by the byte.
+//! assert_eq!(search.query(&b'a'), Some(Answer::Prefix));
+//! assert_eq!(search.query(&b'c'), None);
+//! assert_eq!(search.query(&b'b'), Some(Answer::Match));
+//!
+//! // Reset the query to go again.
+//! search.reset();
+//!
+//! // For unicode its easier to use .query_until().
+//! assert_eq!(search.query_until("す"), Ok(Answer::Prefix));
+//! assert_eq!(search.query_until("し"), Ok(Answer::PrefixAndMatch));
+//! assert_eq!(search.query_until("や"), Ok(Answer::Match));
+//! assert_eq!(search.query(&b'a'), None);
+//! assert_eq!(search.query_until("a"), Err(0));
+//!
+//! search.reset();
+//! assert_eq!(search.query_until("ab-NO-MATCH-"), Err(2)); // No match on byte at index 2.
 //! ```
 //!
 //! # Features
 //! - **Generic type support**: As the above examples show, trie-rs can be used for searching not only UTF-8 string but also other data types.
 //! - **Based on [louds-rs](https://crates.io/crates/louds-rs)**, which is fast, parallelized, and memory efficient.
 //! - **Latest benchmark results are always accessible**: trie-rs is continuously benchmarked in Travis CI using [Criterion.rs](https://crates.io/crates/criterion). Graphical benchmark results are published [here](https://laysakura.github.io/trie-rs/criterion/report/).
+//! - `map::Trie` associates a `Value` with each entry.
+//! - `Value` does not require any traits.
+//! - `Label: Clone` not required to create `Trie<Label>` but useful for many reifying search operations like `predictive_search()`.
+//! - Many search operations are implemented via iterators which are lazy, require less memory, and can be short circuited.
+//! - Incremental search available for "online" applications, i.e., searching one `Label` at a time.
 //!
 //! # Acknowledgments
 //! [`edict.furigana`](https://github.com/laysakura/trie-rs/blob/master/benches/edict.furigana) is used for benchmark.
@@ -207,9 +258,10 @@
 //!
 //! Many thanks for these dictionaries and tools.
 
-pub use trie::Trie;
-pub use trie::TrieBuilder;
-
+pub mod inc_search;
 mod internal_data_structure;
-mod trie;
+pub mod iter;
 pub mod map;
+mod trie;
+pub mod try_collect;
+pub use trie::{Trie, TrieBuilder};

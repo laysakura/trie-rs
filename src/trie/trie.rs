@@ -1,162 +1,106 @@
-use super::Trie;
-use louds_rs::LoudsNodeNum;
+use crate::inc_search::IncSearch;
+use crate::iter::{Keys, KeysExt, PostfixIter, PrefixIter, SearchIter};
+use crate::map;
+use crate::try_collect::TryFromIterator;
+use std::iter::FromIterator;
 
-impl<Label: Ord + Clone> Trie<Label> {
-    /// Return true if [query] is an exact match.
-    pub fn exact_match<Arr: AsRef<[Label]>>(&self, query: Arr) -> bool {
-        self.exact_match_node(query).is_some()
+/// A trie for sequences of the type `Label`.
+pub struct Trie<Label>(pub map::Trie<Label, ()>);
+
+impl<Label: Ord> Trie<Label> {
+    /// Return true if `query` is an exact match.
+    pub fn exact_match(&self, query: impl AsRef<[Label]>) -> bool {
+        self.0.exact_match(query).is_some()
     }
 
-    pub(crate) fn exact_match_node<Arr: AsRef<[Label]>>(&self, query: Arr) -> Option<LoudsNodeNum> {
-        let mut cur_node_num = LoudsNodeNum(1);
-
-        for (i, chr) in query.as_ref().iter().enumerate() {
-            let children_node_nums = self.children_node_nums(cur_node_num);
-            let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
-
-            match res {
-                Ok(j) => {
-                    let child_node_num = children_node_nums[j];
-                    if i == query.as_ref().len() - 1 && self.is_terminal(child_node_num) {
-                        return Some(child_node_num);
-                    };
-                    cur_node_num = child_node_num;
-                }
-                Err(_) => return None,
-            }
-        }
-        None
+    /// Return the common prefixes of `query`.
+    pub fn common_prefix_search<C, M>(
+        &self,
+        query: impl AsRef<[Label]>,
+    ) -> Keys<PrefixIter<'_, Label, (), C, M>>
+    where
+        C: TryFromIterator<Label, M>,
+        Label: Clone,
+    {
+        // TODO: We could return Keys iterators instead of collecting.
+        self.0.common_prefix_search(query).keys()
     }
 
-    /// Return true if [query] is a prefix.
+    /// Return all entries that match `query`.
+    pub fn predictive_search<C, M>(
+        &self,
+        query: impl AsRef<[Label]>,
+    ) -> Keys<SearchIter<'_, Label, (), C, M>>
+    where
+        C: TryFromIterator<Label, M> + Clone,
+        Label: Clone,
+    {
+        self.0.predictive_search(query).keys()
+    }
+    /// Return the postfixes of all entries that match `query`.
+    pub fn postfix_search<C, M>(
+        &self,
+        query: impl AsRef<[Label]>,
+    ) -> Keys<PostfixIter<'_, Label, (), C, M>>
+    where
+        C: TryFromIterator<Label, M>,
+        Label: Clone,
+    {
+        self.0.postfix_search(query).keys()
+    }
+
+    /// Create an incremental search. Useful for interactive applications. See
+    /// [crate::inc_search] for details.
+    pub fn inc_search(&self) -> IncSearch<'_, Label, ()> {
+        IncSearch::new(&self.0)
+    }
+
+    /// Return true if `query` is a prefix.
     ///
     /// Note: A prefix may be an exact match or not, and an exact match may be a
     /// prefix or not.
-    pub fn is_prefix<Arr: AsRef<[Label]>>(&self, query: Arr) -> bool {
-        let mut cur_node_num = LoudsNodeNum(1);
+    pub fn is_prefix(&self, query: impl AsRef<[Label]>) -> bool {
+        self.0.is_prefix(query)
+    }
 
-        for chr in query.as_ref().iter() {
-            let children_node_nums = self.children_node_nums(cur_node_num);
-            let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
-            match res {
-                Ok(j) => cur_node_num = children_node_nums[j],
-                Err(_) => return false,
-            }
+    /// Return the longest shared prefix of `query`.
+    pub fn longest_prefix<C, M>(&self, query: impl AsRef<[Label]>) -> Option<C>
+    where
+        C: TryFromIterator<Label, M>,
+        Label: Clone,
+    {
+        self.0.longest_prefix(query)
+    }
+}
+
+impl<Label, C> FromIterator<C> for Trie<Label>
+where
+    C: AsRef<[Label]>,
+    Label: Ord + Clone,
+{
+    fn from_iter<T>(iter: T) -> Self
+    where
+        Self: Sized,
+        T: IntoIterator<Item = C>,
+    {
+        let mut builder = super::TrieBuilder::new();
+        for k in iter {
+            builder.push(k)
         }
-        // Are there more nodes after our query?
-        self.has_children_node_nums(cur_node_num)
+        builder.build()
     }
+}
 
-    /// Return all entries that match [query].
-    ///
-    /// # Panics
-    /// If `query` is empty.
-    pub fn predictive_search<Arr: AsRef<[Label]>>(&self, query: Arr) -> Vec<Vec<Label>> {
-        self.rec_predictive_search(query, LoudsNodeNum(1))
-    }
-
-    fn rec_predictive_search<Arr: AsRef<[Label]>>(
-        &self,
-        query: Arr,
-        node_num: LoudsNodeNum,
-    ) -> Vec<Vec<Label>> {
-        assert!(!query.as_ref().is_empty());
-        let mut cur_node_num = node_num;
-
-        // Consumes query (prefix)
-        for chr in query.as_ref() {
-            let children_node_nums = self.children_node_nums(cur_node_num);
-            let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
-            match res {
-                Ok(i) => cur_node_num = children_node_nums[i],
-                Err(_) => return vec![],
-            }
-        }
-
-        let mut results = if self.is_terminal(cur_node_num) {
-            let mut v = query.as_ref().to_vec();
-            // Copy the last label from the tree for dict::trie's sake. This
-            // will copy its value.
-            *v.last_mut().unwrap() = self.label(cur_node_num);
-            vec![v]
-        } else {
-            vec![]
-        };
-        let all_words_under_cur: Vec<Vec<Label>> = self
-            .children_node_nums(cur_node_num)
-            .iter()
-            .flat_map(|child_node_num| {
-                self.rec_predictive_search(vec![self.label(*child_node_num)], cur_node_num)
-            })
-            .collect();
-
-        for word in all_words_under_cur {
-            let mut result: Vec<Label> = query.as_ref().to_vec();
-            result.extend(word);
-            results.push(result);
-        }
-        results
-    }
-
-    /// Return the common prefixes.
-    pub fn common_prefix_search<Arr: AsRef<[Label]>>(&self, query: Arr) -> Vec<Vec<Label>> {
-        let mut results: Vec<Vec<Label>> = Vec::new();
-        let mut labels_in_path: Vec<Label> = Vec::new();
-
-        let mut cur_node_num = LoudsNodeNum(1);
-
-        for chr in query.as_ref() {
-            let children_node_nums = self.children_node_nums(cur_node_num);
-            let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
-            match res {
-                Ok(j) => {
-                    let child_node_num = children_node_nums[j];
-                    labels_in_path.push(self.label(child_node_num));
-                    if self.is_terminal(child_node_num) {
-                        results.push(labels_in_path.clone());
-                    };
-                    cur_node_num = child_node_num;
-                }
-                Err(_) => break,
-            }
-        }
-        results
-    }
-
-    fn has_children_node_nums(&self, node_num: LoudsNodeNum) -> bool {
-        !self.louds
-            .parent_to_children(node_num)
-            .is_empty()
-    }
-
-    fn children_node_nums(&self, node_num: LoudsNodeNum) -> Vec<LoudsNodeNum> {
-        self.louds
-            .parent_to_children(node_num)
-            .iter()
-            .map(|child_idx| self.louds.index_to_node_num(*child_idx))
-            .collect()
-    }
-
-    fn bin_search_by_children_labels(
-        &self,
-        query: &Label,
-        children_node_nums: &[LoudsNodeNum],
-    ) -> Result<usize, usize> {
-        children_node_nums.binary_search_by_key(query, |child_node_num| self.label(*child_node_num))
-    }
-
-    pub(crate) fn label(&self, node_num: LoudsNodeNum) -> Label {
-        self.trie_labels[(node_num.0 - 2) as usize].label.clone()
-    }
-
-    fn is_terminal(&self, node_num: LoudsNodeNum) -> bool {
-        self.trie_labels[(node_num.0 - 2) as usize].is_terminal
+impl<Label: Clone> Clone for Trie<Label> {
+    fn clone(&self) -> Self {
+        Trie(self.0.clone())
     }
 }
 
 #[cfg(test)]
 mod search_tests {
     use crate::{Trie, TrieBuilder};
+    use std::iter::FromIterator;
 
     fn build_trie() -> Trie<u8> {
         let mut builder = TrieBuilder::new();
@@ -167,6 +111,34 @@ mod search_tests {
         builder.push("application");
         builder.push("アップル🍎");
         builder.build()
+    }
+
+    #[test]
+    fn trie_from_iter() {
+        let trie = Trie::<u8>::from_iter(["a", "app", "apple", "better", "application"]);
+        assert!(trie.exact_match("application"));
+    }
+
+    #[test]
+    fn collect_a_trie() {
+        let trie: Trie<u8> = IntoIterator::into_iter(["a", "app", "apple", "better", "application"])
+            .collect();
+        assert!(trie.exact_match("application"));
+    }
+
+    #[test]
+    fn clone() {
+        let trie = build_trie();
+        let _c: Trie<u8> = trie.clone();
+    }
+
+    #[test]
+    fn use_empty_queries() {
+        let trie = build_trie();
+        assert!(!trie.exact_match(""));
+        let _ = trie.predictive_search::<String, _>("").next();
+        let _ = trie.postfix_search::<String, _>("").next();
+        let _ = trie.common_prefix_search::<String, _>("").next();
     }
 
     mod exact_match_tests {
@@ -235,8 +207,7 @@ mod search_tests {
                 fn $name() {
                     let (query, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results = trie.predictive_search(query);
-                    let expected_results: Vec<Vec<u8>> = expected_results.iter().map(|s| s.as_bytes().to_vec()).collect();
+                    let results: Vec<String> = trie.predictive_search(query).collect();
                     assert_eq!(results, expected_results);
                 }
             )*
@@ -262,8 +233,7 @@ mod search_tests {
                 fn $name() {
                     let (query, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results = trie.common_prefix_search(query);
-                    let expected_results: Vec<Vec<u8>> = expected_results.iter().map(|s| s.as_bytes().to_vec()).collect();
+                    let results: Vec<String> = trie.common_prefix_search(query).collect();
                     assert_eq!(results, expected_results);
                 }
             )*

@@ -84,15 +84,17 @@ assert_eq!(
 ### Using with Various Data Types
 `TrieBuilder` is implemented using generic type like following:
 
-```
-impl<Label: Ord + Clone> TrieBuilder<Label> {
+```rust
+impl<Label: Ord> TrieBuilder<Label> {
     ...
-    pub fn push<Arr: AsRef<[Label]>>(&mut self, word: Arr) { ... }
+    pub fn push<Arr: AsRef<[Label]>>(&mut self, word: Arr) where Label: Clone { ... }
     ...
 }
 ```
 
-In the above `Usage Overview` example, we used `Label=u8, Arr=&str`.
+In the above `Usage Overview` example, we used `Label=u8, Arr=&str`. If
+`Label` does not implement `Clone`, use
+[`insert()`][crate::trie::TrieBuilder::insert].
 
 Here shows other `Label` and `Arr` type examples.
 
@@ -183,18 +185,66 @@ builder.push("すしをにぎる", 5);
 builder.push("すし", 6);  // Word `push`ed twice is just ignored.
 builder.push("🍣", 7);
 
-let trie = builder.build();
+let mut trie = builder.build();
 
 // exact_match(): Find a word exactly match to query.
-assert_eq!(trie.exact_match("すし"), Some(0));
-assert_eq!(trie.exact_match("🍣"), Some(7));
+assert_eq!(trie.exact_match("すし"), Some(&0));
+assert_eq!(trie.exact_match("🍣"), Some(&7));
 assert_eq!(trie.exact_match("🍜"), None);
+
+// Values can be modified.
+let v = trie.exact_match_mut("🍣").unwrap();
+*v = 8;
+assert_eq!(trie.exact_match("🍣"), Some(&8));
+```
+
+### Incremental Search
+
+For interactive applications, one can use an incremental search to get the
+best performance. See [IncSearch][crate::inc_search::IncSearch].
+
+```rust
+use std::str;
+use trie_rs::{TrieBuilder, inc_search::Answer};
+
+let mut builder = TrieBuilder::new();  // Inferred `TrieBuilder<u8, u8>` automatically
+builder.push("ab");
+builder.push("すし");
+builder.push("すしや");
+builder.push("すしだね");
+builder.push("すしづめ");
+builder.push("すしめし");
+builder.push("すしをにぎる");
+let trie = builder.build();
+let mut search = trie.inc_search();
+
+// Query by the byte.
+assert_eq!(search.query(&b'a'), Some(Answer::Prefix));
+assert_eq!(search.query(&b'c'), None);
+assert_eq!(search.query(&b'b'), Some(Answer::Match));
+
+// Reset the query to go again.
+search.reset();
+
+// For unicode its easier to use .query_until().
+assert_eq!(search.query_until("す"), Ok(Answer::Prefix));
+assert_eq!(search.query_until("し"), Ok(Answer::PrefixAndMatch));
+assert_eq!(search.query_until("や"), Ok(Answer::Match));
+assert_eq!(search.query(&b'a'), None);
+assert_eq!(search.query_until("a"), Err(0));
+
+search.reset();
+assert_eq!(search.query_until("ab-NO-MATCH-"), Err(2)); // No match on byte at index 2.
 ```
 
 ## Features
 - **Generic type support**: As the above examples show, trie-rs can be used for searching not only UTF-8 string but also other data types.
 - **Based on [louds-rs](https://crates.io/crates/louds-rs)**, which is fast, parallelized, and memory efficient.
 - **Latest benchmark results are always accessible**: trie-rs is continuously benchmarked in Travis CI using [Criterion.rs](https://crates.io/crates/criterion). Graphical benchmark results are published [here](https://laysakura.github.io/trie-rs/criterion/report/).
+- [map::Trie][crate::map::Trie] associates a `Value` with each entry
+- `Clone` not required for `Label` or `Value`
+- Search via iterators is lazy, requires less memory, and can be short circuited
+- Supports incremental search
 
 ## Acknowledgments
 [`edict.furigana`](https://github.com/laysakura/trie-rs/blob/master/benches/edict.furigana) is used for benchmark.

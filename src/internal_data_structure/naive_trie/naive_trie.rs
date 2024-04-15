@@ -1,26 +1,28 @@
 use super::naive_trie_b_f_iter::NaiveTrieBFIter;
 use super::{NaiveTrie, NaiveTrieIntermOrLeaf, NaiveTrieRoot};
+use std::vec::Drain;
 
-impl<'trie, Label: Ord + Clone> NaiveTrie<Label> {
+impl<'trie, Label: Ord, Value> NaiveTrie<Label, Value> {
     pub fn make_root() -> Self {
-        NaiveTrie::Root(Box::new(NaiveTrieRoot { children: vec![] }))
+        NaiveTrie::Root(NaiveTrieRoot { children: vec![] })
     }
 
-    pub fn make_interm_or_leaf(label: &Label, is_terminal: bool) -> Self {
-        NaiveTrie::IntermOrLeaf(Box::new(NaiveTrieIntermOrLeaf {
+    pub fn make_interm_or_leaf(label: Label, terminal: Option<Value>) -> Self {
+        NaiveTrie::IntermOrLeaf(NaiveTrieIntermOrLeaf {
             children: vec![],
-            label: label.clone(),
-            is_terminal,
-        }))
+            label,
+            value: terminal,
+        })
     }
 
-    pub fn push<Arr: AsRef<[Label]>>(&'trie mut self, word: Arr) {
+    pub fn push<Arr: Iterator<Item = Label>>(&'trie mut self, word: Arr, value: Value) {
         let mut trie = self;
-        for (i, chr) in word.as_ref().iter().enumerate() {
-            let res = {
-                trie.children()
-                    .binary_search_by_key(chr, |child| child.label())
-            };
+        let mut value = Some(value);
+        let mut word = word.peekable();
+        while let Some(chr) = word.next() {
+            let res = trie
+                .children()
+                .binary_search_by(|child| child.label().cmp(&chr));
             match res {
                 Ok(j) => {
                     trie = match trie {
@@ -30,8 +32,9 @@ impl<'trie, Label: Ord + Clone> NaiveTrie<Label> {
                     };
                 }
                 Err(j) => {
-                    let is_terminal = i == word.as_ref().len() - 1;
-                    let child_trie = Box::new(Self::make_interm_or_leaf(chr, is_terminal));
+                    let is_terminal = word.peek().is_none();
+                    let child_trie =
+                        Self::make_interm_or_leaf(chr, is_terminal.then(|| value.take().unwrap()));
                     trie = match trie {
                         NaiveTrie::Root(node) => {
                             node.children.insert(j, child_trie);
@@ -48,11 +51,7 @@ impl<'trie, Label: Ord + Clone> NaiveTrie<Label> {
         }
     }
 
-    pub fn bf_iter(&'trie self) -> NaiveTrieBFIter<Label> {
-        NaiveTrieBFIter::new(self)
-    }
-
-    pub fn children(&self) -> &[Box<Self>] {
+    pub fn children(&self) -> &[Self] {
         match self {
             NaiveTrie::Root(node) => &node.children,
             NaiveTrie::IntermOrLeaf(node) => &node.children,
@@ -60,21 +59,38 @@ impl<'trie, Label: Ord + Clone> NaiveTrie<Label> {
         }
     }
 
-    /// # Panics
-    /// If self is not IntermOrLeaf.
-    pub fn is_terminal(&self) -> bool {
+    pub fn drain_children(&mut self) -> Drain<'_, Self> {
         match self {
-            NaiveTrie::IntermOrLeaf(node) => node.is_terminal,
+            NaiveTrie::Root(node) => node.children.drain(0..),
+            NaiveTrie::IntermOrLeaf(node) => node.children.drain(0..),
             _ => panic!("Unexpected type"),
         }
     }
 
     /// # Panics
     /// If self is not IntermOrLeaf.
-    pub fn label(&self) -> Label {
+    #[allow(dead_code)]
+    pub fn value(&self) -> Option<&Value> {
         match self {
-            NaiveTrie::IntermOrLeaf(node) => node.label.clone(),
+            NaiveTrie::IntermOrLeaf(node) => node.value.as_ref(),
             _ => panic!("Unexpected type"),
         }
+    }
+
+    /// # Panics
+    /// If self is not IntermOrLeaf.
+    pub fn label(&self) -> &Label {
+        match self {
+            NaiveTrie::IntermOrLeaf(node) => &node.label,
+            _ => panic!("Unexpected type"),
+        }
+    }
+}
+
+impl<Label: Ord, Value> IntoIterator for NaiveTrie<Label, Value> {
+    type Item = NaiveTrie<Label, Value>;
+    type IntoIter = NaiveTrieBFIter<Label, Value>;
+    fn into_iter(self) -> NaiveTrieBFIter<Label, Value> {
+        NaiveTrieBFIter::new(self)
     }
 }

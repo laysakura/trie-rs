@@ -17,18 +17,17 @@ fn c() -> Criterion {
 fn git_hash() -> String {
     use std::process::Command;
     let output = Command::new("git")
-        .args(&["rev-parse", "--short", "HEAD"])
+        .args(["rev-parse", "--short", "HEAD"])
         .output()
         .unwrap();
     String::from(String::from_utf8(output.stdout).unwrap().trim())
 }
 
 mod trie {
-    use criterion::{BatchSize, Criterion};
+    use criterion::{black_box, BatchSize, Criterion};
     use std::env;
     use std::fs::File;
     use std::io::{BufRead, BufReader};
-    use std::str;
     use trie_rs::{Trie, TrieBuilder};
 
     lazy_static! {
@@ -36,7 +35,7 @@ mod trie {
         static ref TRIE_EDICT: Trie<u8> = {
             let mut builder = TrieBuilder::new();
 
-            let repo_root = env::var("REPO_ROOT").expect("REPO_ROOT environment variable must be set.");
+            let repo_root = env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR environment variable must be set.");
             let edict2_path = format!("{}/benches/edict.furigana", repo_root);
             println!("Reading dictionary file from: {}", edict2_path);
 
@@ -46,11 +45,43 @@ mod trie {
                 builder.push(l);
                 n_words += 1;
             }
-            println!("Read {} words", n_words);
+            println!("Read {} words.", n_words);
 
             builder.build()
             // TODO print memory footprint compared to original `edict.furigana` file
         };
+    }
+
+    pub fn build(_: &mut Criterion) {
+        let items = 10_000;
+
+        super::c().bench_function(
+            &format!("[{}] Trie::build() {} items", super::git_hash(), items),
+            move |b| {
+                b.iter_batched(
+                    || &TRIE_EDICT,
+                    |_trie| {
+                        let mut builder = TrieBuilder::new();
+
+                        let repo_root = env::var("CARGO_MANIFEST_DIR")
+                            .expect("CARGO_MANIFEST_DIR environment variable must be set.");
+                        let edict2_path = format!("{}/benches/edict.furigana", repo_root);
+
+                        let mut n_words = 0;
+                        for result in BufReader::new(File::open(edict2_path).unwrap()).lines() {
+                            let l = result.unwrap();
+                            builder.push(l);
+                            n_words += 1;
+                            if n_words >= items {
+                                break;
+                            }
+                        }
+                        black_box(builder.build())
+                    },
+                    BatchSize::SmallInput,
+                )
+            },
+        );
     }
 
     pub fn exact_match(_: &mut Criterion) {
@@ -66,13 +97,15 @@ mod trie {
                 b.iter_batched(
                     || &TRIE_EDICT,
                     |trie| {
-                        // iter_batched() does not properly time `routine` time when `setup` time is far longer than `routine` time.
-                        // Tested function takes too short compared to build(). So loop many times.
+                        // iter_batched() does not properly time `routine` time
+                        // when `setup` time is far longer than `routine` time.
+                        // Tested function takes too short compared to build().
+                        // So loop many times.
                         let result = trie.exact_match("すしをにぎる");
                         for _ in 0..(times - 1) {
-                            trie.exact_match("すしをにぎる");
+                            assert!(trie.exact_match("すしをにぎる"));
                         }
-                        assert_eq!(result, true);
+                        assert!(result);
                     },
                     BatchSize::SmallInput,
                 )
@@ -93,16 +126,20 @@ mod trie {
                 b.iter_batched(
                     || &TRIE_EDICT,
                     |trie| {
-                        // iter_batched() does not properly time `routine` time when `setup` time is far longer than `routine` time.
-                        // Tested function takes too short compared to build(). So loop many times.
-                        let results_in_u8s = trie.predictive_search("すし");
+                        // iter_batched() does not properly time `routine` time
+                        // when `setup` time is far longer than `routine` time.
+                        // Tested function takes too short compared to build().
+                        // So loop many times.
+                        let results_in_u8s: Vec<Vec<u8>> = trie.predictive_search("すし").collect();
                         for _ in 0..(times - 1) {
-                            trie.predictive_search("すし");
+                            for entry in trie.predictive_search::<Vec<u8>, _>("すし") {
+                                black_box(entry);
+                            }
                         }
 
-                        let results_in_str: Vec<&str> = results_in_u8s
-                            .iter()
-                            .map(|u8s| str::from_utf8(u8s).unwrap())
+                        let results_in_str: Vec<String> = results_in_u8s
+                            .into_iter()
+                            .map(|u8s| String::from_utf8(u8s).unwrap())
                             .collect();
                         assert_eq!(
                             results_in_str,
@@ -123,6 +160,47 @@ mod trie {
         );
     }
 
+    pub fn predictive_search_big_output(_: &mut Criterion) {
+        super::c().bench_function(
+            &format!(
+                "[{}] Trie::predictive_search_big_output()",
+                super::git_hash(),
+            ),
+            move |b| {
+                b.iter_batched(
+                    || &TRIE_EDICT,
+                    |trie| {
+                        let results: Vec<Vec<u8>> = trie.predictive_search("す").collect();
+                        assert_eq!(results.len(), 4220);
+                        let results_in_u8s = results.into_iter().take(100);
+                        assert_eq!(results_in_u8s.len(), 100);
+                    },
+                    BatchSize::SmallInput,
+                )
+            },
+        );
+    }
+
+    pub fn predictive_search_limited_big_output(_: &mut Criterion) {
+        super::c().bench_function(
+            &format!(
+                "[{}] Trie::predictive_search_limited_big_output()",
+                super::git_hash(),
+            ),
+            move |b| {
+                b.iter_batched(
+                    || &TRIE_EDICT,
+                    |trie| {
+                        let results_in_u8s: Vec<Vec<u8>> =
+                            trie.predictive_search("す").take(100).collect();
+                        assert_eq!(results_in_u8s.len(), 100);
+                    },
+                    BatchSize::SmallInput,
+                )
+            },
+        );
+    }
+
     pub fn common_prefix_search(_: &mut Criterion) {
         let times = 100;
 
@@ -136,17 +214,17 @@ mod trie {
                 b.iter_batched(
                     || &TRIE_EDICT,
                     |trie| {
-                        // iter_batched() does not properly time `routine` time when `setup` time is far longer than `routine` time.
-                        // Tested function takes too short compared to build(). So loop many times.
-                        let results_in_u8s = trie.common_prefix_search("すしをにぎる");
+                        // iter_batched() does not properly time `routine` time
+                        // when `setup` time is far longer than `routine` time.
+                        // Tested function takes too short compared to build().
+                        // So loop many times.
+                        let results_in_str: Vec<String> =
+                            trie.common_prefix_search("すしをにぎる").collect();
                         for _ in 0..(times - 1) {
-                            trie.common_prefix_search("すしをにぎる");
+                            for entry in trie.common_prefix_search("すしをにぎる") {
+                                black_box::<Vec<u8>>(entry);
+                            }
                         }
-
-                        let results_in_str: Vec<&str> = results_in_u8s
-                            .iter()
-                            .map(|u8s| str::from_utf8(u8s).unwrap())
-                            .collect();
                         assert_eq!(results_in_str, vec!["す", "すし", "すしをにぎる"]);
                     },
                     BatchSize::SmallInput,
@@ -158,8 +236,11 @@ mod trie {
 
 criterion_group!(
     benches,
+    trie::build,
     trie::exact_match,
     trie::predictive_search,
-    trie::common_prefix_search
+    trie::predictive_search_big_output,
+    trie::predictive_search_limited_big_output,
+    trie::common_prefix_search,
 );
 criterion_main!(benches);
