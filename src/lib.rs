@@ -1,3 +1,4 @@
+#![doc(html_root_url = "https://docs.rs/trie-rs/0.3.0")]
 #![forbid(missing_docs)]
 //! Memory efficient trie (prefix tree) and map library based on LOUDS.
 //!
@@ -22,7 +23,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! trie-rs = "0.1"  # NOTE: Replace to latest minor version.
+//! trie-rs = "0.3"
 //! ```
 //!
 //! ## Usage Overview
