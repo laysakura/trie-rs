@@ -64,6 +64,9 @@ pub trait TryFromIterator<A, Marker> {
         Self: Sized,
         T: IntoIterator<Item = A>;
 }
+
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// Marker type for blanket [TryFromIterator] implementation.
 #[doc(hidden)]
 pub struct Collect;
@@ -82,6 +85,7 @@ where
     }
 }
 
+#[derive(Debug, Clone)]
 /// Marker type for String [TryFromIterator] implementation.
 #[doc(hidden)]
 pub struct StringCollect;

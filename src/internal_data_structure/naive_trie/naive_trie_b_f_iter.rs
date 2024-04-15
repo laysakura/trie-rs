@@ -1,6 +1,8 @@
 use super::NaiveTrie;
 use std::collections::VecDeque;
 
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// Iterates over NaiveTrie in Breadth-First manner.
 pub struct NaiveTrieBFIter<Label, Value> {
     unvisited: VecDeque<NaiveTrie<Label, Value>>,

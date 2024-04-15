@@ -1,6 +1,8 @@
 use super::Trie;
 use crate::map;
 
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// A trie builder for [Trie].
 pub struct TrieBuilder<Label>(map::TrieBuilder<Label, ()>);
 

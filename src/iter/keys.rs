@@ -1,3 +1,4 @@
+#[derive(Debug, Clone)]
 /// Strips off `Value`s from [crate::map::Trie].
 pub struct Keys<I>(I);
 

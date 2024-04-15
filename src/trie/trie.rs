@@ -4,6 +4,8 @@ use crate::map;
 use crate::try_collect::TryFromIterator;
 use std::iter::FromIterator;
 
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// A trie for sequences of the type `Label`.
 pub struct Trie<Label>(pub map::Trie<Label, ()>);
 
@@ -91,12 +93,6 @@ where
     }
 }
 
-impl<Label: Clone> Clone for Trie<Label> {
-    fn clone(&self) -> Self {
-        Trie(self.0.clone())
-    }
-}
-
 #[cfg(test)]
 mod search_tests {
     use crate::{Trie, TrieBuilder};
@@ -121,8 +117,8 @@ mod search_tests {
 
     #[test]
     fn collect_a_trie() {
-        let trie: Trie<u8> = IntoIterator::into_iter(["a", "app", "apple", "better", "application"])
-            .collect();
+        let trie: Trie<u8> =
+            IntoIterator::into_iter(["a", "app", "apple", "better", "application"]).collect();
         assert!(trie.exact_match("application"));
     }
 

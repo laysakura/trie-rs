@@ -37,6 +37,7 @@
 use crate::map::Trie;
 use louds_rs::LoudsNodeNum;
 
+#[derive(Debug, Clone)]
 /// An incremental search of the trie.
 pub struct IncSearch<'a, Label, Value> {
     trie: &'a Trie<Label, Value>,

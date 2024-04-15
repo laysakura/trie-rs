@@ -3,6 +3,7 @@ use crate::try_collect::{TryCollect, TryFromIterator};
 use louds_rs::LoudsNodeNum;
 use std::marker::PhantomData;
 
+#[derive(Debug, Clone)]
 /// Iterates through all the common prefixes of a given query.
 pub struct PrefixIter<'a, Label, Value, C, M> {
     trie: &'a Trie<Label, Value>,
