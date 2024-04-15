@@ -248,9 +248,14 @@ mod trie {
                     |trie| {
                         // iter_batched() does not properly time `routine` time when `setup` time is far longer than `routine` time.
                         // Tested function takes too short compared to build(). So loop many times.
-                        let result = trie.common_prefix_search::<Vec<u8>, _>("すしをにぎる").next().is_some();
+                        let result = trie
+                            .common_prefix_search::<Vec<u8>, _>("すしをにぎる")
+                            .next()
+                            .is_some();
                         for _ in 0..(times - 1) {
-                            trie.common_prefix_search::<Vec<u8>, _>("すしをにぎる").next().is_some();
+                            trie.common_prefix_search::<Vec<u8>, _>("すしをにぎる")
+                                .next()
+                                .is_some();
                         }
 
                         assert_eq!(result, true);

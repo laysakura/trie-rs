@@ -1,5 +1,5 @@
-pub mod naive_trie_impl;
 pub mod naive_trie_b_f_iter;
+pub mod naive_trie_impl;
 
 #[cfg(feature = "mem_dbg")]
 use mem_dbg::MemDbg;
