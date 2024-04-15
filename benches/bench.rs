@@ -28,7 +28,6 @@ mod trie {
     use std::env;
     use std::fs::File;
     use std::io::{BufRead, BufReader};
-    use std::str;
     use trie_rs::{Trie, TrieBuilder};
 
     lazy_static! {
@@ -161,49 +160,6 @@ mod trie {
         );
     }
 
-    pub fn predictive_search_ref(_: &mut Criterion) {
-        let times = 100;
-
-        super::c().bench_function(
-            &format!(
-                "[{}] Trie::predictive_search_ref() {} times",
-                super::git_hash(),
-                times
-            ),
-            move |b| {
-                b.iter_batched(
-                    || &TRIE_EDICT,
-                    |trie| {
-                        // iter_batched() does not properly time `routine` time
-                        // when `setup` time is far longer than `routine` time.
-                        // Tested function takes too short compared to build().
-                        // So loop many times.
-                        let results_in_str: Vec<String> = trie.predictive_search("すし").collect();
-                        for _ in 0..(times - 1) {
-                            for entry in trie.predictive_search("すし") {
-                                black_box::<Vec<u8>>(entry);
-                            }
-                        }
-
-                        assert_eq!(
-                            results_in_str,
-                            vec![
-                                "すし",
-                                "すしだね",
-                                "すしづめ",
-                                "すしのぐ",
-                                "すしめし",
-                                "すしや",
-                                "すしをにぎる"
-                            ]
-                        );
-                    },
-                    BatchSize::SmallInput,
-                )
-            },
-        );
-    }
-
     pub fn predictive_search_big_output(_: &mut Criterion) {
         super::c().bench_function(
             &format!(
@@ -225,10 +181,10 @@ mod trie {
         );
     }
 
-    pub fn predictive_search_ref_big_output(_: &mut Criterion) {
+    pub fn predictive_search_limited_big_output(_: &mut Criterion) {
         super::c().bench_function(
             &format!(
-                "[{}] Trie::predictive_search_ref_big_output()",
+                "[{}] Trie::predictive_search_limited_big_output()",
                 super::git_hash(),
             ),
             move |b| {
@@ -262,41 +218,6 @@ mod trie {
                         // when `setup` time is far longer than `routine` time.
                         // Tested function takes too short compared to build().
                         // So loop many times.
-                        let results_in_u8s: Vec<Vec<u8>> =
-                            trie.common_prefix_search("すしをにぎる").collect();
-                        for _ in 0..(times - 1) {
-                            black_box::<Vec<Vec<u8>>>(trie.common_prefix_search("すしをにぎる").collect());
-                        }
-
-                        let results_in_str: Vec<&str> = results_in_u8s
-                            .iter()
-                            .map(|u8s| str::from_utf8(u8s).unwrap())
-                            .collect();
-                        assert_eq!(results_in_str, vec!["す", "すし", "すしをにぎる"]);
-                    },
-                    BatchSize::SmallInput,
-                )
-            },
-        );
-    }
-
-    pub fn common_prefix_search_ref(_: &mut Criterion) {
-        let times = 100;
-
-        super::c().bench_function(
-            &format!(
-                "[{}] Trie::common_prefix_search_ref() {} times",
-                super::git_hash(),
-                times
-            ),
-            move |b| {
-                b.iter_batched(
-                    || &TRIE_EDICT,
-                    |trie| {
-                        // iter_batched() does not properly time `routine` time
-                        // when `setup` time is far longer than `routine` time.
-                        // Tested function takes too short compared to build().
-                        // So loop many times.
                         let results_in_str: Vec<String> = trie.common_prefix_search("すしをにぎる").collect();
                         for _ in 0..(times - 1) {
                             for entry in trie.common_prefix_search("すしをにぎる") {
@@ -317,10 +238,8 @@ criterion_group!(
     trie::build,
     trie::exact_match,
     trie::predictive_search,
-    trie::predictive_search_ref,
     trie::predictive_search_big_output,
-    trie::predictive_search_ref_big_output,
+    trie::predictive_search_limited_big_output,
     trie::common_prefix_search,
-    trie::common_prefix_search_ref
 );
 criterion_main!(benches);
