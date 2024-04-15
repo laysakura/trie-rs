@@ -89,6 +89,12 @@ where C: AsRef<[Label]>,
     }
 }
 
+impl<Label: Clone> Clone for Trie<Label> {
+    fn clone(&self) -> Self {
+        Trie(self.0.clone())
+    }
+}
+
 #[cfg(test)]
 mod search_tests {
     use crate::{Trie, TrieBuilder};
@@ -114,6 +120,12 @@ mod search_tests {
     fn collect_a_trie() {
         let trie: Trie<u8> = ["a", "app", "apple", "better", "application"].into_iter().collect();
         assert!(trie.exact_match("application"));
+    }
+
+    #[test]
+    fn clone() {
+        let trie = build_trie();
+        let _c: Trie<u8> = trie.clone();
     }
 
     #[test]
