@@ -13,6 +13,7 @@ edition = "2021"
 
 [dependencies]
 louds-rs = "0.6"
+mem_dbg = { version = "0.1.4", optional = true }
 serde = { version = "1.0", features = ["derive"], optional = true }
 
 [dev-dependencies]
@@ -27,3 +28,5 @@ harness = false
 
 [features]
 serde = ["louds-rs/serde", "dep:serde"]
+mem_dbg = ["louds-rs/mem_dbg", "dep:mem_dbg"]
+rayon = ["louds-rs/rayon"]

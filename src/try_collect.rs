@@ -66,6 +66,7 @@ pub trait TryFromIterator<A, Marker> {
 }
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "mem_dbg", derive(mem_dbg::MemDbg, mem_dbg::MemSize))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// Marker type for blanket [TryFromIterator] implementation.
 #[doc(hidden)]

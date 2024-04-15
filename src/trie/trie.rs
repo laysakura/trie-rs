@@ -4,7 +4,11 @@ use crate::map;
 use crate::try_collect::TryFromIterator;
 use std::iter::FromIterator;
 
+#[cfg(feature = "mem_dbg")]
+use mem_dbg::MemDbg;
+
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "mem_dbg", derive(mem_dbg::MemDbg, mem_dbg::MemSize))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// A trie for sequences of the type `Label`.
 pub struct Trie<Label>(pub map::Trie<Label, ()>);
