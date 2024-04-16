@@ -9,12 +9,16 @@
 //! the number of entries in the trie. Consider this loop where we simulate
 //! accumulating a query.
 //!
-//! ```ignore
+//! ```rust
+//! use trie_rs::Trie;
+//! 
 //! let q = "appli"; // query string
 //! let mut is_match: bool;
-//! for i = 0..q.len() {
-//!     is_match = trie.exact_match(q[0..i]);
+//! let trie = Trie::from_iter(vec!["appli", "application"]);
+//! for i in 0..q.len() - 1 {
+//!     assert!(!trie.exact_match(&q[0..i]));
 //! }
+//! assert!(trie.exact_match(q));
 //! ```
 //!
 //! Building the query one "character" at a time and `exact_match()`ing each
