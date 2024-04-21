@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v0.3.1]
+- Added derives across all data structures, including:
+  - `Clone`
+  - `Debug`
+  - serde's `Serialize` & `Deserialize`, available under the feature `serde`.
+  - [mem-dbg](https://github.com/zommiommy/mem_dbg-rs)'s `MemDbg` & `MemSize`, available under the feature `mem-dbg`.
+- Moved rayon, which is optionally used in dependency crates, under the feature `rayon`.
+- Switched from Travis-CI to GitHub Actions.
+- Fixed several code smells as reported by clippy.
+- Extended documentation & doctests.
+
 ## [v0.3.0]
 - Use iterators for search results.
 
