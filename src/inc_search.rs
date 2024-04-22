@@ -49,7 +49,7 @@ pub struct IncSearch<'a, Label, Value> {
 }
 
 /// A "matching" answer to an incremental search on a partial query.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Answer {
     /// There is a prefix here.
     Prefix,

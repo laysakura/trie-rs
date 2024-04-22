@@ -11,7 +11,6 @@ Memory efficient trie (prefix tree) and map library based on LOUDS.
 [Changelog](https://github.com/laysakura/trie-rs/blob/master/CHANGELOG.md)
 
 [![GitHub Actions Status](https://github.com/laysakura/trie-rs/actions/workflows/clippy.yml/badge.svg)](https://github.com/laysakura/trie-rs/actions)
-[![Travis Status](https://travis-ci.com/laysakura/trie-rs.svg?branch=master)](https://travis-ci.com/laysakura/trie-rs)
 [![Crates.io Version](https://img.shields.io/crates/v/trie-rs.svg)](https://crates.io/crates/trie-rs)
 [![Crates.io Downloads](https://img.shields.io/crates/d/trie-rs.svg)](https://crates.io/crates/trie-rs)
 [![Minimum rustc version](https://img.shields.io/badge/rustc-1.33+-lightgray.svg)](https://github.com/laysakura/trie-rs#rust-version-supports)
@@ -278,13 +277,6 @@ Older versions may also work, but are not tested or guaranteed.
 ## Contributing
 
 Any kind of pull requests are appreciated.
-
-### Guidelines
-
-- `README.md` is generated from `$ cargo readme` command. Do not manually update `README.md` but edit `src/lib.rs` and then `$ cargo readme > README.md`.
-- Travis CI automatically does the following commit & push to your pull-requests:
-    - `$ cargo readme > README.md`
-    - `$ cargo fmt --all`
 
 ## License
 

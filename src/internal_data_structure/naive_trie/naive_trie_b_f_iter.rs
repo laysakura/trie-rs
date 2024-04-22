@@ -1,12 +1,7 @@
 use super::NaiveTrie;
 use std::collections::VecDeque;
 
-#[cfg(feature = "mem_dbg")]
-use mem_dbg::MemDbg;
-
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "mem_dbg", derive(mem_dbg::MemDbg, mem_dbg::MemSize))]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug)]
 /// Iterates over NaiveTrie in Breadth-First manner.
 pub struct NaiveTrieBFIter<Label, Value> {
     unvisited: VecDeque<NaiveTrie<Label, Value>>,
