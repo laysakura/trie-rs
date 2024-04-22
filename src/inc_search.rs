@@ -11,7 +11,7 @@
 //!
 //! ```rust
 //! use trie_rs::Trie;
-//! 
+//!
 //! let q = "appli"; // query string
 //! let mut is_match: bool;
 //! let trie = Trie::from_iter(vec!["appli", "application"]);
@@ -122,7 +122,7 @@ impl<'a, Label: Ord, Value> IncSearch<'a, Label, Value> {
     pub fn resume(trie: &'a Trie<Label, Value>, position: Position) -> Self {
         Self {
             trie,
-            node: position
+            node: position,
         }
     }
 

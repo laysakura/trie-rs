@@ -243,26 +243,33 @@ mod search_tests {
         let _ = trie.common_prefix_search::<String, _>("").next();
     }
 
-
     #[cfg(feature = "mem_dbg")]
     #[test]
     /// ```sh
     /// cargo test --features mem_dbg memsize -- --nocapture
     /// ```
     fn memsize() {
-        use std::{env, io::{BufReader, BufRead}, fs::{File}};
         use mem_dbg::*;
+        use std::{
+            env,
+            fs::File,
+            io::{BufRead, BufReader},
+        };
 
         const COUNT: usize = 100;
         let mut builder = TrieBuilder::new();
 
-        let repo_root = env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR environment variable must be set.");
+        let repo_root = env::var("CARGO_MANIFEST_DIR")
+            .expect("CARGO_MANIFEST_DIR environment variable must be set.");
         let edict2_path = format!("{}/benches/edict.furigana", repo_root);
         println!("Reading dictionary file from: {}", edict2_path);
 
         let mut n_words = 0;
         let mut accum = 0;
-        for result in BufReader::new(File::open(edict2_path).unwrap()).lines().take(COUNT) {
+        for result in BufReader::new(File::open(edict2_path).unwrap())
+            .lines()
+            .take(COUNT)
+        {
             let l = result.unwrap();
             accum += l.len();
             builder.push(l);
@@ -278,7 +285,6 @@ mod search_tests {
         eprintln!("Uncompressed size {}", uncompressed_size);
         assert!(accum < trie_size); // This seems wrong to me.
         assert!(trie_size < uncompressed_size);
-
     }
 
     mod exact_match_tests {
