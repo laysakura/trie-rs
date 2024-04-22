@@ -48,9 +48,17 @@ pub struct IncSearch<'a, Label, Value> {
     node: LoudsNodeNum,
 }
 
+/// Search position in the trie.
+///
+/// # Why do this?
+///
+/// "Position" is more descriptive for incremental search purposes, and without
+/// it a user would have to explicitly depend on `louds-rs`.
+pub type Position = LoudsNodeNum;
+
 /// Retrieve the position the search is on. Useful for hanging on to a search
-/// without having to fight the borrow checker.
-impl<'a, L, V> From<IncSearch<'a, L, V>> for LoudsNodeNum {
+/// without having to fight the borrow checker because its borrowing a trie.
+impl<'a, L, V> From<IncSearch<'a, L, V>> for Position {
     fn from(inc_search: IncSearch<'a, L, V>) -> Self {
         inc_search.node
     }
@@ -111,7 +119,7 @@ impl<'a, Label: Ord, Value> IncSearch<'a, Label, Value> {
     /// assert_eq!(inc_search2.query_until("llo"), Ok(Answer::Match));
     ///
     /// ```
-    pub fn resume(trie: &'a Trie<Label, Value>, position: LoudsNodeNum) -> Self {
+    pub fn resume(trie: &'a Trie<Label, Value>, position: Position) -> Self {
         Self {
             trie,
             node: position
