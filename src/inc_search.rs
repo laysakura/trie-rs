@@ -48,6 +48,14 @@ pub struct IncSearch<'a, Label, Value> {
     node: LoudsNodeNum,
 }
 
+/// Retrieve the position the search is on. Useful for hanging on to a search
+/// without having to fight the borrow checker.
+impl<'a, L, V> From<IncSearch<'a, L, V>> for LoudsNodeNum {
+    fn from(inc_search: IncSearch<'a, L, V>) -> Self {
+        inc_search.node
+    }
+}
+
 /// A "matching" answer to an incremental search on a partial query.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Answer {
@@ -86,6 +94,27 @@ impl<'a, Label: Ord, Value> IncSearch<'a, Label, Value> {
         Self {
             trie,
             node: LoudsNodeNum(1),
+        }
+    }
+
+    /// Resume an incremental search at a particular point.
+    ///
+    /// ```
+    /// use trie_rs::{Trie, inc_search::{Answer, IncSearch}};
+    /// use louds_rs::LoudsNodeNum;
+    /// let trie: Trie<u8> = ["hello", "bye"].into_iter().collect();
+    /// let mut inc_search = trie.inc_search();
+    /// assert_eq!(inc_search.query_until("he"), Ok(Answer::Prefix));
+    /// let position = LoudsNodeNum::from(inc_search);
+    /// // inc_search is dropped.
+    /// let mut inc_search2 = IncSearch::resume(&trie.0, position);
+    /// assert_eq!(inc_search2.query_until("llo"), Ok(Answer::Match));
+    ///
+    /// ```
+    pub fn resume(trie: &'a Trie<Label, Value>, position: LoudsNodeNum) -> Self {
+        Self {
+            trie,
+            node: position
         }
     }
 

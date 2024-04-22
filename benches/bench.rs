@@ -253,7 +253,7 @@ mod trie {
                             .next()
                             .is_some();
                         for _ in 0..(times - 1) {
-                            trie.common_prefix_search::<Vec<u8>, _>("すしをにぎる")
+                            let _ = trie.common_prefix_search::<Vec<u8>, _>("すしをにぎる")
                                 .next()
                                 .is_some();
                         }
