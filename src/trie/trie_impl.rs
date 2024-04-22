@@ -4,16 +4,56 @@ use crate::map;
 use crate::try_collect::TryFromIterator;
 use std::iter::FromIterator;
 
+#[cfg(feature = "mem_dbg")]
+use mem_dbg::MemDbg;
+
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "mem_dbg", derive(mem_dbg::MemDbg, mem_dbg::MemSize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// A trie for sequences of the type `Label`.
 pub struct Trie<Label>(pub map::Trie<Label, ()>);
 
 impl<Label: Ord> Trie<Label> {
     /// Return true if `query` is an exact match.
+    ///
+    /// # Arguments
+    /// * `query` - The query to search for.
+    ///
+    /// # Examples
+    /// In the following example we illustrate how to query an exact match.
+    ///
+    /// ```rust
+    /// use trie_rs::Trie;
+    ///
+    /// let trie = Trie::from_iter(["a", "app", "apple", "better", "application"]);
+    ///
+    /// assert!(trie.exact_match("application"));
+    /// assert!(trie.exact_match("app"));
+    /// assert!(!trie.exact_match("appla"));
+    ///
+    /// ```
     pub fn exact_match(&self, query: impl AsRef<[Label]>) -> bool {
         self.0.exact_match(query).is_some()
     }
 
     /// Return the common prefixes of `query`.
+    ///
+    /// # Arguments
+    /// * `query` - The query to search for.
+    ///
+    /// # Examples
+    /// In the following example we illustrate how to query the common prefixes of a query string.
+    ///
+    /// ```rust
+    /// use trie_rs::Trie;
+    ///
+    /// let trie = Trie::from_iter(["a", "app", "apple", "better", "application"]);
+    ///
+    /// let results: Vec<String> = trie.common_prefix_search("application").collect();
+    ///
+    /// assert_eq!(results, vec!["a", "app", "application"]);
+    ///
+    /// ```
     pub fn common_prefix_search<C, M>(
         &self,
         query: impl AsRef<[Label]>,
@@ -37,7 +77,29 @@ impl<Label: Ord> Trie<Label> {
     {
         self.0.predictive_search(query).keys()
     }
+
     /// Return the postfixes of all entries that match `query`.
+    ///
+    /// # Arguments
+    /// * `query` - The query to search for.
+    ///
+    /// # Examples
+    /// In the following example we illustrate how to query the postfixes of a query string.
+    ///
+    /// ```rust
+    /// use trie_rs::Trie;
+    ///
+    /// let trie = Trie::from_iter(["a", "app", "apple", "better", "application"]);
+    ///
+    /// let results: Vec<String> = trie.postfix_search("application").collect();
+    ///
+    /// assert!(results.is_empty());
+    ///
+    /// let results: Vec<String> = trie.postfix_search("app").collect();
+    ///
+    /// assert_eq!(results, vec!["le", "lication"]);
+    ///
+    /// ```
     pub fn postfix_search<C, M>(
         &self,
         query: impl AsRef<[Label]>,
@@ -47,6 +109,31 @@ impl<Label: Ord> Trie<Label> {
         Label: Clone,
     {
         self.0.postfix_search(query).keys()
+    }
+
+    /// Returns an iterator across all keys in the trie.
+    ///
+    /// # Examples
+    /// In the following example we illustrate how to iterate over all keys in the trie.
+    /// Note that the order of the keys is not guaranteed, as they will be returned in
+    /// lexicographical order.
+    ///
+    /// ```rust
+    /// use trie_rs::Trie;
+    ///
+    /// let trie = Trie::from_iter(["a", "app", "apple", "better", "application"]);
+    ///
+    /// let results: Vec<String> = trie.iter().collect();
+    ///
+    /// assert_eq!(results, vec!["a", "app", "apple", "application", "better"]);
+    ///
+    /// ```
+    pub fn iter<C, M>(&self) -> Keys<PostfixIter<'_, Label, (), C, M>>
+    where
+        C: TryFromIterator<Label, M>,
+        Label: Clone,
+    {
+        self.postfix_search([])
     }
 
     /// Create an incremental search. Useful for interactive applications. See
@@ -91,12 +178,6 @@ where
     }
 }
 
-impl<Label: Clone> Clone for Trie<Label> {
-    fn clone(&self) -> Self {
-        Trie(self.0.clone())
-    }
-}
-
 #[cfg(test)]
 mod search_tests {
     use crate::{Trie, TrieBuilder};
@@ -121,8 +202,8 @@ mod search_tests {
 
     #[test]
     fn collect_a_trie() {
-        let trie: Trie<u8> = IntoIterator::into_iter(["a", "app", "apple", "better", "application"])
-            .collect();
+        let trie: Trie<u8> =
+            IntoIterator::into_iter(["a", "app", "apple", "better", "application"]).collect();
         assert!(trie.exact_match("application"));
     }
 

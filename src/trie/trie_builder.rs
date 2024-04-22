@@ -1,6 +1,12 @@
 use super::Trie;
 use crate::map;
 
+#[cfg(feature = "mem_dbg")]
+use mem_dbg::MemDbg;
+
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "mem_dbg", derive(mem_dbg::MemDbg, mem_dbg::MemSize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// A trie builder for [Trie].
 pub struct TrieBuilder<Label>(map::TrieBuilder<Label, ()>);
 

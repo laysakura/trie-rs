@@ -1,6 +1,6 @@
 [package]
 name = "trie-rs"
-version = "0.3.0"
+version = "0.3.1"
 authors = ["Sho Nakatani <lay.sakura@gmail.com>", "Shane Celis <shane.celis@gmail.com>"]
 description = "Memory efficient trie (prefix tree) and map library based on LOUDS"
 readme = "README.md"
@@ -9,10 +9,12 @@ repository = "https://github.com/laysakura/trie-rs"
 homepage = "https://github.com/laysakura/trie-rs"
 keywords = ["trie", "louds", "succinct"] # up to 5 keywords, each keyword should have <= 20 chars
 categories = ["compression", "data-structures"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 louds-rs = "0.6"
+mem_dbg = { version = "0.1.4", optional = true }
+serde = { version = "1.0", features = ["derive"], optional = true }
 
 [dev-dependencies]
 criterion = "0.2"
@@ -23,3 +25,8 @@ version-sync = "0.9"
 [[bench]]
 name = "bench"
 harness = false
+
+[features]
+serde = ["louds-rs/serde", "dep:serde"]
+mem_dbg = ["louds-rs/mem_dbg", "dep:mem_dbg"]
+rayon = ["louds-rs/rayon"]

@@ -4,6 +4,7 @@ use crate::try_collect::{Collect, TryCollect, TryFromIterator};
 use louds_rs::LoudsNodeNum;
 use std::marker::PhantomData;
 
+#[derive(Debug, Clone)]
 /// Iterates through all the matches of a query.
 pub struct SearchIter<'a, Label, Value, C, M> {
     prefix: Vec<Label>,

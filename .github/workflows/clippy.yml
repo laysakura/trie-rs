@@ -1,0 +1,35 @@
+name: Clippy
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  clippy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Clippy
+        run:
+          rustup toolchain install nightly --component clippy
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+      - name: Run clippy
+        run: cargo clippy --all-features
+      - name: Run clippy without rayon
+        run: cargo clippy --no-default-features --features="serde"
+      - name: Run tests
+        run: cargo test --all-features
+      - name: Run tests without rayon
+        run: cargo test --no-default-features --features="serde"
+      - name: Run tests release
+        run: cargo test --release --all-features

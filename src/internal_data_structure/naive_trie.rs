@@ -1,6 +1,12 @@
-pub mod naive_trie;
 pub mod naive_trie_b_f_iter;
+pub mod naive_trie_impl;
 
+#[cfg(feature = "mem_dbg")]
+use mem_dbg::MemDbg;
+
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "mem_dbg", derive(mem_dbg::MemDbg, mem_dbg::MemSize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// Naive trie with ordered Label sequence in edges.
 ///
 /// The following naive trie contains these words.
@@ -72,11 +78,17 @@ pub enum NaiveTrie<Label, Value> {
     PhantomSibling,
 }
 
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "mem_dbg", derive(mem_dbg::MemDbg, mem_dbg::MemSize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct NaiveTrieRoot<Label, Value> {
     /// Sorted by Label's order.
     children: Vec<NaiveTrie<Label, Value>>,
 }
 
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "mem_dbg", derive(mem_dbg::MemDbg, mem_dbg::MemSize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct NaiveTrieIntermOrLeaf<Label, Value> {
     /// Sorted by Label's order.
     children: Vec<NaiveTrie<Label, Value>>,

@@ -1,8 +1,9 @@
+#[derive(Debug, Clone)]
 /// Strips off `Value`s from [crate::map::Trie].
 pub struct Keys<I>(I);
 
 impl<I> Keys<I> {
-    ///
+    ///Creates a new `Keys` iterator.
     pub fn new(iter: I) -> Self {
         Self(iter)
     }
