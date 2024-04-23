@@ -38,7 +38,10 @@
 //!
 //! This means the above code restores the time complexity of _O(m log n)_ for
 //! the loop.
-use crate::map::Trie;
+use crate::{
+    map::Trie,
+    try_collect::{TryCollect, TryFromIterator},
+};
 use louds_rs::LoudsNodeNum;
 
 #[derive(Debug, Clone)]
@@ -181,6 +184,18 @@ impl<'a, Label: Ord, Value> IncSearch<'a, Label, Value> {
         self.trie.value(self.node)
     }
 
+    /// Return the current prefix for this search.
+    pub fn prefix<C, M>(&self) -> C
+    where
+        C: TryFromIterator<Label, M>,
+        Label: Clone,
+    {
+        let mut v: Vec<Label> = self.trie.child_to_ancestors(self.node)
+            .map(|node| self.trie.label(node).clone()).collect();
+        v.reverse();
+        v.into_iter().try_collect().expect("Could not collect")
+    }
+
     // This isn't actually possible.
     // /// Return the mutable value at current node. There should be one for any
     // /// node where `answer.is_match()` is true.
@@ -217,24 +232,38 @@ mod search_tests {
     fn inc_search() {
         let trie = build_trie();
         let mut search = trie.inc_search();
+        assert_eq!("", search.prefix::<String, _>());
         assert_eq!(None, search.query(&b'z'));
+        assert_eq!("", search.prefix::<String, _>());
         assert_eq!(Answer::PrefixAndMatch, search.query(&b'a').unwrap());
+        assert_eq!("a", search.prefix::<String, _>());
         assert_eq!(Answer::Prefix, search.query(&b'p').unwrap());
+        assert_eq!("ap", search.prefix::<String, _>());
         assert_eq!(Answer::PrefixAndMatch, search.query(&b'p').unwrap());
+        assert_eq!("app", search.prefix::<String, _>());
         assert_eq!(Answer::Prefix, search.query(&b'l').unwrap());
+        assert_eq!("appl", search.prefix::<String, _>());
         assert_eq!(Answer::Match, search.query(&b'e').unwrap());
+        assert_eq!("apple", search.prefix::<String, _>());
     }
 
     #[test]
     fn inc_search_value() {
         let trie = build_trie();
         let mut search = trie.inc_search();
+        assert_eq!("", search.prefix::<String, _>());
         assert_eq!(None, search.query(&b'z'));
+        assert_eq!("", search.prefix::<String, _>());
         assert_eq!(Answer::PrefixAndMatch, search.query(&b'a').unwrap());
+        assert_eq!("a", search.prefix::<String, _>());
         assert_eq!(Answer::Prefix, search.query(&b'p').unwrap());
+        assert_eq!("ap", search.prefix::<String, _>());
         assert_eq!(Answer::PrefixAndMatch, search.query(&b'p').unwrap());
+        assert_eq!("app", search.prefix::<String, _>());
         assert_eq!(Answer::Prefix, search.query(&b'l').unwrap());
+        assert_eq!("appl", search.prefix::<String, _>());
         assert_eq!(Answer::Match, search.query(&b'e').unwrap());
+        assert_eq!("apple", search.prefix::<String, _>());
         assert_eq!(Some(&2), search.value());
     }
 
@@ -243,10 +272,13 @@ mod search_tests {
         let trie = build_trie();
         let mut search = trie.inc_search();
         assert_eq!(Err(0), search.query_until("zoo"));
+        assert_eq!("", search.prefix::<String, _>());
         search.reset();
         assert_eq!(Err(1), search.query_until("blue"));
+        assert_eq!("b", search.prefix::<String, _>());
         search.reset();
         assert_eq!(Answer::Match, search.query_until("apple").unwrap());
+        assert_eq!("apple", search.prefix::<String, _>());
         assert_eq!(Some(&2), search.value());
     }
 
