@@ -246,6 +246,20 @@ assert_eq!(search.query_until("ab-NO-MATCH-"), Err(2)); // No match on byte at i
 - Many search operations are implemented via iterators which are lazy, require less memory, and can be short circuited.
 - Incremental search available for "online" applications, i.e., searching one `Label` at a time.
 
+## Cargo features
+
+- "rayon"
+
+Enables [rayon](https://crates.io/crates/rayon) a data parallelism library.
+
+- "mem_dbg"
+
+Can determine the size in bytes of nested data structures like the trie itself.
+
+- "serde"
+
+Can serialize and deserialize the trie.
+
 ## Acknowledgments
 [`edict.furigana`](https://github.com/laysakura/trie-rs/blob/master/benches/edict.furigana) is used for benchmark.
 This file is constructed in the following step:
@@ -265,14 +279,14 @@ Since current major version is _0_, minor version update might involve breaking 
 
 ## Rust Version Supports
 
-trie-rs is continuously tested with these Rust versions in Travis CI:
+`trie-rs` is continuously tested with these Rust versions in with the github CI:
 
 - 1.33.0
 - Latest stable version
 
 So it expectedly works with Rust 1.33.0 and any newer versions.
 
-Older versions may also work, but are not tested or guaranteed.
+Older versions may also work but are not tested or guaranteed.
 
 ## Contributing
 
