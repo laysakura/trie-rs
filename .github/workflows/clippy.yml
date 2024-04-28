@@ -37,7 +37,7 @@ jobs:
       - name: Run tests release
         run: cargo test --release --all-features
 
-  test-against-1.65.0:
+  test-against-earliest:
     runs-on: ubuntu-latest
 
     steps:
