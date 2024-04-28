@@ -281,12 +281,17 @@ Since current major version is _0_, minor version update might involve breaking 
 
 `trie-rs` is continuously tested with these Rust versions in with the github CI:
 
-- 1.33.0
+- 1.56.0
 - Latest stable version
 
-So it expectedly works with Rust 1.33.0 and any newer versions.
+So it expectedly works with Rust 1.56.0 and any newer versions.
 
 Older versions may also work but are not tested or guaranteed.
+
+### Earlier Verion Supports
+
+`trie-rs` v0.3.0 supports Rust 1.33.0 and later.
+
 
 ## Contributing
 
