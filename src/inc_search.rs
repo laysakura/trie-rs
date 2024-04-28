@@ -40,7 +40,7 @@
 //! the loop.
 use crate::{
     map::Trie,
-    try_collect::{TryCollect, TryFromIterator},
+    // try_collect::{TryCollect, TryFromIterator},
 };
 use louds_rs::LoudsNodeNum;
 
@@ -184,16 +184,34 @@ impl<'a, Label: Ord, Value> IncSearch<'a, Label, Value> {
         self.trie.value(self.node)
     }
 
-    /// Return the current prefix for this search.
-    pub fn prefix<C, M>(&self) -> C
-    where
-        C: TryFromIterator<Label, M>,
-        Label: Clone,
-    {
-        let mut v: Vec<Label> = self.trie.child_to_ancestors(self.node)
-            .map(|node| self.trie.label(node).clone()).collect();
-        v.reverse();
-        v.into_iter().try_collect().expect("Could not collect")
+    // Return the current prefix for this search.
+    // pub fn prefix<C, M>(&self) -> C
+    // where
+    //     C: TryFromIterator<Label, M>,
+    //     Label: Clone,
+    // {
+    //     let mut v: Vec<Label> = self.trie.child_to_ancestors(self.node)
+    //         .map(|node| self.trie.label(node).clone()).collect();
+    //     v.reverse();
+    //     v.into_iter().try_collect().expect("Could not collect")
+    // }
+
+    /// Returne the length of the current prefix for this search.
+    pub fn prefix_len(&self) -> usize {
+        // TODO: If PR for child_to_ancestors is accepted. Use the iterator and
+        // remove `pub(crate)` from Trie.louds field. Also uncomment prefix()
+        // above.
+
+        // self.trie.child_to_ancestors(self.node).count()
+
+        let mut node = self.node;
+        let mut count = 0;
+        while node.0 > 1 {
+            let index = self.trie.louds.node_num_to_index(node);
+            node = self.trie.louds.child_to_parent(index);
+            count += 1;
+        }
+        count
     }
 
     // This isn't actually possible.
@@ -232,38 +250,45 @@ mod search_tests {
     fn inc_search() {
         let trie = build_trie();
         let mut search = trie.inc_search();
-        assert_eq!("", search.prefix::<String, _>());
+        // assert_eq!("", search.prefix::<String, _>());
+        assert_eq!(0, search.prefix_len());
         assert_eq!(None, search.query(&b'z'));
-        assert_eq!("", search.prefix::<String, _>());
+        // assert_eq!("", search.prefix::<String, _>());
+        assert_eq!(0, search.prefix_len());
         assert_eq!(Answer::PrefixAndMatch, search.query(&b'a').unwrap());
-        assert_eq!("a", search.prefix::<String, _>());
+        // assert_eq!("a", search.prefix::<String, _>());
+        assert_eq!(1, search.prefix_len());
         assert_eq!(Answer::Prefix, search.query(&b'p').unwrap());
-        assert_eq!("ap", search.prefix::<String, _>());
+        // assert_eq!("ap", search.prefix::<String, _>());
+        assert_eq!(2, search.prefix_len());
         assert_eq!(Answer::PrefixAndMatch, search.query(&b'p').unwrap());
-        assert_eq!("app", search.prefix::<String, _>());
+        // assert_eq!("app", search.prefix::<String, _>());
+        assert_eq!(3, search.prefix_len());
         assert_eq!(Answer::Prefix, search.query(&b'l').unwrap());
-        assert_eq!("appl", search.prefix::<String, _>());
+        // assert_eq!("appl", search.prefix::<String, _>());
+        assert_eq!(4, search.prefix_len());
         assert_eq!(Answer::Match, search.query(&b'e').unwrap());
-        assert_eq!("apple", search.prefix::<String, _>());
+        // assert_eq!("apple", search.prefix::<String, _>());
+        assert_eq!(5, search.prefix_len());
     }
 
     #[test]
     fn inc_search_value() {
         let trie = build_trie();
         let mut search = trie.inc_search();
-        assert_eq!("", search.prefix::<String, _>());
+        // assert_eq!("", search.prefix::<String, _>());
         assert_eq!(None, search.query(&b'z'));
-        assert_eq!("", search.prefix::<String, _>());
+        // assert_eq!("", search.prefix::<String, _>());
         assert_eq!(Answer::PrefixAndMatch, search.query(&b'a').unwrap());
-        assert_eq!("a", search.prefix::<String, _>());
+        // assert_eq!("a", search.prefix::<String, _>());
         assert_eq!(Answer::Prefix, search.query(&b'p').unwrap());
-        assert_eq!("ap", search.prefix::<String, _>());
+        // assert_eq!("ap", search.prefix::<String, _>());
         assert_eq!(Answer::PrefixAndMatch, search.query(&b'p').unwrap());
-        assert_eq!("app", search.prefix::<String, _>());
+        // assert_eq!("app", search.prefix::<String, _>());
         assert_eq!(Answer::Prefix, search.query(&b'l').unwrap());
-        assert_eq!("appl", search.prefix::<String, _>());
+        // assert_eq!("appl", search.prefix::<String, _>());
         assert_eq!(Answer::Match, search.query(&b'e').unwrap());
-        assert_eq!("apple", search.prefix::<String, _>());
+        // assert_eq!("apple", search.prefix::<String, _>());
         assert_eq!(Some(&2), search.value());
     }
 
@@ -272,13 +297,13 @@ mod search_tests {
         let trie = build_trie();
         let mut search = trie.inc_search();
         assert_eq!(Err(0), search.query_until("zoo"));
-        assert_eq!("", search.prefix::<String, _>());
+        // assert_eq!("", search.prefix::<String, _>());
         search.reset();
         assert_eq!(Err(1), search.query_until("blue"));
-        assert_eq!("b", search.prefix::<String, _>());
+        // assert_eq!("b", search.prefix::<String, _>());
         search.reset();
         assert_eq!(Answer::Match, search.query_until("apple").unwrap());
-        assert_eq!("apple", search.prefix::<String, _>());
+        // assert_eq!("apple", search.prefix::<String, _>());
         assert_eq!(Some(&2), search.value());
     }
 
