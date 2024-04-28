@@ -8,7 +8,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  RUST_VERSION_EARLIEST: 1.61.0
+  RUST_VERSION_EARLIEST: 1.65.0
   # RUST_VERSION_EARLIEST: 1.33.0
 
 jobs:
@@ -37,7 +37,7 @@ jobs:
       - name: Run tests release
         run: cargo test --release --all-features
 
-  test:
+  test-against-1.65.0:
     runs-on: ubuntu-latest
 
     steps:
