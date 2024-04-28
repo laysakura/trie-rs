@@ -37,7 +37,7 @@ jobs:
         run: cargo test --release --all-features
 
   test:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
