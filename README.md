@@ -290,7 +290,7 @@ Older versions may also work but are not tested or guaranteed.
 
 ### Earlier Verion Supports
 
-`trie-rs` v0.3.0 supports Rust 1.33.0 and later.
+If support for Rust prior to 1.56.0 is required, `trie-rs` 0.3.0 supports Rust 1.33.0 and later.
 
 
 ## Contributing
