@@ -259,7 +259,7 @@ mod trie {
                                 .is_some();
                         }
 
-                        assert_eq!(result, true);
+                        assert!(result);
                     },
                     BatchSize::SmallInput,
                 )

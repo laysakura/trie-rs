@@ -314,7 +314,7 @@ mod search_tests {
     #[test]
     fn use_empty_queries() {
         let trie = build_trie();
-        assert!(!trie.exact_match("").is_some());
+        assert!(trie.exact_match("").is_none());
         let _ = trie.predictive_search::<String, _>("").next();
         let _ = trie.postfix_search::<String, _>("").next();
         let _ = trie.common_prefix_search::<String, _>("").next();
