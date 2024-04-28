@@ -8,9 +8,10 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  RUST_VERSION_START: 1.33.0
 
 jobs:
-  clippy:
+  clippy-latest:
     runs-on: ubuntu-latest
 
     steps:
@@ -22,6 +23,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
+          profile: minimal
           override: true
       - name: Run clippy
         run: cargo clippy --all-features
@@ -33,3 +35,19 @@ jobs:
         run: cargo test --no-default-features --features="serde"
       - name: Run tests release
         run: cargo test --release --all-features
+
+  test:
+    runs-on: ubuntu-18.04
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ env.RUST_VERSION_START }}
+          profile: minimal
+          override: true
+      - name: Build
+        run: cargo build --all-targets
+      - name: Test
+        run: cargo test --all-features
