@@ -7,14 +7,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ## [v0.3.1]
-- Added derives for many data structures including:
+- Now deriving the following traits, for many data structures:
   - `Clone`
   - `Debug`
-  - serde's `Serialize` & `Deserialize`, available under the feature `serde`.
-  - [mem-dbg](https://github.com/zommiommy/mem_dbg-rs)'s `MemDbg` & `MemSize`, available under the feature `mem-dbg`.
-- Moved rayon, which is optionally used in dependency crates, under the feature `rayon`.
-- Switched from Travis-CI to GitHub Actions.
-- Extended documentation & doctests.
+  - serde's `Serialize` & `Deserialize`, available under the crate feature "serde".
+  - [mem-dbg](https://github.com/zommiommy/mem_dbg-rs)'s `MemDbg` & `MemSize`,
+    available under the crate feature "mem-dbg".
+- Added "rayon" crate feature, an optional feature in its dependencies.
+- Switched from Travis continuous integration to GitHub Actions.
+- Updated Rust version requirement from 1.33.0 to 1.75.0 for all features and
+  1.67.0 for no features.
 
 ## [v0.3.0]
 - Use iterators for search results.
