@@ -1,4 +1,4 @@
-name: Clippy
+name: CI
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  RUST_VERSION_EARLIEST_FEATURES: 1.75.0
+  RUST_VERSION_EARLIEST_ALL_FEATURES: 1.75.0
   RUST_VERSION_EARLIEST_NO_FEATURES: 1.67.0
   # RUST_VERSION_EARLIEST: 1.33.0
 
@@ -45,7 +45,7 @@ jobs:
           profile: minimal
           override: true
       - name: Build
-        run: cargo build --all-targets
+        run: cargo build --all-targets --no-default-features
       - name: Test
         run: cargo test --no-default-features
       - name: Doc
@@ -59,11 +59,11 @@ jobs:
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: ${{ env.RUST_VERSION_EARLIEST_FEATURES }}
+          toolchain: ${{ env.RUST_VERSION_EARLIEST_ALL_FEATURES }}
           profile: minimal
           override: true
       - name: Build
-        run: cargo build --all-targets
+        run: cargo build --all-targets --all-features
       - name: Test
         run: cargo test --all-features
       - name: Doc

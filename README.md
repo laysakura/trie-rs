@@ -281,17 +281,17 @@ Since current major version is _0_, minor version update might involve breaking 
 
 trie-rs is continuously tested with these Rust versions in with the github CI:
 
-- 1.56.0
+- 1.75.0 with all features
+- 1.67.0 with no features
 - Latest stable version
 
-So it expectedly works with Rust 1.56.0 and any newer versions.
+So it is expected to work with Rust 1.75.0 and any newer versions.
 
 Older versions may also work but are not tested or guaranteed.
 
 ### Earlier Rust Verion Supports
 
-If support for Rust prior to 1.56.0 is required, trie-rs 0.2.0 supports Rust
-1.33.0 and later.
+If support for Rust prior to 1.67.0 is required, trie-rs 0.2.0 supports Rust 1.33.0 and later.
 
 ## Contributing
 
