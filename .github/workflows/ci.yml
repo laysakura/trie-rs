@@ -48,6 +48,8 @@ jobs:
         run: cargo build --all-targets
       - name: Test
         run: cargo test --no-default-features
+      - name: Doc
+        run: cargo doc --no-default-features
 
   test-against-earliest-all-features:
     runs-on: ubuntu-latest
@@ -64,3 +66,5 @@ jobs:
         run: cargo build --all-targets
       - name: Test
         run: cargo test --all-features
+      - name: Doc
+        run: cargo doc --all-features
