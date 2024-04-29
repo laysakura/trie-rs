@@ -10,10 +10,10 @@ Memory efficient trie (prefix tree) and map library based on LOUDS.
 |
 [Changelog](https://github.com/laysakura/trie-rs/blob/master/CHANGELOG.md)
 
-[![GitHub Actions Status](https://github.com/laysakura/trie-rs/actions/workflows/clippy.yml/badge.svg)](https://github.com/laysakura/trie-rs/actions)
+[![GitHub Actions Status](https://github.com/laysakura/trie-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/laysakura/trie-rs/actions)
 [![Crates.io Version](https://img.shields.io/crates/v/trie-rs.svg)](https://crates.io/crates/trie-rs)
 [![Crates.io Downloads](https://img.shields.io/crates/d/trie-rs.svg)](https://crates.io/crates/trie-rs)
-[![Minimum rustc version](https://img.shields.io/badge/rustc-1.33+-lightgray.svg)](https://github.com/laysakura/trie-rs#rust-version-supports)
+[![Minimum rustc version](https://img.shields.io/badge/rustc-1.56+-lightgray.svg)](https://github.com/laysakura/trie-rs#rust-version-supports)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/laysakura/trie-rs/blob/master/LICENSE-MIT)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](https://github.com/laysakura/trie-rs/blob/master/LICENSE-APACHE)
 
@@ -279,7 +279,7 @@ Since current major version is _0_, minor version update might involve breaking 
 
 ## Rust Version Supports
 
-`trie-rs` is continuously tested with these Rust versions in with the github CI:
+trie-rs is continuously tested with these Rust versions in with the github CI:
 
 - 1.56.0
 - Latest stable version
@@ -288,10 +288,10 @@ So it expectedly works with Rust 1.56.0 and any newer versions.
 
 Older versions may also work but are not tested or guaranteed.
 
-### Earlier Verion Supports
+### Earlier Rust Verion Supports
 
-If support for Rust prior to 1.56.0 is required, `trie-rs` 0.3.0 supports Rust 1.33.0 and later.
-
+If support for Rust prior to 1.56.0 is required, trie-rs 0.2.0 supports Rust
+1.33.0 and later.
 
 ## Contributing
 
