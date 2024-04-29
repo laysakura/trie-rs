@@ -31,8 +31,10 @@ jobs:
         run: echo '<meta http-equiv="refresh" content="0;url=trie_rs/index.html">' > target/doc/index.html
       - name: Run benchmarks
         run: cargo bench --all
+      - name: Add benchmark redirect
+        run: echo '<meta http-equiv="refresh" content="0;url=report/index.html">' > target/criterion/index.html
       - name: Move benchmarks
-        run: mv target/criterion target/doc/
+        run: mv target/criterion target/doc/criterion
       - name: Remove lock file
         run: rm target/doc/.lock
       - name: Upload artifact
