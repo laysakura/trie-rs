@@ -15,9 +15,9 @@ env:
 jobs:
   clippy-latest:
     runs-on: ubuntu-latest
+    continue-on-error: true
 
     steps:
-      - continue-on-error: true
       - uses: actions/checkout@v2
       - name: Install Clippy
         run:
