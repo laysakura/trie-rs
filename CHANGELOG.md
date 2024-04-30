@@ -6,17 +6,23 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-## [v0.3.1]
+## [v0.4.0]
 - Now deriving the following traits, for many data structures:
   - `Clone`
   - `Debug`
-  - serde's `Serialize` & `Deserialize`, available under the crate feature "serde".
+  - [serde](https://serde.rs)'s `Serialize` & `Deserialize`, available under the
+    crate feature "serde".
   - [mem-dbg](https://github.com/zommiommy/mem_dbg-rs)'s `MemDbg` & `MemSize`,
     available under the crate feature "mem-dbg".
 - Added "rayon" crate feature, an optional feature in its dependencies.
 - Switched from Travis continuous integration to GitHub Actions.
 - Updated Rust version requirement from 1.33.0 to 1.75.0 for all features and
   1.67.0 for no features.
+- Add methods to `IncSearch`:
+  - `prefix()`,
+  - `prefix_len()`,
+  - and `goto_longest_prefix()`.
+- Add `iter()` method to `Trie` and `map::Trie`.
 
 ## [v0.3.0]
 - Use iterators for search results.
@@ -61,7 +67,8 @@ assert_eq!(Answer::Match, search.query(&b'e').unwrap());
 - Add `map::Trie::exact_match_mut()` to mutate `Value`s.
 - Add `Trie::longest_prefix()`.
   
-  Find the longest prefix. This is the kind of behavior one would want to implement tab completion for instance.
+  Find the longest prefix. This is the kind of behavior one would want to
+  implement tab completion for instance.
 
 - No longer panics on zero-length string queries.
 
