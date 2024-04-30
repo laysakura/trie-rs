@@ -6,7 +6,7 @@ Memory efficient trie (prefix tree) and map library based on LOUDS.
 |
 [Released API Docs](https://docs.rs/crate/trie-rs)
 |
-[Benchmark Results](criterion/report/)
+[Benchmark Results](https://laysakura.github.io/trie-rs/criterion/report/)
 |
 [Changelog](https://github.com/laysakura/trie-rs/blob/master/CHANGELOG.md)
 
