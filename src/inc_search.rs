@@ -113,10 +113,13 @@ impl<'a, Label: Ord, Value> IncSearch<'a, Label, Value> {
     /// ```
     /// use trie_rs::{Trie, inc_search::{Answer, IncSearch}};
     /// use louds_rs::LoudsNodeNum;
+    ///
     /// let trie: Trie<u8> = ["hello", "bye"].into_iter().collect();
     /// let mut inc_search = trie.inc_search();
+    ///
     /// assert_eq!(inc_search.query_until("he"), Ok(Answer::Prefix));
     /// let position = LoudsNodeNum::from(inc_search);
+    ///
     /// // inc_search is dropped.
     /// let mut inc_search2 = IncSearch::resume(&trie.0, position);
     /// assert_eq!(inc_search2.query_until("llo"), Ok(Answer::Match));
@@ -182,6 +185,31 @@ impl<'a, Label: Ord, Value> IncSearch<'a, Label, Value> {
     /// `answer.is_match()` is true.
     pub fn value(&self) -> Option<&'a Value> {
         self.trie.value(self.node)
+    }
+
+    /// Go to the longest shared prefix.
+    pub fn goto_longest_prefix(&mut self) -> Result<usize, usize> {
+        let mut count = 0;
+
+        while count == 0 || !self.trie.is_terminal(self.node) {
+            let mut iter = self.trie.children_node_nums(self.node);
+            let first = iter.next();
+            let second = iter.next();
+            match (first, second) {
+                (Some(child_node_num), None) => {
+                    self.node = child_node_num;
+                    count += 1;
+                }
+                (None, _) => {
+                    assert_eq!(count, 0);
+                    return Ok(count);
+                }
+                _ => {
+                    return Err(count);
+                }
+            }
+        }
+        Ok(count)
     }
 
     /// Return the current prefix for this search.
@@ -250,25 +278,25 @@ mod search_tests {
     fn inc_search() {
         let trie = build_trie();
         let mut search = trie.inc_search();
-        // assert_eq!("", search.prefix::<String, _>());
+        assert_eq!("", search.prefix::<String, _>());
         assert_eq!(0, search.prefix_len());
         assert_eq!(None, search.query(&b'z'));
-        // assert_eq!("", search.prefix::<String, _>());
+        assert_eq!("", search.prefix::<String, _>());
         assert_eq!(0, search.prefix_len());
         assert_eq!(Answer::PrefixAndMatch, search.query(&b'a').unwrap());
-        // assert_eq!("a", search.prefix::<String, _>());
+        assert_eq!("a", search.prefix::<String, _>());
         assert_eq!(1, search.prefix_len());
         assert_eq!(Answer::Prefix, search.query(&b'p').unwrap());
-        // assert_eq!("ap", search.prefix::<String, _>());
+        assert_eq!("ap", search.prefix::<String, _>());
         assert_eq!(2, search.prefix_len());
         assert_eq!(Answer::PrefixAndMatch, search.query(&b'p').unwrap());
-        // assert_eq!("app", search.prefix::<String, _>());
+        assert_eq!("app", search.prefix::<String, _>());
         assert_eq!(3, search.prefix_len());
         assert_eq!(Answer::Prefix, search.query(&b'l').unwrap());
-        // assert_eq!("appl", search.prefix::<String, _>());
+        assert_eq!("appl", search.prefix::<String, _>());
         assert_eq!(4, search.prefix_len());
         assert_eq!(Answer::Match, search.query(&b'e').unwrap());
-        // assert_eq!("apple", search.prefix::<String, _>());
+        assert_eq!("apple", search.prefix::<String, _>());
         assert_eq!(5, search.prefix_len());
     }
 
@@ -276,19 +304,19 @@ mod search_tests {
     fn inc_search_value() {
         let trie = build_trie();
         let mut search = trie.inc_search();
-        // assert_eq!("", search.prefix::<String, _>());
+        assert_eq!("", search.prefix::<String, _>());
         assert_eq!(None, search.query(&b'z'));
-        // assert_eq!("", search.prefix::<String, _>());
+        assert_eq!("", search.prefix::<String, _>());
         assert_eq!(Answer::PrefixAndMatch, search.query(&b'a').unwrap());
-        // assert_eq!("a", search.prefix::<String, _>());
+        assert_eq!("a", search.prefix::<String, _>());
         assert_eq!(Answer::Prefix, search.query(&b'p').unwrap());
-        // assert_eq!("ap", search.prefix::<String, _>());
+        assert_eq!("ap", search.prefix::<String, _>());
         assert_eq!(Answer::PrefixAndMatch, search.query(&b'p').unwrap());
-        // assert_eq!("app", search.prefix::<String, _>());
+        assert_eq!("app", search.prefix::<String, _>());
         assert_eq!(Answer::Prefix, search.query(&b'l').unwrap());
-        // assert_eq!("appl", search.prefix::<String, _>());
+        assert_eq!("appl", search.prefix::<String, _>());
         assert_eq!(Answer::Match, search.query(&b'e').unwrap());
-        // assert_eq!("apple", search.prefix::<String, _>());
+        assert_eq!("apple", search.prefix::<String, _>());
         assert_eq!(Some(&2), search.value());
     }
 
@@ -297,13 +325,37 @@ mod search_tests {
         let trie = build_trie();
         let mut search = trie.inc_search();
         assert_eq!(Err(0), search.query_until("zoo"));
-        // assert_eq!("", search.prefix::<String, _>());
+        assert_eq!("", search.prefix::<String, _>());
         search.reset();
         assert_eq!(Err(1), search.query_until("blue"));
-        // assert_eq!("b", search.prefix::<String, _>());
+        assert_eq!("b", search.prefix::<String, _>());
         search.reset();
         assert_eq!(Answer::Match, search.query_until("apple").unwrap());
-        // assert_eq!("apple", search.prefix::<String, _>());
+        assert_eq!("apple", search.prefix::<String, _>());
+        assert_eq!(Some(&2), search.value());
+    }
+
+    #[test]
+    fn inc_search_goto_longest_prefix() {
+        let trie = build_trie();
+        let mut search = trie.inc_search();
+        assert_eq!(Err(0), search.goto_longest_prefix());
+        assert_eq!("", search.prefix::<String, _>());
+        search.reset();
+        assert_eq!(Ok(Answer::PrefixAndMatch), search.query_until("a"));
+        assert_eq!("a", search.prefix::<String, _>());
+        assert_eq!(Ok(2), search.goto_longest_prefix());
+        assert_eq!("app", search.prefix::<String, _>());
+        assert_eq!(Err(1), search.goto_longest_prefix());
+        assert_eq!("appl", search.prefix::<String, _>());
+        assert_eq!(Err(0), search.goto_longest_prefix());
+        assert_eq!(Ok(Answer::Prefix), search.query_until("i"));
+        assert_eq!(Ok(6), search.goto_longest_prefix());
+        assert_eq!(Ok(0), search.goto_longest_prefix());
+        assert_eq!("application", search.prefix::<String, _>());
+        search.reset();
+        assert_eq!(Answer::Match, search.query_until("apple").unwrap());
+        assert_eq!("apple", search.prefix::<String, _>());
         assert_eq!(Some(&2), search.value());
     }
 

@@ -106,6 +106,27 @@ impl<Label: Ord, Value> Trie<Label, Value> {
         PostfixIter::new(self, cur_node_num)
     }
 
+    /// Returns an iterator across all keys in the trie.
+    ///
+    /// # Examples
+    /// In the following example we illustrate how to iterate over all keys in the trie.
+    /// Note that the order of the keys is not guaranteed, as they will be returned in
+    /// lexicographical order.
+    ///
+    /// ```rust
+    /// use trie_rs::map::Trie;
+    /// let trie = Trie::from_iter([("a", 0), ("app", 1), ("apple", 2), ("better", 3), ("application", 4)]);
+    /// let results: Vec<(String, &u8)> = trie.iter().collect();
+    /// assert_eq!(results, [("a".to_string(), &0u8), ("app".to_string(), &1u8), ("apple".to_string(), &2u8), ("application".to_string(), &4u8), ("better".to_string(), &3u8)]);
+    /// ```
+    pub fn iter<C, M>(&self) -> PostfixIter<'_, Label, Value, C, M>
+    where
+        C: TryFromIterator<Label, M>,
+        Label: Clone,
+    {
+        self.postfix_search([])
+    }
+
     /// Return the common prefixes of `query`.
     pub fn common_prefix_search<C, M>(
         &self,
@@ -394,15 +415,16 @@ mod search_tests {
         parameterized_tests! {
             t1: ("a", Some("a")),
             t2: ("ap", Some("app")),
-            t3: ("appl", Some("appl")),
-            t4: ("appli", Some("application")),
-            t5: ("b", Some("better")),
-            t6: ("アップル🍎", Some("アップル🍎")),
-            t7: ("appler", None),
-            t8: ("アップル", Some("アップル🍎")),
-            t9: ("z", None),
-            t10: ("applesDONTEXIST", None),
-            t11: ("", None),
+            t3: ("app", Some("app")),
+            t4: ("appl", Some("appl")),
+            t5: ("appli", Some("application")),
+            t6: ("b", Some("better")),
+            t7: ("アップル🍎", Some("アップル🍎")),
+            t8: ("appler", None),
+            t9: ("アップル", Some("アップル🍎")),
+            t10: ("z", None),
+            t11: ("applesDONTEXIST", None),
+            t12: ("", None),
         }
     }
 

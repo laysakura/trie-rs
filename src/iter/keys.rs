@@ -1,5 +1,5 @@
 #[derive(Debug, Clone)]
-/// Strips off `Value`s from [crate::map::Trie].
+/// Retains keys and strips off `Value`s from a [crate::iter] iterator.
 pub struct Keys<I>(I);
 
 impl<I> Keys<I> {
@@ -24,7 +24,7 @@ where
 
 /// Strip an iterator items `(K, V)` to only have `K`.
 pub trait KeysExt: Iterator {
-    /// Use [entries] to strip values from a [crate::iter] iterator.
+    /// Retain keys and strip values from a [crate::iter] iterator.
     fn keys(self) -> Keys<Self>
     where
         Self: Sized,
