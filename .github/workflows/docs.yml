@@ -20,6 +20,8 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
       - name: Configure cache
         uses: Swatinem/rust-cache@v2
+      - name: Install gnuplot
+        run: apt-get install gnuplot
       - name: Setup pages
         id: pages
         uses: actions/configure-pages@v4
