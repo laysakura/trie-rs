@@ -218,8 +218,11 @@ impl<'a, Label: Ord, Value> IncSearch<'a, Label, Value> {
         C: TryFromIterator<Label, M>,
         Label: Clone,
     {
-        let mut v: Vec<Label> = self.trie.child_to_ancestors(self.node)
-            .map(|node| self.trie.label(node).clone()).collect();
+        let mut v: Vec<Label> = self
+            .trie
+            .child_to_ancestors(self.node)
+            .map(|node| self.trie.label(node).clone())
+            .collect();
         v.reverse();
         v.into_iter().try_collect().expect("Could not collect")
     }
