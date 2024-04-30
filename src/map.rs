@@ -13,7 +13,7 @@ use mem_dbg::MemDbg;
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// A trie for sequences of the type `Label`; each sequence has an associated `Value`.
 pub struct Trie<Label, Value> {
-    pub(crate) louds: Louds,
+    louds: Louds,
 
     /// (LoudsNodeNum - 2) -> TrieLabel
     trie_labels: Vec<TrieLabel<Label, Value>>,

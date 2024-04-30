@@ -12,7 +12,7 @@ categories = ["compression", "data-structures"]
 edition = "2021"
 
 [dependencies]
-louds-rs = "0.6"
+louds-rs = "0.7"
 mem_dbg = { version = "0.1.4", optional = true }
 serde = { version = "1.0", features = ["derive"], optional = true }
 

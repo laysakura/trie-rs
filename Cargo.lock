@@ -337,9 +337,9 @@ checksum = "9c198f91728a82281a64e1f4f9eeb25d82cb32a5de251c6bd1b5154d63a8e7bd"
 
 [[package]]
 name = "louds-rs"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b89b57c02945ced04b55177561050584fc438e1d457bdd4fc7ea4a94b98ad68f"
+checksum = "936de6c22f08e7135a921f8ada907acd0d88880c4f42b5591f634b9f1dd8e07f"
 dependencies = [
  "fid-rs",
  "mem_dbg",

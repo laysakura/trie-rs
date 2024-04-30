@@ -40,7 +40,7 @@
 //! the loop.
 use crate::{
     map::Trie,
-    // try_collect::{TryCollect, TryFromIterator},
+    try_collect::{TryCollect, TryFromIterator},
 };
 use louds_rs::LoudsNodeNum;
 
@@ -184,17 +184,17 @@ impl<'a, Label: Ord, Value> IncSearch<'a, Label, Value> {
         self.trie.value(self.node)
     }
 
-    // Return the current prefix for this search.
-    // pub fn prefix<C, M>(&self) -> C
-    // where
-    //     C: TryFromIterator<Label, M>,
-    //     Label: Clone,
-    // {
-    //     let mut v: Vec<Label> = self.trie.child_to_ancestors(self.node)
-    //         .map(|node| self.trie.label(node).clone()).collect();
-    //     v.reverse();
-    //     v.into_iter().try_collect().expect("Could not collect")
-    // }
+    /// Return the current prefix for this search.
+    pub fn prefix<C, M>(&self) -> C
+    where
+        C: TryFromIterator<Label, M>,
+        Label: Clone,
+    {
+        let mut v: Vec<Label> = self.trie.child_to_ancestors(self.node)
+            .map(|node| self.trie.label(node).clone()).collect();
+        v.reverse();
+        v.into_iter().try_collect().expect("Could not collect")
+    }
 
     /// Returne the length of the current prefix for this search.
     pub fn prefix_len(&self) -> usize {
@@ -202,16 +202,16 @@ impl<'a, Label: Ord, Value> IncSearch<'a, Label, Value> {
         // remove `pub(crate)` from Trie.louds field. Also uncomment prefix()
         // above.
 
-        // self.trie.child_to_ancestors(self.node).count()
+        self.trie.child_to_ancestors(self.node).count()
 
-        let mut node = self.node;
-        let mut count = 0;
-        while node.0 > 1 {
-            let index = self.trie.louds.node_num_to_index(node);
-            node = self.trie.louds.child_to_parent(index);
-            count += 1;
-        }
-        count
+        // let mut node = self.node;
+        // let mut count = 0;
+        // while node.0 > 1 {
+        //     let index = self.trie.louds.node_num_to_index(node);
+        //     node = self.trie.louds.child_to_parent(index);
+        //     count += 1;
+        // }
+        // count
     }
 
     // This isn't actually possible.

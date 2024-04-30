@@ -3,7 +3,7 @@ use super::Trie;
 use crate::inc_search::IncSearch;
 use crate::iter::{PostfixIter, PrefixIter, SearchIter};
 use crate::try_collect::{TryCollect, TryFromIterator};
-use louds_rs::{ChildNodeIter, LoudsNodeNum};
+use louds_rs::{ChildNodeIter, LoudsNodeNum, AncestorNodeIter};
 use std::iter::FromIterator;
 
 impl<Label: Ord, Value> Trie<Label, Value> {
@@ -211,9 +211,9 @@ impl<Label: Ord, Value> Trie<Label, Value> {
         self.trie_labels[(node_num.0 - 2) as usize].value.as_mut()
     }
 
-    // pub (crate) fn child_to_ancestors(&self, node_num: LoudsNodeNum) -> AncestorNodeIter {
-    //     self.louds.child_to_ancestors(node_num)
-    // }
+    pub (crate) fn child_to_ancestors(&self, node_num: LoudsNodeNum) -> AncestorNodeIter {
+        self.louds.child_to_ancestors(node_num)
+    }
 }
 
 impl<Label, Value, C> FromIterator<(C, Value)> for Trie<Label, Value>
