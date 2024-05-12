@@ -17,8 +17,6 @@ impl<'trie, Label: Ord, Value> NaiveTrie<Label, Value> {
 
     pub fn push<Arr: Iterator<Item = Label>>(&'trie mut self, word: Arr, value: Value) {
         let mut trie = self;
-        let mut value = Some(value);
-        let mut word = word.peekable();
         while let Some(chr) = word.next() {
             let res = trie
                 .children()
@@ -32,9 +30,7 @@ impl<'trie, Label: Ord, Value> NaiveTrie<Label, Value> {
                     };
                 }
                 Err(j) => {
-                    let is_terminal = word.peek().is_none();
-                    let child_trie =
-                        Self::make_interm_or_leaf(chr, is_terminal.then(|| value.take().unwrap()));
+                    let child_trie = Self::make_interm_or_leaf(chr, None);
                     trie = match trie {
                         NaiveTrie::Root(node) => {
                             node.children.insert(j, child_trie);
@@ -48,6 +44,10 @@ impl<'trie, Label: Ord, Value> NaiveTrie<Label, Value> {
                     };
                 }
             };
+        }
+        match trie {
+            NaiveTrie::IntermOrLeaf(node) => node.value = Some(value),
+            _ => panic!("Unexpected type"),
         }
     }
 

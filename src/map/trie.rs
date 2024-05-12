@@ -341,6 +341,31 @@ mod search_tests {
         let _ = trie.common_prefix_search::<String, _>("").next();
     }
 
+    #[test]
+    fn insert_order_dependent() {
+        let trie = Trie::from_iter([("a", 0), ("app", 1), ("apple", 2)]);
+        let results: Vec<(String, &u8)> = trie.iter().collect();
+        assert_eq!(
+            results,
+            [
+                ("a".to_string(), &0u8),
+                ("app".to_string(), &1u8),
+                ("apple".to_string(), &2u8)
+            ]
+        );
+
+        let trie = Trie::from_iter([("a", 0), ("apple", 2), ("app", 1)]);
+        let results: Vec<(String, &u8)> = trie.iter().collect();
+        assert_eq!(
+            results,
+            [
+                ("a".to_string(), &0u8),
+                ("app".to_string(), &1u8),
+                ("apple".to_string(), &2u8)
+            ]
+        );
+    }
+
     mod exact_match_tests {
         macro_rules! parameterized_tests {
             ($($name:ident: $value:expr,)*) => {
