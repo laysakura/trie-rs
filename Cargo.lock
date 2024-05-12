@@ -876,7 +876,7 @@ dependencies = [
 
 [[package]]
 name = "trie-rs"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "criterion",
  "lazy_static",

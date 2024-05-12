@@ -23,7 +23,7 @@ To use trie-rs, add the following to your `Cargo.toml` file:
 
 ```toml
 [dependencies]
-trie-rs = "0.4.0"
+trie-rs = "0.4.1"
 ```
 
 ### Usage Overview
