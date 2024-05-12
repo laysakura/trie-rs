@@ -15,7 +15,7 @@ impl<'trie, Label: Ord, Value> NaiveTrie<Label, Value> {
         })
     }
 
-    pub fn push<Arr: Iterator<Item = Label>>(&'trie mut self, word: Arr, value: Value) {
+    pub fn push<Arr: Iterator<Item = Label>>(&'trie mut self, mut word: Arr, value: Value) {
         let mut trie = self;
         while let Some(chr) = word.next() {
             let res = trie
