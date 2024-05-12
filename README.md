@@ -181,13 +181,13 @@ builder.push("すしだね", 2);
 builder.push("すしづめ", 3);
 builder.push("すしめし", 4);
 builder.push("すしをにぎる", 5);
-builder.push("すし", 6);  // Word `push`ed twice is just ignored.
+builder.push("すし", 6);  // Word `push`ed twice uses last value.
 builder.push("🍣", 7);
 
 let mut trie = builder.build();
 
 // exact_match(): Find a word exactly match to query.
-assert_eq!(trie.exact_match("すし"), Some(&0));
+assert_eq!(trie.exact_match("すし"), Some(&6));
 assert_eq!(trie.exact_match("🍣"), Some(&7));
 assert_eq!(trie.exact_match("🍜"), None);
 
