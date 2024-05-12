@@ -15,9 +15,9 @@ impl<'trie, Label: Ord, Value> NaiveTrie<Label, Value> {
         })
     }
 
-    pub fn push<Arr: Iterator<Item = Label>>(&'trie mut self, mut word: Arr, value: Value) {
+    pub fn push<Arr: Iterator<Item = Label>>(&'trie mut self, word: Arr, value: Value) {
         let mut trie = self;
-        while let Some(chr) = word.next() {
+        for chr in word {
             let res = trie
                 .children()
                 .binary_search_by(|child| child.label().cmp(&chr));
