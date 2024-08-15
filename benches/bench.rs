@@ -219,9 +219,9 @@ mod trie {
                         // Tested function takes too short compared to build().
                         // So loop many times.
                         let results_in_str: Vec<String> =
-                            trie.common_prefix_search("すしをにぎる").collect();
+                            trie.common_prefix_search("すしをにぎる".bytes()).collect();
                         for _ in 0..(times - 1) {
-                            for entry in trie.common_prefix_search("すしをにぎる") {
+                            for entry in trie.common_prefix_search("すしをにぎる".bytes()) {
                                 black_box::<Vec<u8>>(entry);
                             }
                         }
@@ -249,12 +249,12 @@ mod trie {
                         // iter_batched() does not properly time `routine` time when `setup` time is far longer than `routine` time.
                         // Tested function takes too short compared to build(). So loop many times.
                         let result = trie
-                            .common_prefix_search::<Vec<u8>, _>("すしをにぎる")
+                            .common_prefix_search::<Vec<u8>, _, _>("すしをにぎる".bytes())
                             .next()
                             .is_some();
                         for _ in 0..(times - 1) {
                             let _ = trie
-                                .common_prefix_search::<Vec<u8>, _>("すしをにぎる")
+                                .common_prefix_search::<Vec<u8>, _, _>("すしをにぎる".bytes())
                                 .next()
                                 .is_some();
                         }
