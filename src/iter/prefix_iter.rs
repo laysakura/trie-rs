@@ -3,25 +3,28 @@ use crate::try_collect::{TryCollect, TryFromIterator};
 use louds_rs::LoudsNodeNum;
 use std::marker::PhantomData;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 /// Iterates through all the common prefixes of a given query.
-pub struct PrefixIter<'a, Label, Value, C, M> {
+pub struct PrefixIter<'a, Label, I, Value, C, M> {
     trie: &'a Trie<Label, Value>,
-    query: Vec<Label>,
-    index: usize,
+    query: I,
     node: LoudsNodeNum,
     buffer: Vec<&'a Label>,
     consume: Option<&'a Value>,
     col: PhantomData<(C, M)>,
 }
 
-impl<'a, Label: Ord + Clone, Value, C, M> PrefixIter<'a, Label, Value, C, M> {
+impl<'a, 'b, Label: Ord + Clone, Value, I: Iterator<Item = Label>, C, M>
+    PrefixIter<'a, Label, I, Value, C, M>
+{
     #[inline]
-    pub(crate) fn new(trie: &'a Trie<Label, Value>, query: impl AsRef<[Label]>) -> Self {
+    pub(crate) fn new(
+        trie: &'a Trie<Label, Value>,
+        query: impl IntoIterator<IntoIter = I>,
+    ) -> Self {
         Self {
             trie,
-            query: query.as_ref().to_vec(),
-            index: 0,
+            query: query.into_iter(),
             node: LoudsNodeNum(1),
             buffer: Vec::new(),
             consume: None,
@@ -30,18 +33,19 @@ impl<'a, Label: Ord + Clone, Value, C, M> PrefixIter<'a, Label, Value, C, M> {
     }
 }
 
-impl<'a, Label: Ord + Clone, Value, C, M> Iterator for PrefixIter<'a, Label, Value, C, M>
+impl<'a, 'b, Label: Ord + Clone, Value, I: Iterator<Item = Label>, C, M> Iterator
+    for PrefixIter<'a, Label, I, Value, C, M>
 where
     C: TryFromIterator<Label, M>,
 {
     type Item = (C, &'a Value);
     fn next(&mut self) -> Option<Self::Item> {
         while self.consume.is_none() {
-            if let Some(chr) = self.query.get(self.index) {
+            if let Some(chr) = self.query.next() {
                 let children_node_nums: Vec<_> = self.trie.children_node_nums(self.node).collect();
                 let res = self
                     .trie
-                    .bin_search_by_children_labels(chr, &children_node_nums[..]);
+                    .bin_search_by_children_labels(&chr, &children_node_nums[..]);
                 match res {
                     Ok(j) => {
                         let child_node_num = children_node_nums[j];
@@ -54,7 +58,6 @@ where
             } else {
                 return None;
             }
-            self.index += 1;
         }
         if let Some(v) = self.consume.take() {
             let col = self.buffer.clone();
