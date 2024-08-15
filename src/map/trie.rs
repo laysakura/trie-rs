@@ -53,12 +53,12 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     ///
     /// Note: A prefix may be an exact match or not, and an exact match may be a
     /// prefix or not.
-    pub fn is_prefix(&self, query: impl AsRef<[Label]>) -> bool {
+    pub fn is_prefix(&self, query: impl IntoIterator<Item = Label>) -> bool {
         let mut cur_node_num = LoudsNodeNum(1);
 
-        for chr in query.as_ref().iter() {
+        for chr in query {
             let children_node_nums: Vec<_> = self.children_node_nums(cur_node_num).collect();
-            let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
+            let res = self.bin_search_by_children_labels(&chr, &children_node_nums[..]);
             match res {
                 Ok(j) => cur_node_num = children_node_nums[j],
                 Err(_) => return false,
@@ -128,13 +128,14 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     }
 
     /// Return the common prefixes of `query`.
-    pub fn common_prefix_search<C, M>(
+    pub fn common_prefix_search<'a, C, M, I>(
         &self,
-        query: impl AsRef<[Label]>,
-    ) -> PrefixIter<'_, Label, Value, C, M>
+        query: I,
+    ) -> PrefixIter<'_, Label, I::IntoIter, Value, C, M>
     where
         C: TryFromIterator<Label, M>,
         Label: Clone,
+        I: IntoIterator<Item = Label>,
     {
         PrefixIter::new(self, query)
     }
@@ -338,7 +339,11 @@ mod search_tests {
         assert!(trie.exact_match("").is_none());
         let _ = trie.predictive_search::<String, _>("").next();
         let _ = trie.postfix_search::<String, _>("").next();
-        let _ = trie.common_prefix_search::<String, _>("").next();
+
+        let trie2 = build_trie2();
+        let _ = trie2
+            .common_prefix_search::<String, _, _>(&mut "".chars())
+            .next();
     }
 
     #[test]
@@ -401,7 +406,7 @@ mod search_tests {
                 fn $name() {
                     let (query, expected_match) = $value;
                     let trie = super::build_trie();
-                    let result = trie.is_prefix(query);
+                    let result = trie.is_prefix(query.bytes());
                     assert_eq!(result, expected_match);
                 }
             )*
@@ -488,7 +493,7 @@ mod search_tests {
                 fn $name() {
                     let (query, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results: Vec<(String, &u8)> = trie.common_prefix_search(query).collect();
+                    let results: Vec<(String, &u8)> = trie.common_prefix_search(&mut query.bytes()).collect();
                     let expected_results: Vec<(String, &u8)> = expected_results.iter().map(|s| (s.0.to_string(), &s.1)).collect();
                     assert_eq!(results, expected_results);
                 }

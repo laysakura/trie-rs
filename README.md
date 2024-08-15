@@ -64,8 +64,8 @@ assert_eq!(
 );
 
 // common_prefix_search(): Find words which is included in `query`'s prefix.
-let results_in_u8s: Vec<Vec<u8>> = trie.common_prefix_search("すしや").collect();
-let results_in_str: Vec<String> = trie.common_prefix_search("すしや").collect();
+let results_in_u8s: Vec<Vec<u8>> = trie.common_prefix_search("すしや".bytes()).collect();
+let results_in_str: Vec<String> = trie.common_prefix_search("すしや".bytes()).collect();
 assert_eq!(
     results_in_str,
     vec![
