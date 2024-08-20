@@ -127,6 +127,73 @@ impl<Label: Ord, Value> Trie<Label, Value> {
         self.postfix_search([])
     }
 
+    /// Returns an iterator across the direct dependents of a trie node.
+    ///
+    /// For example, in the tree (A (B, C (D, E))), children(C) would return an
+    /// iterator over D and E.
+    pub fn children(&self, query: impl AsRef<[Label]>) -> Option<ChildNodeIter>
+    where
+        Label: Clone,
+    {
+
+        let mut cur_node_num = LoudsNodeNum(1);
+        let mut buffer = Vec::new();
+
+        // Consumes query (prefix)
+        for chr in query.as_ref() {
+            let children_node_nums: Vec<_> = self.children_node_nums(cur_node_num).collect();
+            let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
+            match res {
+                Ok(i) => {
+                    cur_node_num = children_node_nums[i];
+                    buffer.push(cur_node_num);
+                }
+                Err(_) => {
+                    return None;
+                }
+            }
+        }
+
+        Some(self.children_node_nums(cur_node_num))
+                // .filter(|x| self.is_terminal(*x))
+                // .map(|x| self.label(x))
+                // .collect::<Vec<_>>()
+    }
+
+    /// Returns an iterator across the direct dependents of a trie node.
+    /// This function returns the values of the children.
+    /// If a child does not have a value, it is not included in the result.
+    /// Note that this function does not take a `terminals_only` argument
+    /// (as `children_labels` does) because only terminal nodes have values.
+    pub fn children_values(&self, query: impl AsRef<[Label]>) -> Option<Vec<&Value>>
+        where
+        Label: Clone,
+    {
+        let children = self.children(query)?;
+
+        Some(children
+                .map(|x| self.value(x))
+                .filter(|x| x.is_some())
+                .map(|x| x.unwrap())
+                .collect::<Vec<_>>())
+    }
+
+    /// Returns an iterator across the direct dependents of a trie node.
+    /// This function returns the labels of the children.
+    /// If `terminals_only` is true, only terminal nodes are included in the
+    /// resulting iterator.
+    pub fn children_labels(&self, query: impl AsRef<[Label]>, terminals_only: bool) -> Option<Vec<Label>>
+        where
+        Label: Clone,
+    {
+        let children = self.children(query)?;
+
+        Some(children
+            .filter(|x| !terminals_only || self.is_terminal(*x))
+                .map(|x| self.label(x).clone())
+                .collect::<Vec<_>>())
+    }
+
     /// Return the common prefixes of `query`.
     pub fn common_prefix_search<C, M>(
         &self,
