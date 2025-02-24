@@ -3,7 +3,7 @@
 #![doc = include_str!("../README.md")]
 
 pub mod inc_search;
-mod internal_data_structure;
+mod internal;
 pub mod iter;
 pub mod map;
 mod trie;

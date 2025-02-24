@@ -1,5 +1,5 @@
 //! A trie that maps sequence of `Label`s to a `Value`.
-use crate::internal_data_structure::naive_trie::NaiveTrie;
+use crate::internal::naive_trie::NaiveTrie;
 use louds_rs::Louds;
 
 mod trie;

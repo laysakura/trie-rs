@@ -1,4 +1,4 @@
-use crate::internal_data_structure::naive_trie::NaiveTrie;
+use crate::internal::naive_trie::NaiveTrie;
 use crate::map::TrieLabel;
 use crate::map::{Trie, TrieBuilder};
 use louds_rs::Louds;
