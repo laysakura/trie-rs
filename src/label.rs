@@ -72,15 +72,15 @@ impl Label<u8> for char {
 }
 
 /// Used to convert a token iterator into a `Label<Token>` type.
-pub trait ToLabel<Token>: Iterator<Item = Token> {
+pub trait IntoLabel<Token>: Iterator<Item = Token> {
     /// Wraps the iterator so it can be used as a label.
-    fn to_label(self) -> LabelIter<Token, Self>
+    fn into_label(self) -> LabelIter<Token, Self>
     where
         Self: Sized;
 }
 
-impl<Token, T: Iterator<Item = Token>> ToLabel<Token> for T {
-    fn to_label(self) -> LabelIter<Token, Self>
+impl<Token, T: Iterator<Item = Token>> IntoLabel<Token> for T {
+    fn into_label(self) -> LabelIter<Token, Self>
     where
         Self: Sized,
     {
@@ -99,13 +99,13 @@ impl<Token, Iter: Iterator<Item = Token>> Label<Token> for LabelIter<Token, Iter
 
 #[cfg(test)]
 mod label_tests {
-    use super::{Label, ToLabel};
+    use super::{IntoLabel, Label};
 
     #[test]
     fn generic_iter() {
         // let's turn a regular char iterator into a label
         let chars = "hello".chars();
-        let label = chars.to_label();
+        let label = chars.into_label();
         let _tokens = label.into_tokens();
     }
 }
