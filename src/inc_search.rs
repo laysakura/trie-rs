@@ -16,16 +16,16 @@
 //! let mut is_match: bool;
 //! let trie = Trie::<u8>::from_iter(vec!["appli", "application"]);
 //! for i in 0..q.len() - 1 {
-//!     assert!(!trie.exact_match(&q[0..i]));
+//!     assert!(!trie.is_exact(&q[0..i]));
 //! }
-//! assert!(trie.exact_match(q));
+//! assert!(trie.is_exact(q));
 //! ```
 //!
 //! Building the query one "character" at a time and `exact_match()`ing each
 //! time, the loop has effectively complexity of _O(m<sup>2</sup> log n)_.
 //!
 //! Using the incremental search, the time complexity of each query is _O(log
-//! n)_ which returns an [Answer] enum.
+//! n)_ which returns an [LabelKind] enum.
 //!
 //! ```ignore
 //! let q = "appli"; // query string
@@ -39,7 +39,7 @@
 //! This means the above code restores the time complexity of _O(m log n)_ for
 //! the loop.
 use crate::{
-    label::Label,
+    label::{Label, LabelKind},
     map::Trie,
     try_collect::{TryCollect, TryFromIterator},
 };
@@ -68,38 +68,6 @@ impl<'a, T, V> From<IncSearch<'a, T, V>> for Position {
     }
 }
 
-/// A "matching" answer to an incremental search on a partial query.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum Answer {
-    /// There is a prefix here.
-    Prefix,
-    /// There is an exact match here.
-    Match,
-    /// There is a prefix and an exact match here.
-    PrefixAndMatch,
-}
-
-impl Answer {
-    /// Is query answer a prefix?
-    pub fn is_prefix(&self) -> bool {
-        matches!(self, Answer::Prefix | Answer::PrefixAndMatch)
-    }
-
-    /// Is query answer an exact match?
-    pub fn is_match(&self) -> bool {
-        matches!(self, Answer::Match | Answer::PrefixAndMatch)
-    }
-
-    fn new(is_prefix: bool, is_match: bool) -> Option<Self> {
-        match (is_prefix, is_match) {
-            (true, false) => Some(Answer::Prefix),
-            (false, true) => Some(Answer::Match),
-            (true, true) => Some(Answer::PrefixAndMatch),
-            (false, false) => None,
-        }
-    }
-}
-
 impl<'a, Token: Ord, Value> IncSearch<'a, Token, Value> {
     /// Create a new incremental search for a trie.
     pub fn new(trie: &'a Trie<Token, Value>) -> Self {
@@ -112,18 +80,18 @@ impl<'a, Token: Ord, Value> IncSearch<'a, Token, Value> {
     /// Resume an incremental search at a particular point.
     ///
     /// ```
-    /// use trie_rs::{Trie, inc_search::{Answer, IncSearch}};
+    /// use trie_rs::{Trie, label::LabelKind, inc_search::IncSearch};
     /// use louds_rs::LoudsNodeNum;
     ///
     /// let trie: Trie<u8> = ["hello", "bye"].into_iter().collect();
     /// let mut inc_search = trie.inc_search();
     ///
-    /// assert_eq!(inc_search.query_until("he"), Ok(Answer::Prefix));
+    /// assert_eq!(inc_search.query_until("he"), Ok(LabelKind::Prefix));
     /// let position = LoudsNodeNum::from(inc_search);
     ///
     /// // inc_search is dropped.
     /// let mut inc_search2 = IncSearch::resume(&trie.0, position);
-    /// assert_eq!(inc_search2.query_until("llo"), Ok(Answer::Match));
+    /// assert_eq!(inc_search2.query_until("llo"), Ok(LabelKind::Match));
     ///
     /// ```
     pub fn resume(trie: &'a Trie<Token, Value>, position: Position) -> Self {
@@ -134,7 +102,7 @@ impl<'a, Token: Ord, Value> IncSearch<'a, Token, Value> {
     }
 
     /// Query but do not change the node we're looking at on the trie.
-    pub fn peek(&self, chr: &Token) -> Option<Answer> {
+    pub fn peek(&self, chr: &Token) -> Option<LabelKind> {
         let children_node_nums: Vec<_> = self.trie.children_node_nums(self.node).collect();
         let res = self
             .trie
@@ -144,14 +112,14 @@ impl<'a, Token: Ord, Value> IncSearch<'a, Token, Value> {
                 let node = children_node_nums[j];
                 let is_prefix = self.trie.has_children_node_nums(node);
                 let is_match = self.trie.value(node).is_some();
-                Answer::new(is_prefix, is_match)
+                LabelKind::new(is_prefix, is_match)
             }
             Err(_) => None,
         }
     }
 
     /// Query the trie and go to node if there is a match.
-    pub fn query(&mut self, chr: &Token) -> Option<Answer> {
+    pub fn query(&mut self, chr: &Token) -> Option<LabelKind> {
         let children_node_nums: Vec<_> = self.trie.children_node_nums(self.node).collect();
         let res = self
             .trie
@@ -161,7 +129,7 @@ impl<'a, Token: Ord, Value> IncSearch<'a, Token, Value> {
                 self.node = children_node_nums[j];
                 let is_prefix = self.trie.has_children_node_nums(self.node);
                 let is_match = self.trie.value(self.node).is_some();
-                Answer::new(is_prefix, is_match)
+                LabelKind::new(is_prefix, is_match)
             }
             Err(_) => None,
         }
@@ -169,7 +137,7 @@ impl<'a, Token: Ord, Value> IncSearch<'a, Token, Value> {
 
     /// Query the trie with a sequence. Will return `Err(index of query)` on
     /// first failure to match.
-    pub fn query_until(&mut self, query: impl Label<Token>) -> Result<Answer, usize> {
+    pub fn query_until(&mut self, query: impl Label<Token>) -> Result<LabelKind, usize> {
         let mut result = None;
         let mut i = 0;
         for chr in query.into_tokens() {
@@ -294,19 +262,19 @@ mod search_tests {
         assert_eq!(None, search.query(&b'z'));
         assert_eq!("", search.prefix::<String, _>());
         assert_eq!(0, search.prefix_len());
-        assert_eq!(Answer::PrefixAndMatch, search.query(&b'a').unwrap());
+        assert_eq!(LabelKind::PrefixAndMatch, search.query(&b'a').unwrap());
         assert_eq!("a", search.prefix::<String, _>());
         assert_eq!(1, search.prefix_len());
-        assert_eq!(Answer::Prefix, search.query(&b'p').unwrap());
+        assert_eq!(LabelKind::Prefix, search.query(&b'p').unwrap());
         assert_eq!("ap", search.prefix::<String, _>());
         assert_eq!(2, search.prefix_len());
-        assert_eq!(Answer::PrefixAndMatch, search.query(&b'p').unwrap());
+        assert_eq!(LabelKind::PrefixAndMatch, search.query(&b'p').unwrap());
         assert_eq!("app", search.prefix::<String, _>());
         assert_eq!(3, search.prefix_len());
-        assert_eq!(Answer::Prefix, search.query(&b'l').unwrap());
+        assert_eq!(LabelKind::Prefix, search.query(&b'l').unwrap());
         assert_eq!("appl", search.prefix::<String, _>());
         assert_eq!(4, search.prefix_len());
-        assert_eq!(Answer::Match, search.query(&b'e').unwrap());
+        assert_eq!(LabelKind::Match, search.query(&b'e').unwrap());
         assert_eq!("apple", search.prefix::<String, _>());
         assert_eq!(5, search.prefix_len());
     }
@@ -320,23 +288,23 @@ mod search_tests {
         assert_eq!(None, search.query(&b'z'));
         assert_eq!("", search.prefix::<String, _>());
         assert_eq!(3, search.children().count());
-        assert_eq!(Answer::PrefixAndMatch, search.query(&b'a').unwrap());
+        assert_eq!(LabelKind::PrefixAndMatch, search.query(&b'a').unwrap());
         assert_eq!("a", search.prefix::<String, _>());
         assert_eq!(1, search.children().count());
-        assert_eq!(Answer::Prefix, search.query(&b'p').unwrap());
+        assert_eq!(LabelKind::Prefix, search.query(&b'p').unwrap());
         assert_eq!("ap", search.prefix::<String, _>());
         assert_eq!(1, search.children().count());
-        assert_eq!(Answer::PrefixAndMatch, search.query(&b'p').unwrap());
+        assert_eq!(LabelKind::PrefixAndMatch, search.query(&b'p').unwrap());
         assert_eq!("app", search.prefix::<String, _>());
         assert_eq!(1, search.children().count());
-        assert_eq!(Answer::Prefix, search.query(&b'l').unwrap());
+        assert_eq!(LabelKind::Prefix, search.query(&b'l').unwrap());
         assert_eq!("appl", search.prefix::<String, _>());
         assert_eq!(2, search.children().count());
         assert_eq!(
             vec![b'e', b'i'],
             search.children().map(|(c, _)| *c).collect::<Vec<_>>()
         );
-        assert_eq!(Answer::Match, search.query(&b'e').unwrap());
+        assert_eq!(LabelKind::Match, search.query(&b'e').unwrap());
         assert_eq!("apple", search.prefix::<String, _>());
         assert_eq!(0, search.children().count());
     }
@@ -348,15 +316,15 @@ mod search_tests {
         assert_eq!("", search.prefix::<String, _>());
         assert_eq!(None, search.query(&b'z'));
         assert_eq!("", search.prefix::<String, _>());
-        assert_eq!(Answer::PrefixAndMatch, search.query(&b'a').unwrap());
+        assert_eq!(LabelKind::PrefixAndMatch, search.query(&b'a').unwrap());
         assert_eq!("a", search.prefix::<String, _>());
-        assert_eq!(Answer::Prefix, search.query(&b'p').unwrap());
+        assert_eq!(LabelKind::Prefix, search.query(&b'p').unwrap());
         assert_eq!("ap", search.prefix::<String, _>());
-        assert_eq!(Answer::PrefixAndMatch, search.query(&b'p').unwrap());
+        assert_eq!(LabelKind::PrefixAndMatch, search.query(&b'p').unwrap());
         assert_eq!("app", search.prefix::<String, _>());
-        assert_eq!(Answer::Prefix, search.query(&b'l').unwrap());
+        assert_eq!(LabelKind::Prefix, search.query(&b'l').unwrap());
         assert_eq!("appl", search.prefix::<String, _>());
-        assert_eq!(Answer::Match, search.query(&b'e').unwrap());
+        assert_eq!(LabelKind::Match, search.query(&b'e').unwrap());
         assert_eq!("apple", search.prefix::<String, _>());
         assert_eq!(Some(&2), search.value());
     }
@@ -371,7 +339,7 @@ mod search_tests {
         assert_eq!(Err(1), search.query_until("blue"));
         assert_eq!("b", search.prefix::<String, _>());
         search.reset();
-        assert_eq!(Answer::Match, search.query_until("apple").unwrap());
+        assert_eq!(LabelKind::Match, search.query_until("apple").unwrap());
         assert_eq!("apple", search.prefix::<String, _>());
         assert_eq!(Some(&2), search.value());
     }
@@ -383,19 +351,19 @@ mod search_tests {
         assert_eq!(Err(0), search.goto_longest_prefix());
         assert_eq!("", search.prefix::<String, _>());
         search.reset();
-        assert_eq!(Ok(Answer::PrefixAndMatch), search.query_until("a"));
+        assert_eq!(Ok(LabelKind::PrefixAndMatch), search.query_until("a"));
         assert_eq!("a", search.prefix::<String, _>());
         assert_eq!(Ok(2), search.goto_longest_prefix());
         assert_eq!("app", search.prefix::<String, _>());
         assert_eq!(Err(1), search.goto_longest_prefix());
         assert_eq!("appl", search.prefix::<String, _>());
         assert_eq!(Err(0), search.goto_longest_prefix());
-        assert_eq!(Ok(Answer::Prefix), search.query_until("i"));
+        assert_eq!(Ok(LabelKind::Prefix), search.query_until("i"));
         assert_eq!(Ok(6), search.goto_longest_prefix());
         assert_eq!(Ok(0), search.goto_longest_prefix());
         assert_eq!("application", search.prefix::<String, _>());
         search.reset();
-        assert_eq!(Answer::Match, search.query_until("apple").unwrap());
+        assert_eq!(LabelKind::Match, search.query_until("apple").unwrap());
         assert_eq!("apple", search.prefix::<String, _>());
         assert_eq!(Some(&2), search.value());
     }
@@ -405,11 +373,11 @@ mod search_tests {
     //     let trie = build_trie();
     //     let mut search = trie.inc_search();
     //     assert_eq!(None, search.query(b'z'));
-    //     assert_eq!(Answer::PrefixAndMatch, search.query(b'a').unwrap());
-    //     assert_eq!(Answer::Prefix, search.query(b'p').unwrap());
-    //     assert_eq!(Answer::PrefixAndMatch, search.query(b'p').unwrap());
-    //     assert_eq!(Answer::Prefix, search.query(b'l').unwrap());
-    //     assert_eq!(Answer::Match, search.query(b'e').unwrap());
+    //     assert_eq!(LabelKind::PrefixAndMatch, search.query(b'a').unwrap());
+    //     assert_eq!(LabelKind::Prefix, search.query(b'p').unwrap());
+    //     assert_eq!(LabelKind::PrefixAndMatch, search.query(b'p').unwrap());
+    //     assert_eq!(LabelKind::Prefix, search.query(b'l').unwrap());
+    //     assert_eq!(LabelKind::Match, search.query(b'e').unwrap());
     //     let mut v = search.value_mut(&mut trie);
     //     assert_eq!(Some(&2), v.as_deref())
     // }

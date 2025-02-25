@@ -101,9 +101,9 @@ mod trie {
                         // when `setup` time is far longer than `routine` time.
                         // Tested function takes too short compared to build().
                         // So loop many times.
-                        let result = trie.exact_match("すしをにぎる");
+                        let result = trie.is_exact("すしをにぎる");
                         for _ in 0..(times - 1) {
-                            assert!(trie.exact_match("すしをにぎる"));
+                            assert!(trie.is_exact("すしをにぎる"));
                         }
                         assert!(result);
                     },

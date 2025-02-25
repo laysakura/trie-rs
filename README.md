@@ -44,9 +44,9 @@ builder.insert("🍣");
 let trie = builder.build();
 
 // exact_match(): Find a word exactly match to query.
-assert_eq!(trie.exact_match("すし"), true);
-assert_eq!(trie.exact_match("🍣"), true);
-assert_eq!(trie.exact_match("🍜"), false);
+assert_eq!(trie.is_exact("すし"), true);
+assert_eq!(trie.is_exact("🍣"), true);
+assert_eq!(trie.is_exact("🍜"), false);
 
 // predictive_search(): Find words which include `query` as their prefix.
 let results_in_u8s: Vec<Vec<u8>> = trie.predictive_search("すし").collect();
@@ -104,7 +104,7 @@ builder.insert(vec!["a", "woman", "on", "the", "run"]);
 let trie = builder.build();
 
 assert_eq!(
-    trie.exact_match(vec!["a", "woman", "on", "the", "beach"]),
+    trie.is_exact(vec!["a", "woman", "on", "the", "beach"]),
     true
 );
 let r: Vec<Vec<&str>> = trie.predictive_search(vec!["a", "woman", "on"]).collect();
@@ -147,7 +147,7 @@ builder.insert([5, 3, 5, 9, 4, 0, 8, 1, 2, 8]);
 
 let trie = builder.build();
 
-assert_eq!(trie.exact_match([5, 3, 5, 9, 4, 0, 8, 1, 2, 8]), true);
+assert_eq!(trie.is_exact([5, 3, 5, 9, 4, 0, 8, 1, 2, 8]), true);
 
 let t: Vec<Vec<u8>> = trie.predictive_search([3]).collect();
 assert_eq!(
@@ -202,7 +202,7 @@ best performance. See [IncSearch][crate::inc_search::IncSearch].
 
 ```rust
 use std::str;
-use trie_rs::{TrieBuilder, inc_search::Answer};
+use trie_rs::{TrieBuilder, label::LabelKind};
 
 let mut builder = TrieBuilder::new();  // Inferred `TrieBuilder<u8, u8>` automatically
 builder.insert("ab");
@@ -216,17 +216,17 @@ let trie = builder.build();
 let mut search = trie.inc_search();
 
 // Query by the byte.
-assert_eq!(search.query(&b'a'), Some(Answer::Prefix));
+assert_eq!(search.query(&b'a'), Some(LabelKind::Prefix));
 assert_eq!(search.query(&b'c'), None);
-assert_eq!(search.query(&b'b'), Some(Answer::Match));
+assert_eq!(search.query(&b'b'), Some(LabelKind::Match));
 
 // Reset the query to go again.
 search.reset();
 
 // For unicode its easier to use .query_until().
-assert_eq!(search.query_until("す"), Ok(Answer::Prefix));
-assert_eq!(search.query_until("し"), Ok(Answer::PrefixAndMatch));
-assert_eq!(search.query_until("や"), Ok(Answer::Match));
+assert_eq!(search.query_until("す"), Ok(LabelKind::Prefix));
+assert_eq!(search.query_until("し"), Ok(LabelKind::PrefixAndMatch));
+assert_eq!(search.query_until("や"), Ok(LabelKind::Match));
 assert_eq!(search.query(&b'a'), None);
 assert_eq!(search.query_until("a"), Err(0));
 

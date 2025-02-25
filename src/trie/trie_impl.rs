@@ -28,12 +28,12 @@ impl<Token: Ord> Trie<Token> {
     ///
     /// let trie = Trie::<u8>::from_iter(["a", "app", "apple", "better", "application"]);
     ///
-    /// assert!(trie.exact_match("application"));
-    /// assert!(trie.exact_match("app"));
-    /// assert!(!trie.exact_match("appla"));
+    /// assert!(trie.is_exact("application"));
+    /// assert!(trie.is_exact("app"));
+    /// assert!(!trie.is_exact("appla"));
     ///
     /// ```
-    pub fn exact_match(&self, query: impl Label<Token>) -> bool {
+    pub fn is_exact(&self, query: impl Label<Token>) -> bool {
         self.0.exact_match(query).is_some()
     }
 
@@ -198,14 +198,14 @@ mod search_tests {
     #[test]
     fn trie_from_iter() {
         let trie = Trie::<u8>::from_iter(["a", "app", "apple", "better", "application"]);
-        assert!(trie.exact_match("application"));
+        assert!(trie.is_exact("application"));
     }
 
     #[test]
     fn collect_a_trie() {
         let trie: Trie<u8> =
             IntoIterator::into_iter(["a", "app", "apple", "better", "application"]).collect();
-        assert!(trie.exact_match("application"));
+        assert!(trie.is_exact("application"));
     }
 
     #[test]
@@ -238,7 +238,7 @@ mod search_tests {
     #[test]
     fn use_empty_queries() {
         let trie = build_trie();
-        assert!(!trie.exact_match(""));
+        assert!(!trie.is_exact(""));
         let _ = trie.predictive_search::<String, _>("").next();
         let _ = trie.postfix_search::<String, _>("").next();
         let _ = trie.common_prefix_search::<String, _>("").next();
@@ -296,7 +296,7 @@ mod search_tests {
                 fn $name() {
                     let (query, expected_match) = $value;
                     let trie = super::build_trie();
-                    let result = trie.exact_match(query);
+                    let result = trie.is_exact(query);
                     assert_eq!(result, expected_match);
                 }
             )*
