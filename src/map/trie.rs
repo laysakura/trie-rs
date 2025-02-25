@@ -20,10 +20,11 @@ impl<Token: Ord, Value> Trie<Token, Value> {
         let mut cur_node_num = LoudsNodeNum(1);
 
         let mut iter = query.into_tokens().peekable();
+        let mut children_node_nums = Vec::new(); // reuse allocated space
 
         while let Some(chr) = iter.next() {
-            let children_node_nums: Vec<LoudsNodeNum> =
-                self.children_node_nums(cur_node_num).collect();
+            children_node_nums.clear();
+            children_node_nums.extend(self.children_node_nums(cur_node_num));
             let res = self.bin_search_by_children_labels(&chr, &children_node_nums[..]);
 
             match res {
@@ -58,9 +59,11 @@ impl<Token: Ord, Value> Trie<Token, Value> {
     /// prefix or not.
     pub fn is_prefix(&self, query: impl Label<Token>) -> bool {
         let mut cur_node_num = LoudsNodeNum(1);
+        let mut children_node_nums = Vec::new(); // reuse allocated space
 
         for chr in query.into_tokens() {
-            let children_node_nums: Vec<_> = self.children_node_nums(cur_node_num).collect();
+            children_node_nums.clear();
+            children_node_nums.extend(self.children_node_nums(cur_node_num));
             let res = self.bin_search_by_children_labels(&chr, &children_node_nums[..]);
             match res {
                 Ok(j) => cur_node_num = children_node_nums[j],
@@ -69,6 +72,33 @@ impl<Token: Ord, Value> Trie<Token, Value> {
         }
         // Are there more nodes after our query?
         self.has_children_node_nums(cur_node_num)
+    }
+
+    /// For a given prefix, return its child nodes.
+    ///
+    /// If a node for the prefix doesn't exist, returns `None`.
+    pub fn children(
+        &self,
+        query: impl Label<Token>,
+    ) -> Option<impl Iterator<Item = (&Token, Option<&Value>)>> {
+        let mut cur_node_num = LoudsNodeNum(1);
+        let mut children_node_nums = Vec::new(); // reuse allocated space
+
+        for chr in query.into_tokens() {
+            children_node_nums.clear();
+            children_node_nums.extend(self.children_node_nums(cur_node_num));
+            let res = self.bin_search_by_children_labels(&chr, &children_node_nums[..]);
+            match res {
+                Ok(j) => cur_node_num = children_node_nums[j],
+                Err(_) => return None,
+            }
+        }
+
+        // return children
+        Some(
+            self.children_node_nums(cur_node_num)
+                .map(|node_num| (self.token(node_num), self.value(node_num))),
+        )
     }
 
     /// Return all entries and their values that match `query`.
@@ -93,10 +123,12 @@ impl<Token: Ord, Value> Trie<Token, Value> {
         Token: Clone,
     {
         let mut cur_node_num = LoudsNodeNum(1);
+        let mut children_node_nums = Vec::new(); // reuse allocated space
 
         // Consumes query (prefix)
         for chr in query.into_tokens() {
-            let children_node_nums: Vec<_> = self.children_node_nums(cur_node_num).collect();
+            children_node_nums.clear();
+            children_node_nums.extend(self.children_node_nums(cur_node_num));
             let res = self.bin_search_by_children_labels(&chr, &children_node_nums[..]);
             match res {
                 Ok(i) => cur_node_num = children_node_nums[i],
@@ -150,10 +182,12 @@ impl<Token: Ord, Value> Trie<Token, Value> {
     {
         let mut cur_node_num = LoudsNodeNum(1);
         let mut buffer = Vec::new();
+        let mut children_node_nums = Vec::new(); // reuse allocated space
 
         // Consumes query (prefix)
         for chr in query.into_tokens() {
-            let children_node_nums: Vec<_> = self.children_node_nums(cur_node_num).collect();
+            children_node_nums.clear();
+            children_node_nums.extend(self.children_node_nums(cur_node_num));
             let res = self.bin_search_by_children_labels(&chr, &children_node_nums[..]);
             match res {
                 Ok(i) => {
@@ -421,6 +455,45 @@ mod search_tests {
             t7: ("appl", true),
             t8: ("appler", false),
             t9: ("アップル", true),
+        }
+    }
+
+    mod children_tests {
+        macro_rules! parameterized_tests {
+            ($($name:ident: $value:expr,)*) => {
+            $(
+                #[test]
+                fn $name() {
+                    let (query, expected_match) = $value;
+                    let trie = super::build_trie();
+                    let result = trie.children(query).map(|i| i.count());
+                    assert_eq!(result, expected_match);
+                }
+            )*
+            }
+        }
+
+        parameterized_tests! {
+            t1: ("a", Some(1)),
+            t2: ("app", Some(1)),
+            t3: ("apple", Some(0)),
+            t4: ("application", Some(0)),
+            t5: ("better", Some(0)),
+            t6: ("アップル🍎", Some(0)),
+            t7: ("appl", Some(2)),
+            t8: ("appler", None),
+            t9: ("アップル", Some(1)),
+        }
+
+        #[test]
+        fn t10() {
+            let trie = super::build_trie();
+            let result = trie
+                .children("appl")
+                .unwrap()
+                .map(|(c, _)| *c)
+                .collect::<Vec<_>>();
+            assert_eq!(result, vec![b'e', b'i']);
         }
     }
 

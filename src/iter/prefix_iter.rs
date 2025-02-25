@@ -14,6 +14,7 @@ pub struct PrefixIter<'a, Token, Value, C, M> {
     buffer: Vec<&'a Token>,
     consume: Option<&'a Value>,
     col: PhantomData<(C, M)>,
+    children_node_nums: Vec<LoudsNodeNum>, // reuse vec across iterations
 }
 
 impl<'a, Token: Ord + Clone, Value, C, M> PrefixIter<'a, Token, Value, C, M> {
@@ -27,6 +28,7 @@ impl<'a, Token: Ord + Clone, Value, C, M> PrefixIter<'a, Token, Value, C, M> {
             buffer: Vec::new(),
             consume: None,
             col: PhantomData,
+            children_node_nums: Vec::new(),
         }
     }
 }
@@ -39,13 +41,15 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         while self.consume.is_none() {
             if let Some(chr) = self.query.get(self.index) {
-                let children_node_nums: Vec<_> = self.trie.children_node_nums(self.node).collect();
+                self.children_node_nums.clear();
+                self.children_node_nums
+                    .extend(self.trie.children_node_nums(self.node));
                 let res = self
                     .trie
-                    .bin_search_by_children_labels(chr, &children_node_nums[..]);
+                    .bin_search_by_children_labels(chr, &self.children_node_nums[..]);
                 match res {
                     Ok(j) => {
-                        let child_node_num = children_node_nums[j];
+                        let child_node_num = self.children_node_nums[j];
                         self.buffer.push(self.trie.token(child_node_num));
                         self.consume = self.trie.value(child_node_num);
                         self.node = child_node_num;

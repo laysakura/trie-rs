@@ -182,6 +182,13 @@ impl<'a, Token: Ord, Value> IncSearch<'a, Token, Value> {
         result.ok_or(i)
     }
 
+    /// Return the child nodes for the current prefix.
+    pub fn children(&self) -> impl Iterator<Item = (&Token, Option<&Value>)> {
+        self.trie
+            .children_node_nums(self.node)
+            .map(|node_num| (self.trie.token(node_num), self.trie.value(node_num)))
+    }
+
     /// Return the value at current node. There should be one for any node where
     /// `answer.is_match()` is true.
     pub fn value(&self) -> Option<&'a Value> {
@@ -302,6 +309,36 @@ mod search_tests {
         assert_eq!(Answer::Match, search.query(&b'e').unwrap());
         assert_eq!("apple", search.prefix::<String, _>());
         assert_eq!(5, search.prefix_len());
+    }
+
+    #[test]
+    fn inc_search_children() {
+        let trie = build_trie();
+        let mut search = trie.inc_search();
+        assert_eq!("", search.prefix::<String, _>());
+        assert_eq!(3, search.children().count());
+        assert_eq!(None, search.query(&b'z'));
+        assert_eq!("", search.prefix::<String, _>());
+        assert_eq!(3, search.children().count());
+        assert_eq!(Answer::PrefixAndMatch, search.query(&b'a').unwrap());
+        assert_eq!("a", search.prefix::<String, _>());
+        assert_eq!(1, search.children().count());
+        assert_eq!(Answer::Prefix, search.query(&b'p').unwrap());
+        assert_eq!("ap", search.prefix::<String, _>());
+        assert_eq!(1, search.children().count());
+        assert_eq!(Answer::PrefixAndMatch, search.query(&b'p').unwrap());
+        assert_eq!("app", search.prefix::<String, _>());
+        assert_eq!(1, search.children().count());
+        assert_eq!(Answer::Prefix, search.query(&b'l').unwrap());
+        assert_eq!("appl", search.prefix::<String, _>());
+        assert_eq!(2, search.children().count());
+        assert_eq!(
+            vec![b'e', b'i'],
+            search.children().map(|(c, _)| *c).collect::<Vec<_>>()
+        );
+        assert_eq!(Answer::Match, search.query(&b'e').unwrap());
+        assert_eq!("apple", search.prefix::<String, _>());
+        assert_eq!(0, search.children().count());
     }
 
     #[test]

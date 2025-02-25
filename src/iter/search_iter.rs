@@ -21,10 +21,12 @@ where
     pub(crate) fn new(trie: &'a Trie<Token, Value>, query: impl Label<Token>) -> Self {
         let mut cur_node_num = LoudsNodeNum(1);
         let mut prefix = Vec::new();
+        let mut children_node_nums = Vec::new(); // reuse allocated space
 
         // Consumes query (prefix)
         for chr in query.into_tokens() {
-            let children_node_nums: Vec<_> = trie.children_node_nums(cur_node_num).collect();
+            children_node_nums.clear();
+            children_node_nums.extend(trie.children_node_nums(cur_node_num));
             let res = trie.bin_search_by_children_labels(&chr, &children_node_nums[..]);
             match res {
                 Ok(i) => cur_node_num = children_node_nums[i],
