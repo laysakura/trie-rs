@@ -9,7 +9,7 @@ repository = "https://github.com/laysakura/trie-rs"
 homepage = "https://github.com/laysakura/trie-rs"
 keywords = ["trie", "louds", "succinct"] # up to 5 keywords, each keyword should have <= 20 chars
 categories = ["compression", "data-structures"]
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 louds-rs = "0.7"

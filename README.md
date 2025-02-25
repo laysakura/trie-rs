@@ -31,15 +31,15 @@ trie-rs = "0.4.2"
 use std::str;
 use trie_rs::TrieBuilder;
 
-let mut builder = TrieBuilder::new();  // Inferred `TrieBuilder<u8>` automatically
-builder.push("すし");
-builder.push("すしや");
-builder.push("すしだね");
-builder.push("すしづめ");
-builder.push("すしめし");
-builder.push("すしをにぎる");
-builder.push("すし");  // Word `push`ed twice is just ignored.
-builder.push("🍣");
+let mut builder = TrieBuilder::<u8>::new();
+builder.insert("すし");
+builder.insert("すしや");
+builder.insert("すしだね");
+builder.insert("すしづめ");
+builder.insert("すしめし");
+builder.insert("すしをにぎる");
+builder.insert("すし");  // Word `push`ed twice is just ignored.
+builder.insert("🍣");
 
 let trie = builder.build();
 
@@ -79,29 +79,27 @@ assert_eq!(
 `TrieBuilder` is implemented using generic type like following:
 
 ```ignore
-impl<Label: Ord> TrieBuilder<Label> {
+impl<Token: Ord> TrieBuilder<Token> {
     ...
-    pub fn push<Arr: AsRef<[Label]>>(&mut self, word: Arr) where Label: Clone { ... }
+    pub fn insert(&mut self, label: impl Label<Token>) { ... }
     ...
 }
 ```
 
-In the above `Usage Overview` example, we used `Label=u8, Arr=&str`. If
-`Label` does not implement `Clone`, use
-[`insert()`][crate::trie::TrieBuilder::insert].
+In the above `Usage Overview` example, we used `Token=u8, Label=&str`.
 
-Here shows other `Label` and `Arr` type examples.
+Here are some other `Token` and `Label` type examples.
 
-#### `Label=&str, Arr=Vec<&str>`
-Say `Label` is English words and `Arr` is English phrases.
+#### `Token=&str, Label=Vec<&str>`
+Say `Token` is English words and `Label` is English phrases.
 
 ```rust
 use trie_rs::TrieBuilder;
 
 let mut builder = TrieBuilder::new();
-builder.push(vec!["a", "woman"]);
-builder.push(vec!["a", "woman", "on", "the", "beach"]);
-builder.push(vec!["a", "woman", "on", "the", "run"]);
+builder.insert(vec!["a", "woman"]);
+builder.insert(vec!["a", "woman", "on", "the", "beach"]);
+builder.insert(vec!["a", "woman", "on", "the", "run"]);
 
 let trie = builder.build();
 
@@ -132,20 +130,20 @@ use trie_rs::TrieBuilder;
 
 let mut builder = TrieBuilder::<u8>::new(); // Pi = 3.14...
 
-builder.push([1, 4, 1, 5, 9, 2, 6, 5, 3, 5]);
-builder.push([8, 9, 7, 9, 3, 2, 3, 8, 4, 6]);
-builder.push([2, 6, 4, 3, 3, 8, 3, 2, 7, 9]);
-builder.push([6, 9, 3, 9, 9, 3, 7, 5, 1, 0]);
-builder.push([5, 8, 2, 0, 9, 7, 4, 9, 4, 4]);
-builder.push([5, 9, 2, 3, 0, 7, 8, 1, 6, 4]);
-builder.push([0, 6, 2, 8, 6, 2, 0, 8, 9, 9]);
-builder.push([8, 6, 2, 8, 0, 3, 4, 8, 2, 5]);
-builder.push([3, 4, 2, 1, 1, 7, 0, 6, 7, 9]);
-builder.push([8, 2, 1, 4, 8, 0, 8, 6, 5, 1]);
-builder.push([3, 2, 8, 2, 3, 0, 6, 6, 4, 7]);
-builder.push([0, 9, 3, 8, 4, 4, 6, 0, 9, 5]);
-builder.push([5, 0, 5, 8, 2, 2, 3, 1, 7, 2]);
-builder.push([5, 3, 5, 9, 4, 0, 8, 1, 2, 8]);
+builder.insert([1, 4, 1, 5, 9, 2, 6, 5, 3, 5]);
+builder.insert([8, 9, 7, 9, 3, 2, 3, 8, 4, 6]);
+builder.insert([2, 6, 4, 3, 3, 8, 3, 2, 7, 9]);
+builder.insert([6, 9, 3, 9, 9, 3, 7, 5, 1, 0]);
+builder.insert([5, 8, 2, 0, 9, 7, 4, 9, 4, 4]);
+builder.insert([5, 9, 2, 3, 0, 7, 8, 1, 6, 4]);
+builder.insert([0, 6, 2, 8, 6, 2, 0, 8, 9, 9]);
+builder.insert([8, 6, 2, 8, 0, 3, 4, 8, 2, 5]);
+builder.insert([3, 4, 2, 1, 1, 7, 0, 6, 7, 9]);
+builder.insert([8, 2, 1, 4, 8, 0, 8, 6, 5, 1]);
+builder.insert([3, 2, 8, 2, 3, 0, 6, 6, 4, 7]);
+builder.insert([0, 9, 3, 8, 4, 4, 6, 0, 9, 5]);
+builder.insert([5, 0, 5, 8, 2, 2, 3, 1, 7, 2]);
+builder.insert([5, 3, 5, 9, 4, 0, 8, 1, 2, 8]);
 
 let trie = builder.build();
 
@@ -174,15 +172,15 @@ To store a value with each word, use `trie_rs::map::{Trie, TrieBuilder}`.
 use std::str;
 use trie_rs::map::TrieBuilder;
 
-let mut builder = TrieBuilder::new();  // Inferred `TrieBuilder<u8, u8>` automatically
-builder.push("すし", 0);
-builder.push("すしや", 1);
-builder.push("すしだね", 2);
-builder.push("すしづめ", 3);
-builder.push("すしめし", 4);
-builder.push("すしをにぎる", 5);
-builder.push("すし", 6);  // Word `push`ed twice uses last value.
-builder.push("🍣", 7);
+let mut builder = TrieBuilder::<u8, u8>::new();
+builder.insert("すし", 0);
+builder.insert("すしや", 1);
+builder.insert("すしだね", 2);
+builder.insert("すしづめ", 3);
+builder.insert("すしめし", 4);
+builder.insert("すしをにぎる", 5);
+builder.insert("すし", 6);  // Word `push`ed twice uses last value.
+builder.insert("🍣", 7);
 
 let mut trie = builder.build();
 
@@ -207,13 +205,13 @@ use std::str;
 use trie_rs::{TrieBuilder, inc_search::Answer};
 
 let mut builder = TrieBuilder::new();  // Inferred `TrieBuilder<u8, u8>` automatically
-builder.push("ab");
-builder.push("すし");
-builder.push("すしや");
-builder.push("すしだね");
-builder.push("すしづめ");
-builder.push("すしめし");
-builder.push("すしをにぎる");
+builder.insert("ab");
+builder.insert("すし");
+builder.insert("すしや");
+builder.insert("すしだね");
+builder.insert("すしづめ");
+builder.insert("すしめし");
+builder.insert("すしをにぎる");
 let trie = builder.build();
 let mut search = trie.inc_search();
 
@@ -242,7 +240,7 @@ assert_eq!(search.query_until("ab-NO-MATCH-"), Err(2)); // No match on byte at i
 - **Latest benchmark results are always accessible**: trie-rs is continuously benchmarked in Travis CI using [Criterion.rs](https://crates.io/crates/criterion). Graphical benchmark results are published [here](https://laysakura.github.io/trie-rs/criterion/report/).
 - `map::Trie` associates a `Value` with each entry.
 - `Value` does not require any traits.
-- `Label: Clone` not required to create `Trie<Label>` but useful for many reifying search operations like `predictive_search()`.
+- `Token: Clone` not required to create `Trie<Token>` but useful for many reifying search operations like `predictive_search()`.
 - Many search operations are implemented via iterators which are lazy, require less memory, and can be short circuited.
 - Incremental search available for "online" applications, i.e., searching one `Label` at a time.
 

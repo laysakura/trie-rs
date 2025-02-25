@@ -1,5 +1,6 @@
 use crate::inc_search::IncSearch;
 use crate::iter::{Keys, KeysExt, PostfixIter, PrefixIter, SearchIter};
+use crate::label::Label;
 use crate::map;
 use crate::try_collect::TryFromIterator;
 use std::iter::FromIterator;
@@ -11,9 +12,9 @@ use mem_dbg::MemDbg;
 #[cfg_attr(feature = "mem_dbg", derive(mem_dbg::MemDbg, mem_dbg::MemSize))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// A trie for sequences of the type `Label`.
-pub struct Trie<Label>(pub map::Trie<Label, ()>);
+pub struct Trie<Token>(pub map::Trie<Token, ()>);
 
-impl<Label: Ord> Trie<Label> {
+impl<Token: Ord> Trie<Token> {
     /// Return true if `query` is an exact match.
     ///
     /// # Arguments
@@ -25,14 +26,14 @@ impl<Label: Ord> Trie<Label> {
     /// ```rust
     /// use trie_rs::Trie;
     ///
-    /// let trie = Trie::from_iter(["a", "app", "apple", "better", "application"]);
+    /// let trie = Trie::<u8>::from_iter(["a", "app", "apple", "better", "application"]);
     ///
     /// assert!(trie.exact_match("application"));
     /// assert!(trie.exact_match("app"));
     /// assert!(!trie.exact_match("appla"));
     ///
     /// ```
-    pub fn exact_match(&self, query: impl AsRef<[Label]>) -> bool {
+    pub fn exact_match(&self, query: impl Label<Token>) -> bool {
         self.0.exact_match(query).is_some()
     }
 
@@ -47,7 +48,7 @@ impl<Label: Ord> Trie<Label> {
     /// ```rust
     /// use trie_rs::Trie;
     ///
-    /// let trie = Trie::from_iter(["a", "app", "apple", "better", "application"]);
+    /// let trie = Trie::<u8>::from_iter(["a", "app", "apple", "better", "application"]);
     ///
     /// let results: Vec<String> = trie.common_prefix_search("application").collect();
     ///
@@ -56,11 +57,11 @@ impl<Label: Ord> Trie<Label> {
     /// ```
     pub fn common_prefix_search<C, M>(
         &self,
-        query: impl AsRef<[Label]>,
-    ) -> Keys<PrefixIter<'_, Label, (), C, M>>
+        query: impl Label<Token>,
+    ) -> Keys<PrefixIter<'_, Token, (), C, M>>
     where
-        C: TryFromIterator<Label, M>,
-        Label: Clone,
+        C: TryFromIterator<Token, M>,
+        Token: Clone,
     {
         // TODO: We could return Keys iterators instead of collecting.
         self.0.common_prefix_search(query).keys()
@@ -69,11 +70,11 @@ impl<Label: Ord> Trie<Label> {
     /// Return all entries that match `query`.
     pub fn predictive_search<C, M>(
         &self,
-        query: impl AsRef<[Label]>,
-    ) -> Keys<SearchIter<'_, Label, (), C, M>>
+        query: impl Label<Token>,
+    ) -> Keys<SearchIter<'_, Token, (), C, M>>
     where
-        C: TryFromIterator<Label, M> + Clone,
-        Label: Clone,
+        C: TryFromIterator<Token, M> + Clone,
+        Token: Clone,
     {
         self.0.predictive_search(query).keys()
     }
@@ -89,7 +90,7 @@ impl<Label: Ord> Trie<Label> {
     /// ```rust
     /// use trie_rs::Trie;
     ///
-    /// let trie = Trie::from_iter(["a", "app", "apple", "better", "application"]);
+    /// let trie = Trie::<u8>::from_iter(["a", "app", "apple", "better", "application"]);
     ///
     /// let results: Vec<String> = trie.postfix_search("application").collect();
     ///
@@ -102,11 +103,11 @@ impl<Label: Ord> Trie<Label> {
     /// ```
     pub fn postfix_search<C, M>(
         &self,
-        query: impl AsRef<[Label]>,
-    ) -> Keys<PostfixIter<'_, Label, (), C, M>>
+        query: impl Label<Token>,
+    ) -> Keys<PostfixIter<'_, Token, (), C, M>>
     where
-        C: TryFromIterator<Label, M>,
-        Label: Clone,
+        C: TryFromIterator<Token, M>,
+        Token: Clone,
     {
         self.0.postfix_search(query).keys()
     }
@@ -121,24 +122,24 @@ impl<Label: Ord> Trie<Label> {
     /// ```rust
     /// use trie_rs::Trie;
     ///
-    /// let trie = Trie::from_iter(["a", "app", "apple", "better", "application"]);
+    /// let trie = Trie::<u8>::from_iter(["a", "app", "apple", "better", "application"]);
     ///
     /// let results: Vec<String> = trie.iter().collect();
     ///
     /// assert_eq!(results, vec!["a", "app", "apple", "application", "better"]);
     ///
     /// ```
-    pub fn iter<C, M>(&self) -> Keys<PostfixIter<'_, Label, (), C, M>>
+    pub fn iter<C, M>(&self) -> Keys<PostfixIter<'_, Token, (), C, M>>
     where
-        C: TryFromIterator<Label, M>,
-        Label: Clone,
+        C: TryFromIterator<Token, M>,
+        Token: Clone,
     {
-        self.postfix_search([])
+        self.postfix_search(&[] as &[Token])
     }
 
     /// Create an incremental search. Useful for interactive applications. See
     /// [crate::inc_search] for details.
-    pub fn inc_search(&self) -> IncSearch<'_, Label, ()> {
+    pub fn inc_search(&self) -> IncSearch<'_, Token, ()> {
         IncSearch::new(&self.0)
     }
 
@@ -146,33 +147,33 @@ impl<Label: Ord> Trie<Label> {
     ///
     /// Note: A prefix may be an exact match or not, and an exact match may be a
     /// prefix or not.
-    pub fn is_prefix(&self, query: impl AsRef<[Label]>) -> bool {
+    pub fn is_prefix(&self, query: impl Label<Token>) -> bool {
         self.0.is_prefix(query)
     }
 
     /// Return the longest shared prefix of `query`.
-    pub fn longest_prefix<C, M>(&self, query: impl AsRef<[Label]>) -> Option<C>
+    pub fn longest_prefix<C, M>(&self, query: impl Label<Token>) -> Option<C>
     where
-        C: TryFromIterator<Label, M>,
-        Label: Clone,
+        C: TryFromIterator<Token, M>,
+        Token: Clone,
     {
         self.0.longest_prefix(query)
     }
 }
 
-impl<Label, C> FromIterator<C> for Trie<Label>
+impl<Token, L> FromIterator<L> for Trie<Token>
 where
-    C: AsRef<[Label]>,
-    Label: Ord + Clone,
+    L: Label<Token>,
+    Token: Ord + Clone,
 {
     fn from_iter<T>(iter: T) -> Self
     where
         Self: Sized,
-        T: IntoIterator<Item = C>,
+        T: IntoIterator<Item = L>,
     {
         let mut builder = super::TrieBuilder::new();
         for k in iter {
-            builder.push(k)
+            builder.insert(k)
         }
         builder.build()
     }
@@ -185,12 +186,12 @@ mod search_tests {
 
     fn build_trie() -> Trie<u8> {
         let mut builder = TrieBuilder::new();
-        builder.push("a");
-        builder.push("app");
-        builder.push("apple");
-        builder.push("better");
-        builder.push("application");
-        builder.push("アップル🍎");
+        builder.insert("a");
+        builder.insert("app");
+        builder.insert("apple");
+        builder.insert("better");
+        builder.insert("application");
+        builder.insert("アップル🍎");
         builder.build()
     }
 
@@ -218,7 +219,7 @@ mod search_tests {
     fn print_debug() {
         let trie: Trie<u8> = ["a"].into_iter().collect();
         assert_eq!(format!("{:?}", trie),
-"Trie(Trie { louds: Louds { lbs: Fid { byte_vec: [160], bit_len: 5, chunks: Chunks { chunks: [Chunk { value: 2, blocks: Blocks { blocks: [Block { value: 1, length: 1 }, Block { value: 1, length: 1 }, Block { value: 2, length: 1 }, Block { value: 2, length: 1 }], blocks_cnt: 4 } }, Chunk { value: 2, blocks: Blocks { blocks: [Block { value: 0, length: 1 }], blocks_cnt: 1 } }], chunks_cnt: 2 }, table: PopcountTable { bit_length: 1, table: [0, 1] } } }, trie_labels: [TrieLabel { label: 97, value: Some(()) }] })"
+"Trie(Trie { louds: Louds { lbs: Fid { byte_vec: [160], bit_len: 5, chunks: Chunks { chunks: [Chunk { value: 2, blocks: Blocks { blocks: [Block { value: 1, length: 1 }, Block { value: 1, length: 1 }, Block { value: 2, length: 1 }, Block { value: 2, length: 1 }], blocks_cnt: 4 } }, Chunk { value: 2, blocks: Blocks { blocks: [Block { value: 0, length: 1 }], blocks_cnt: 1 } }], chunks_cnt: 2 }, table: PopcountTable { bit_length: 1, table: [0, 1] } } }, trie_tokens: [TrieToken { token: 97, value: Some(()) }] })"
         );
     }
 
@@ -226,11 +227,11 @@ mod search_tests {
     #[test]
     fn print_debug_builder() {
 
-        let mut builder = TrieBuilder::new();
-        builder.push("a");
-        builder.push("app");
+        let mut builder: TrieBuilder<u8> = TrieBuilder::new();
+        builder.insert("a");
+        builder.insert("app");
         assert_eq!(format!("{:?}", builder),
-"TrieBuilder(TrieBuilder { naive_trie: Root(NaiveTrieRoot { children: [IntermOrLeaf(NaiveTrieIntermOrLeaf { children: [IntermOrLeaf(NaiveTrieIntermOrLeaf { children: [IntermOrLeaf(NaiveTrieIntermOrLeaf { children: [], label: 112, value: Some(()) })], label: 112, value: None })], label: 97, value: Some(()) })] }) })"
+"TrieBuilder(TrieBuilder { naive_trie: Root(NaiveTrieRoot { children: [IntermOrLeaf(NaiveTrieIntermOrLeaf { children: [IntermOrLeaf(NaiveTrieIntermOrLeaf { children: [IntermOrLeaf(NaiveTrieIntermOrLeaf { children: [], token: 112, value: Some(()) })], token: 112, value: None })], token: 97, value: Some(()) })] }) })"
         );
     }
 

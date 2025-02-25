@@ -5,6 +5,7 @@
 pub mod inc_search;
 mod internal;
 pub mod iter;
+pub mod label;
 pub mod map;
 mod trie;
 pub mod try_collect;

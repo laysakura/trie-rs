@@ -1,3 +1,4 @@
+use crate::label::Label;
 use crate::map::Trie;
 use crate::try_collect::{TryCollect, TryFromIterator};
 use louds_rs::LoudsNodeNum;
@@ -5,22 +6,22 @@ use std::marker::PhantomData;
 
 #[derive(Debug, Clone)]
 /// Iterates through all the common prefixes of a given query.
-pub struct PrefixIter<'a, Label, Value, C, M> {
-    trie: &'a Trie<Label, Value>,
-    query: Vec<Label>,
+pub struct PrefixIter<'a, Token, Value, C, M> {
+    trie: &'a Trie<Token, Value>,
+    query: Vec<Token>,
     index: usize,
     node: LoudsNodeNum,
-    buffer: Vec<&'a Label>,
+    buffer: Vec<&'a Token>,
     consume: Option<&'a Value>,
     col: PhantomData<(C, M)>,
 }
 
-impl<'a, Label: Ord + Clone, Value, C, M> PrefixIter<'a, Label, Value, C, M> {
+impl<'a, Token: Ord + Clone, Value, C, M> PrefixIter<'a, Token, Value, C, M> {
     #[inline]
-    pub(crate) fn new(trie: &'a Trie<Label, Value>, query: impl AsRef<[Label]>) -> Self {
+    pub(crate) fn new(trie: &'a Trie<Token, Value>, query: impl Label<Token>) -> Self {
         Self {
             trie,
-            query: query.as_ref().to_vec(),
+            query: query.into_tokens().collect(),
             index: 0,
             node: LoudsNodeNum(1),
             buffer: Vec::new(),
@@ -30,9 +31,9 @@ impl<'a, Label: Ord + Clone, Value, C, M> PrefixIter<'a, Label, Value, C, M> {
     }
 }
 
-impl<'a, Label: Ord + Clone, Value, C, M> Iterator for PrefixIter<'a, Label, Value, C, M>
+impl<'a, Token: Ord + Clone, Value, C, M> Iterator for PrefixIter<'a, Token, Value, C, M>
 where
-    C: TryFromIterator<Label, M>,
+    C: TryFromIterator<Token, M>,
 {
     type Item = (C, &'a Value);
     fn next(&mut self) -> Option<Self::Item> {
@@ -45,7 +46,7 @@ where
                 match res {
                     Ok(j) => {
                         let child_node_num = children_node_nums[j];
-                        self.buffer.push(self.trie.label(child_node_num));
+                        self.buffer.push(self.trie.token(child_node_num));
                         self.consume = self.trie.value(child_node_num);
                         self.node = child_node_num;
                     }

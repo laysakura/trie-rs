@@ -2,25 +2,25 @@ use super::naive_trie_b_f_iter::NaiveTrieBFIter;
 use super::{NaiveTrie, NaiveTrieIntermOrLeaf, NaiveTrieRoot};
 use std::vec::Drain;
 
-impl<'trie, Label: Ord, Value> NaiveTrie<Label, Value> {
+impl<'trie, Token: Ord, Value> NaiveTrie<Token, Value> {
     pub fn make_root() -> Self {
         NaiveTrie::Root(NaiveTrieRoot { children: vec![] })
     }
 
-    pub fn make_interm_or_leaf(label: Label, terminal: Option<Value>) -> Self {
+    pub fn make_interm_or_leaf(token: Token, terminal: Option<Value>) -> Self {
         NaiveTrie::IntermOrLeaf(NaiveTrieIntermOrLeaf {
             children: vec![],
-            label,
+            token,
             value: terminal,
         })
     }
 
-    pub fn push<Arr: Iterator<Item = Label>>(&'trie mut self, word: Arr, value: Value) {
+    pub fn insert<Arr: Iterator<Item = Token>>(&'trie mut self, word: Arr, value: Value) {
         let mut trie = self;
         for chr in word {
             let res = trie
                 .children()
-                .binary_search_by(|child| child.label().cmp(&chr));
+                .binary_search_by(|child| child.token().cmp(&chr));
             match res {
                 Ok(j) => {
                     trie = match trie {
@@ -79,18 +79,18 @@ impl<'trie, Label: Ord, Value> NaiveTrie<Label, Value> {
 
     /// # Panics
     /// If self is not IntermOrLeaf.
-    pub fn label(&self) -> &Label {
+    pub fn token(&self) -> &Token {
         match self {
-            NaiveTrie::IntermOrLeaf(node) => &node.label,
+            NaiveTrie::IntermOrLeaf(node) => &node.token,
             _ => panic!("Unexpected type"),
         }
     }
 }
 
-impl<Label: Ord, Value> IntoIterator for NaiveTrie<Label, Value> {
-    type Item = NaiveTrie<Label, Value>;
-    type IntoIter = NaiveTrieBFIter<Label, Value>;
-    fn into_iter(self) -> NaiveTrieBFIter<Label, Value> {
+impl<Token: Ord, Value> IntoIterator for NaiveTrie<Token, Value> {
+    type Item = NaiveTrie<Token, Value>;
+    type IntoIter = NaiveTrieBFIter<Token, Value>;
+    fn into_iter(self) -> NaiveTrieBFIter<Token, Value> {
         NaiveTrieBFIter::new(self)
     }
 }

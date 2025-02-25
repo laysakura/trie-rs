@@ -7,7 +7,7 @@ use mem_dbg::MemDbg;
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "mem_dbg", derive(mem_dbg::MemDbg, mem_dbg::MemSize))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-/// Naive trie with ordered Label sequence in edges.
+/// Naive trie with ordered Token sequence in edges.
 ///
 /// The following naive trie contains these words.
 /// - a
@@ -18,7 +18,7 @@ use mem_dbg::MemDbg;
 /// ```text
 /// <Root>
 ///   |
-///   | a: Label
+///   | a: Token
 /// <IntermOrLeaf (Terminate)>
 ///   |
 ///   | p
@@ -51,9 +51,9 @@ use mem_dbg::MemDbg;
 ///                                  | n
 ///                                <IntermOrLeaf (Terminate)>
 /// ```
-pub enum NaiveTrie<Label, Value> {
-    Root(NaiveTrieRoot<Label, Value>),
-    IntermOrLeaf(NaiveTrieIntermOrLeaf<Label, Value>),
+pub enum NaiveTrie<Token, Value> {
+    Root(NaiveTrieRoot<Token, Value>),
+    IntermOrLeaf(NaiveTrieIntermOrLeaf<Token, Value>),
 
     /// Used for Breadth-First iteration.
     ///
@@ -81,17 +81,17 @@ pub enum NaiveTrie<Label, Value> {
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "mem_dbg", derive(mem_dbg::MemDbg, mem_dbg::MemSize))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct NaiveTrieRoot<Label, Value> {
-    /// Sorted by Label's order.
-    children: Vec<NaiveTrie<Label, Value>>,
+pub struct NaiveTrieRoot<Token, Value> {
+    /// Sorted by Token's order.
+    children: Vec<NaiveTrie<Token, Value>>,
 }
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "mem_dbg", derive(mem_dbg::MemDbg, mem_dbg::MemSize))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct NaiveTrieIntermOrLeaf<Label, Value> {
-    /// Sorted by Label's order.
-    children: Vec<NaiveTrie<Label, Value>>,
-    pub(crate) label: Label,
+pub struct NaiveTrieIntermOrLeaf<Token, Value> {
+    /// Sorted by Token's order.
+    children: Vec<NaiveTrie<Token, Value>>,
+    pub(crate) token: Token,
     pub(crate) value: Option<Value>,
 }

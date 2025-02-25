@@ -24,7 +24,7 @@ fn git_hash() -> String {
 }
 
 mod trie {
-    use criterion::{black_box, BatchSize, Criterion};
+    use criterion::{BatchSize, Criterion, black_box};
     use std::env;
     use std::fs::File;
     use std::io::{BufRead, BufReader};
@@ -42,7 +42,7 @@ mod trie {
             let mut n_words = 0;
             for result in BufReader::new(File::open(edict2_path).unwrap()).lines() {
                 let l = result.unwrap();
-                builder.push(l);
+                builder.insert(&*l);
                 n_words += 1;
             }
             println!("Read {} words.", n_words);
@@ -61,7 +61,7 @@ mod trie {
                 b.iter_batched(
                     || &TRIE_EDICT,
                     |_trie| {
-                        let mut builder = TrieBuilder::new();
+                        let mut builder: TrieBuilder<u8> = TrieBuilder::new();
 
                         let repo_root = env::var("CARGO_MANIFEST_DIR")
                             .expect("CARGO_MANIFEST_DIR environment variable must be set.");
@@ -70,7 +70,7 @@ mod trie {
                         let mut n_words = 0;
                         for result in BufReader::new(File::open(edict2_path).unwrap()).lines() {
                             let l = result.unwrap();
-                            builder.push(l);
+                            builder.insert(&*l);
                             n_words += 1;
                             if n_words >= items {
                                 break;

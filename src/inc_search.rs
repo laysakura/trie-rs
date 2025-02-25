@@ -14,7 +14,7 @@
 //!
 //! let q = "appli"; // query string
 //! let mut is_match: bool;
-//! let trie = Trie::from_iter(vec!["appli", "application"]);
+//! let trie = Trie::<u8>::from_iter(vec!["appli", "application"]);
 //! for i in 0..q.len() - 1 {
 //!     assert!(!trie.exact_match(&q[0..i]));
 //! }
@@ -39,6 +39,7 @@
 //! This means the above code restores the time complexity of _O(m log n)_ for
 //! the loop.
 use crate::{
+    label::Label,
     map::Trie,
     try_collect::{TryCollect, TryFromIterator},
 };
@@ -46,8 +47,8 @@ use louds_rs::LoudsNodeNum;
 
 #[derive(Debug, Clone)]
 /// An incremental search of the trie.
-pub struct IncSearch<'a, Label, Value> {
-    trie: &'a Trie<Label, Value>,
+pub struct IncSearch<'a, Token, Value> {
+    trie: &'a Trie<Token, Value>,
     node: LoudsNodeNum,
 }
 
@@ -61,8 +62,8 @@ pub type Position = LoudsNodeNum;
 
 /// Retrieve the position the search is on. Useful for hanging on to a search
 /// without having to fight the borrow checker because its borrowing a trie.
-impl<'a, L, V> From<IncSearch<'a, L, V>> for Position {
-    fn from(inc_search: IncSearch<'a, L, V>) -> Self {
+impl<'a, T, V> From<IncSearch<'a, T, V>> for Position {
+    fn from(inc_search: IncSearch<'a, T, V>) -> Self {
         inc_search.node
     }
 }
@@ -99,9 +100,9 @@ impl Answer {
     }
 }
 
-impl<'a, Label: Ord, Value> IncSearch<'a, Label, Value> {
+impl<'a, Token: Ord, Value> IncSearch<'a, Token, Value> {
     /// Create a new incremental search for a trie.
-    pub fn new(trie: &'a Trie<Label, Value>) -> Self {
+    pub fn new(trie: &'a Trie<Token, Value>) -> Self {
         Self {
             trie,
             node: LoudsNodeNum(1),
@@ -125,7 +126,7 @@ impl<'a, Label: Ord, Value> IncSearch<'a, Label, Value> {
     /// assert_eq!(inc_search2.query_until("llo"), Ok(Answer::Match));
     ///
     /// ```
-    pub fn resume(trie: &'a Trie<Label, Value>, position: Position) -> Self {
+    pub fn resume(trie: &'a Trie<Token, Value>, position: Position) -> Self {
         Self {
             trie,
             node: position,
@@ -133,7 +134,7 @@ impl<'a, Label: Ord, Value> IncSearch<'a, Label, Value> {
     }
 
     /// Query but do not change the node we're looking at on the trie.
-    pub fn peek(&self, chr: &Label) -> Option<Answer> {
+    pub fn peek(&self, chr: &Token) -> Option<Answer> {
         let children_node_nums: Vec<_> = self.trie.children_node_nums(self.node).collect();
         let res = self
             .trie
@@ -150,7 +151,7 @@ impl<'a, Label: Ord, Value> IncSearch<'a, Label, Value> {
     }
 
     /// Query the trie and go to node if there is a match.
-    pub fn query(&mut self, chr: &Label) -> Option<Answer> {
+    pub fn query(&mut self, chr: &Token) -> Option<Answer> {
         let children_node_nums: Vec<_> = self.trie.children_node_nums(self.node).collect();
         let res = self
             .trie
@@ -168,11 +169,11 @@ impl<'a, Label: Ord, Value> IncSearch<'a, Label, Value> {
 
     /// Query the trie with a sequence. Will return `Err(index of query)` on
     /// first failure to match.
-    pub fn query_until(&mut self, query: impl AsRef<[Label]>) -> Result<Answer, usize> {
+    pub fn query_until(&mut self, query: impl Label<Token>) -> Result<Answer, usize> {
         let mut result = None;
         let mut i = 0;
-        for chr in query.as_ref().iter() {
-            result = self.query(chr);
+        for chr in query.into_tokens() {
+            result = self.query(&chr);
             if result.is_none() {
                 return Err(i);
             }
@@ -215,13 +216,13 @@ impl<'a, Label: Ord, Value> IncSearch<'a, Label, Value> {
     /// Return the current prefix for this search.
     pub fn prefix<C, M>(&self) -> C
     where
-        C: TryFromIterator<Label, M>,
-        Label: Clone,
+        C: TryFromIterator<Token, M>,
+        Token: Clone,
     {
-        let mut v: Vec<Label> = self
+        let mut v: Vec<Token> = self
             .trie
             .child_to_ancestors(self.node)
-            .map(|node| self.trie.label(node).clone())
+            .map(|node| self.trie.token(node).clone())
             .collect();
         v.reverse();
         v.into_iter().try_collect().expect("Could not collect")
@@ -251,7 +252,7 @@ impl<'a, Label: Ord, Value> IncSearch<'a, Label, Value> {
     // ///
     // /// Note: Because [IncSearch] does not store a mutable reference to the
     // /// trie, a mutable reference must be provided.
-    // pub fn value_mut<'b>(self, trie: &'b mut Trie<Label, Value>) -> Option<&'b mut Value> {
+    // pub fn value_mut<'b>(self, trie: &'b mut Trie<Token, Value>) -> Option<&'b mut Value> {
     //     trie.value_mut(self.node)
     // }
 
@@ -268,12 +269,12 @@ mod search_tests {
 
     fn build_trie() -> Trie<u8, u8> {
         let mut builder = TrieBuilder::new();
-        builder.push("a", 0);
-        builder.push("app", 1);
-        builder.push("apple", 2);
-        builder.push("better", 3);
-        builder.push("application", 4);
-        builder.push("アップル🍎", 5);
+        builder.insert("a", 0);
+        builder.insert("app", 1);
+        builder.insert("apple", 2);
+        builder.insert("better", 3);
+        builder.insert("application", 4);
+        builder.insert("アップル🍎", 5);
         builder.build()
     }
 
