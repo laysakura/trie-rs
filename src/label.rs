@@ -8,7 +8,7 @@ pub trait Label<Token> {
 
 impl<T: Clone> Label<T> for &[T] {
     fn into_tokens(self) -> impl Iterator<Item = T> {
-        self.into_iter().cloned()
+        self.iter().cloned()
     }
 }
 
@@ -26,7 +26,7 @@ impl<T> Label<T> for Vec<T> {
 
 impl Label<u8> for &str {
     fn into_tokens(self) -> impl Iterator<Item = u8> {
-        self.as_bytes().into_iter().copied()
+        self.as_bytes().iter().copied()
     }
 }
 
@@ -72,15 +72,15 @@ impl Label<u8> for char {
 }
 
 /// Used to convert a token iterator into a `Label<Token>` type.
-pub trait AsLabel<Token>: Iterator<Item = Token> {
+pub trait ToLabel<Token>: Iterator<Item = Token> {
     /// Wraps the iterator so it can be used as a label.
-    fn as_label(self) -> LabelIter<Token, Self>
+    fn to_label(self) -> LabelIter<Token, Self>
     where
         Self: Sized;
 }
 
-impl<Token, T: Iterator<Item = Token>> AsLabel<Token> for T {
-    fn as_label(self) -> LabelIter<Token, Self>
+impl<Token, T: Iterator<Item = Token>> ToLabel<Token> for T {
+    fn to_label(self) -> LabelIter<Token, Self>
     where
         Self: Sized,
     {
@@ -99,13 +99,13 @@ impl<Token, Iter: Iterator<Item = Token>> Label<Token> for LabelIter<Token, Iter
 
 #[cfg(test)]
 mod label_tests {
-    use super::{AsLabel, Label};
+    use super::{Label, ToLabel};
 
     #[test]
     fn generic_iter() {
         // let's turn a regular char iterator into a label
         let chars = "hello".chars();
-        let label = chars.as_label();
+        let label = chars.to_label();
         let _tokens = label.into_tokens();
     }
 }

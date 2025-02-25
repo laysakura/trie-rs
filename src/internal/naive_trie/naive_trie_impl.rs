@@ -2,7 +2,7 @@ use super::naive_trie_b_f_iter::NaiveTrieBFIter;
 use super::{NaiveTrie, NaiveTrieIntermOrLeaf, NaiveTrieRoot};
 use std::vec::Drain;
 
-impl<'trie, Token: Ord, Value> NaiveTrie<Token, Value> {
+impl<Token: Ord, Value> NaiveTrie<Token, Value> {
     pub fn make_root() -> Self {
         NaiveTrie::Root(NaiveTrieRoot { children: vec![] })
     }
@@ -15,7 +15,7 @@ impl<'trie, Token: Ord, Value> NaiveTrie<Token, Value> {
         })
     }
 
-    pub fn insert<Arr: Iterator<Item = Token>>(&'trie mut self, word: Arr, value: Value) {
+    pub fn insert<Arr: Iterator<Item = Token>>(&mut self, word: Arr, value: Value) {
         let mut trie = self;
         for chr in word {
             let res = trie
