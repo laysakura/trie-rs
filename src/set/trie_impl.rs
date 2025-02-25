@@ -24,7 +24,7 @@ impl<Token: Ord> Trie<Token> {
     /// In the following example we illustrate how to query an exact match.
     ///
     /// ```rust
-    /// use trie_rs::Trie;
+    /// use trie_rs::set::Trie;
     ///
     /// let trie = Trie::<u8>::from_iter(["a", "app", "apple", "better", "application"]);
     ///
@@ -46,7 +46,7 @@ impl<Token: Ord> Trie<Token> {
     /// In the following example we illustrate how to query the common prefixes of a query string.
     ///
     /// ```rust
-    /// use trie_rs::Trie;
+    /// use trie_rs::set::Trie;
     ///
     /// let trie = Trie::<u8>::from_iter(["a", "app", "apple", "better", "application"]);
     ///
@@ -88,7 +88,7 @@ impl<Token: Ord> Trie<Token> {
     /// In the following example we illustrate how to query the postfixes of a query string.
     ///
     /// ```rust
-    /// use trie_rs::Trie;
+    /// use trie_rs::set::Trie;
     ///
     /// let trie = Trie::<u8>::from_iter(["a", "app", "apple", "better", "application"]);
     ///
@@ -120,7 +120,7 @@ impl<Token: Ord> Trie<Token> {
     /// lexicographical order.
     ///
     /// ```rust
-    /// use trie_rs::Trie;
+    /// use trie_rs::set::Trie;
     ///
     /// let trie = Trie::<u8>::from_iter(["a", "app", "apple", "better", "application"]);
     ///
@@ -181,7 +181,7 @@ where
 
 #[cfg(test)]
 mod search_tests {
-    use crate::{Trie, TrieBuilder};
+    use crate::set::{Trie, TrieBuilder};
     use std::iter::FromIterator;
 
     fn build_trie() -> Trie<u8> {

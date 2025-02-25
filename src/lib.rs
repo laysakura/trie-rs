@@ -7,6 +7,5 @@ mod internal;
 pub mod iter;
 pub mod label;
 pub mod map;
-mod trie;
+pub mod set;
 pub mod try_collect;
-pub use trie::{Trie, TrieBuilder};

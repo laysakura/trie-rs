@@ -29,7 +29,7 @@ trie-rs = "0.4.2"
 ### Usage Overview
 ```rust
 use std::str;
-use trie_rs::TrieBuilder;
+use trie_rs::set::TrieBuilder;
 
 let mut builder = TrieBuilder::<u8>::new();
 builder.insert("すし");
@@ -94,7 +94,7 @@ Here are some other `Token` and `Label` type examples.
 Say `Token` is English words and `Label` is English phrases.
 
 ```rust
-use trie_rs::TrieBuilder;
+use trie_rs::set::TrieBuilder;
 
 let mut builder = TrieBuilder::new();
 builder.insert(vec!["a", "woman"]);
@@ -126,7 +126,7 @@ assert_eq!(
 Say `Label` is a digit in Pi (= 3.14...) and Arr is a window to separate pi's digit by 10.
 
 ```rust
-use trie_rs::TrieBuilder;
+use trie_rs::set::TrieBuilder;
 
 let mut builder = TrieBuilder::<u8>::new(); // Pi = 3.14...
 
@@ -202,7 +202,7 @@ best performance. See [IncSearch][crate::inc_search::IncSearch].
 
 ```rust
 use std::str;
-use trie_rs::{TrieBuilder, label::LabelKind};
+use trie_rs::{set::TrieBuilder, label::LabelKind};
 
 let mut builder = TrieBuilder::new();  // Inferred `TrieBuilder<u8, u8>` automatically
 builder.insert("ab");

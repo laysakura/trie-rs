@@ -10,7 +10,7 @@
 //! accumulating a query.
 //!
 //! ```rust
-//! use trie_rs::Trie;
+//! use trie_rs::set::Trie;
 //!
 //! let q = "appli"; // query string
 //! let mut is_match: bool;
@@ -80,7 +80,7 @@ impl<'a, Token: Ord, Value> IncSearch<'a, Token, Value> {
     /// Resume an incremental search at a particular point.
     ///
     /// ```
-    /// use trie_rs::{Trie, label::LabelKind, inc_search::IncSearch};
+    /// use trie_rs::{set::Trie, label::LabelKind, inc_search::IncSearch};
     /// use louds_rs::LoudsNodeNum;
     ///
     /// let trie: Trie<u8> = ["hello", "bye"].into_iter().collect();
