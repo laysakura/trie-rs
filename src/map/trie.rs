@@ -6,6 +6,8 @@ use crate::try_collect::{TryCollect, TryFromIterator};
 use louds_rs::{AncestorNodeIter, ChildNodeIter, Louds, LoudsNodeNum};
 use std::iter::FromIterator;
 
+use super::{NodeMut, NodeRef};
+
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "mem_dbg", derive(mem_dbg::MemDbg, mem_dbg::MemSize))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -22,101 +24,61 @@ pub struct Trie<Token, Value> {
     pub(super) louds: Louds,
 
     /// (LoudsNodeNum - 2) -> Node
-    pub(super) nodes: Vec<Node<Token, Value>>,
+    pub(super) nodes: Box<[Node<Token, Value>]>,
 }
 
 impl<Token: Ord, Value> Trie<Token, Value> {
-    /// Return `Some(&Value)` if query is an exact match.
-    pub fn exact_match(&self, query: impl Label<Token>) -> Option<&Value> {
-        self.exact_match_node(query)
-            .and_then(move |x| self.value(x))
-    }
-
-    /// Return `Node` if query is an exact match.
+    /// Return a node num for a label.
     #[inline]
-    fn exact_match_node(&self, query: impl Label<Token>) -> Option<LoudsNodeNum> {
-        let mut cur_node_num = LoudsNodeNum(1);
-
-        let mut iter = query.into_tokens().peekable();
+    fn get_num(&self, label: impl Label<Token>) -> Option<LoudsNodeNum> {
+        let mut node_num = LoudsNodeNum(1);
         let mut children_node_nums = Vec::new(); // reuse allocated space
 
-        while let Some(chr) = iter.next() {
+        for chr in label.into_tokens() {
             children_node_nums.clear();
-            children_node_nums.extend(self.children_node_nums(cur_node_num));
+            children_node_nums.extend(self.children_node_nums(node_num));
             let res = self.bin_search_by_children_labels(&chr, &children_node_nums[..]);
-
             match res {
-                Ok(j) => {
-                    let child_node_num = children_node_nums[j];
-                    if iter.peek().is_none() && self.is_terminal(child_node_num) {
-                        return Some(child_node_num);
-                    }
-                    cur_node_num = child_node_num;
-                }
+                Ok(j) => node_num = children_node_nums[j],
                 Err(_) => return None,
             }
         }
-        None
+
+        Some(node_num)
     }
 
-    /// Return `Some(&mut value)` if query is an exact match.
-    pub fn exact_match_mut(&mut self, query: impl Label<Token>) -> Option<&mut Value> {
-        self.exact_match_node(query)
-            .and_then(move |x| self.value_mut(x))
+    /// Get a node reference for a label.
+    pub fn get(&self, label: impl Label<Token>) -> Option<NodeRef<'_, Token, Value>> {
+        self.get_num(label).map(|node_num| NodeRef {
+            trie: self,
+            node_num,
+        })
+    }
+
+    /// Get a mutable node reference for a label.
+    pub fn get_mut(&mut self, label: impl Label<Token>) -> Option<NodeMut<'_, Token, Value>> {
+        self.get_num(label).map(|node_num| NodeMut {
+            trie: self,
+            node_num,
+        })
+    }
+
+    /// Get a value for a label.
+    pub fn get_value(&self, label: impl Label<Token>) -> Option<&Value> {
+        self.get_num(label)
+            .and_then(|node_num| self.value(node_num))
+    }
+
+    /// Get a mutable value for a label.
+    pub fn get_value_mut(&mut self, label: impl Label<Token>) -> Option<&mut Value> {
+        self.get_num(label)
+            .and_then(|node_num| self.value_mut(node_num))
     }
 
     /// Create an incremental search. Useful for interactive applications. See
     /// [crate::inc_search] for details.
     pub fn inc_search(&self) -> IncSearch<'_, Token, Value> {
         IncSearch::new(self)
-    }
-
-    /// Return true if `query` is a prefix.
-    ///
-    /// Note: A prefix may be an exact match or not, and an exact match may be a
-    /// prefix or not.
-    pub fn is_prefix(&self, query: impl Label<Token>) -> bool {
-        let mut cur_node_num = LoudsNodeNum(1);
-        let mut children_node_nums = Vec::new(); // reuse allocated space
-
-        for chr in query.into_tokens() {
-            children_node_nums.clear();
-            children_node_nums.extend(self.children_node_nums(cur_node_num));
-            let res = self.bin_search_by_children_labels(&chr, &children_node_nums[..]);
-            match res {
-                Ok(j) => cur_node_num = children_node_nums[j],
-                Err(_) => return false,
-            }
-        }
-        // Are there more nodes after our query?
-        self.has_children_node_nums(cur_node_num)
-    }
-
-    /// For a given prefix, return its child nodes.
-    ///
-    /// If a node for the prefix doesn't exist, returns `None`.
-    pub fn children(
-        &self,
-        query: impl Label<Token>,
-    ) -> Option<impl Iterator<Item = (&Token, Option<&Value>)>> {
-        let mut cur_node_num = LoudsNodeNum(1);
-        let mut children_node_nums = Vec::new(); // reuse allocated space
-
-        for chr in query.into_tokens() {
-            children_node_nums.clear();
-            children_node_nums.extend(self.children_node_nums(cur_node_num));
-            let res = self.bin_search_by_children_labels(&chr, &children_node_nums[..]);
-            match res {
-                Ok(j) => cur_node_num = children_node_nums[j],
-                Err(_) => return None,
-            }
-        }
-
-        // return children
-        Some(
-            self.children_node_nums(cur_node_num)
-                .map(|node_num| (self.token(node_num), self.value(node_num))),
-        )
     }
 
     /// Return all entries and their values that match `query`.
@@ -177,7 +139,7 @@ impl<Token: Ord, Value> Trie<Token, Value> {
         C: TryFromIterator<Token, M>,
         Token: Clone,
     {
-        self.postfix_search(&[] as &[Token])
+        PostfixIter::new(self, LoudsNodeNum(1))
     }
 
     /// Return the common prefixes of `query`.
@@ -219,7 +181,7 @@ impl<Token: Ord, Value> Trie<Token, Value> {
         }
 
         // Walk the trie as long as there is only one path and it isn't a terminal value.
-        while !self.is_terminal(cur_node_num) {
+        while !self.is_exact(cur_node_num) {
             let mut iter = self.children_node_nums(cur_node_num);
             let first = iter.next();
             let second = iter.next();
@@ -267,7 +229,7 @@ impl<Token: Ord, Value> Trie<Token, Value> {
         &self.nodes[(node_num.0 - 2) as usize].token
     }
 
-    pub(crate) fn is_terminal(&self, node_num: LoudsNodeNum) -> bool {
+    pub(crate) fn is_exact(&self, node_num: LoudsNodeNum) -> bool {
         if node_num.0 >= 2 {
             self.nodes[(node_num.0 - 2) as usize].value.is_some()
         } else {
@@ -353,10 +315,10 @@ mod search_tests {
     #[test]
     fn value_mut() {
         let mut trie = build_trie();
-        assert_eq!(trie.exact_match("apple"), Some(&2));
-        let v = trie.exact_match_mut("apple").unwrap();
+        assert_eq!(trie.get_value("apple"), Some(&2));
+        let v = trie.get_value_mut("apple").unwrap();
         *v = 10;
-        assert_eq!(trie.exact_match("apple"), Some(&10));
+        assert_eq!(trie.get_value("apple"), Some(&10));
     }
 
     #[test]
@@ -368,7 +330,7 @@ mod search_tests {
             ("better", 3),
             ("application", 4),
         ]);
-        assert_eq!(trie.exact_match("application"), Some(&4));
+        assert_eq!(trie.get_value("application"), Some(&4));
     }
 
     #[test]
@@ -384,13 +346,13 @@ mod search_tests {
         ]
         .into_iter()
         .collect();
-        assert_eq!(trie.exact_match("application"), Some(&4));
+        assert_eq!(trie.get_value("application"), Some(&4));
     }
 
     #[test]
     fn use_empty_queries() {
         let trie = build_trie();
-        assert!(trie.exact_match("").is_none());
+        assert!(trie.get_value("").is_none());
         let _ = trie.predictive_search::<String, _>("").next();
         let _ = trie.postfix_search::<String, _>("").next();
         let _ = trie.common_prefix_search::<String, _>("").next();
@@ -429,7 +391,7 @@ mod search_tests {
                 fn $name() {
                     let (query, expected_match) = $value;
                     let trie = super::build_trie();
-                    let result = trie.exact_match(query);
+                    let result = trie.get_value(query);
                     assert_eq!(result, expected_match);
                 }
             )*
@@ -456,7 +418,7 @@ mod search_tests {
                 fn $name() {
                     let (query, expected_match) = $value;
                     let trie = super::build_trie();
-                    let result = trie.is_prefix(query);
+                    let result = trie.get(query).filter(|n| n.is_prefix()).is_some();
                     assert_eq!(result, expected_match);
                 }
             )*
@@ -484,7 +446,7 @@ mod search_tests {
                 fn $name() {
                     let (query, expected_match) = $value;
                     let trie = super::build_trie();
-                    let result = trie.children(query).map(|i| i.count());
+                    let result = trie.get(query).map(|n| n.children().count());
                     assert_eq!(result, expected_match);
                 }
             )*
@@ -507,9 +469,10 @@ mod search_tests {
         fn t10() {
             let trie = super::build_trie();
             let result = trie
-                .children("appl")
+                .get("appl")
                 .unwrap()
-                .map(|(c, _)| *c)
+                .children()
+                .map(|n| *n.token())
                 .collect::<Vec<_>>();
             assert_eq!(result, vec![b'e', b'i']);
         }

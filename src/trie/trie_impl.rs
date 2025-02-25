@@ -34,7 +34,7 @@ impl<Token: Ord> Trie<Token> {
     ///
     /// ```
     pub fn is_exact(&self, query: impl Label<Token>) -> bool {
-        self.0.exact_match(query).is_some()
+        self.0.get_value(query).is_some()
     }
 
     /// Return the common prefixes of `query`.
@@ -148,7 +148,7 @@ impl<Token: Ord> Trie<Token> {
     /// Note: A prefix may be an exact match or not, and an exact match may be a
     /// prefix or not.
     pub fn is_prefix(&self, query: impl Label<Token>) -> bool {
-        self.0.is_prefix(query)
+        self.0.get(query).map(|n| n.is_prefix()).unwrap_or_default()
     }
 
     /// Return the longest shared prefix of `query`.

@@ -49,6 +49,7 @@ impl<Token: Ord, Value> TrieBuilder<Token, Value> {
             }
         }
         let louds = Louds::from(&louds_bits[..]);
+        let nodes = nodes.into_boxed_slice();
 
         Trie { louds, nodes }
     }

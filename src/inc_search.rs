@@ -167,7 +167,7 @@ impl<'a, Token: Ord, Value> IncSearch<'a, Token, Value> {
     pub fn goto_longest_prefix(&mut self) -> Result<usize, usize> {
         let mut count = 0;
 
-        while count == 0 || !self.trie.is_terminal(self.node) {
+        while count == 0 || !self.trie.is_exact(self.node) {
             let mut iter = self.trie.children_node_nums(self.node);
             let first = iter.next();
             let second = iter.next();
