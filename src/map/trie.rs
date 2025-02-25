@@ -1,7 +1,7 @@
 //! A trie map stores a value with each word or key.
 use crate::inc_search::IncSearch;
 use crate::iter::{PostfixIter, PrefixIter, SearchIter};
-use crate::label::Label;
+use crate::label::{Label, LabelKind};
 use crate::try_collect::{TryCollect, TryFromIterator};
 use louds_rs::{AncestorNodeIter, ChildNodeIter, Louds, LoudsNodeNum};
 use std::iter::FromIterator;
@@ -34,10 +34,10 @@ impl<Token: Ord, Value> Trie<Token, Value> {
         let mut node_num = LoudsNodeNum(1);
         let mut children_node_nums = Vec::new(); // reuse allocated space
 
-        for chr in label.into_tokens() {
+        for token in label.into_tokens() {
             children_node_nums.clear();
             children_node_nums.extend(self.children_node_nums(node_num));
-            let res = self.bin_search_by_children_labels(&chr, &children_node_nums[..]);
+            let res = self.bin_search_by_children_labels(&token, &children_node_nums[..]);
             match res {
                 Ok(j) => node_num = children_node_nums[j],
                 Err(_) => return None,
@@ -206,7 +206,17 @@ impl<Token: Ord, Value> Trie<Token, Value> {
         }
     }
 
-    pub(crate) fn has_children_node_nums(&self, node_num: LoudsNodeNum) -> bool {
+    pub(crate) fn bin_search_by_children_labels(
+        &self,
+        token: &Token,
+        children_node_nums: &[LoudsNodeNum],
+    ) -> Result<usize, usize> {
+        children_node_nums.binary_search_by(|child_node_num| self.token(*child_node_num).cmp(token))
+    }
+}
+
+impl<Token, Value> Trie<Token, Value> {
+    pub(crate) fn is_prefix(&self, node_num: LoudsNodeNum) -> bool {
         self.louds
             .parent_to_children_indices(node_num)
             .next()
@@ -215,14 +225,6 @@ impl<Token: Ord, Value> Trie<Token, Value> {
 
     pub(crate) fn children_node_nums(&self, node_num: LoudsNodeNum) -> ChildNodeIter {
         self.louds.parent_to_children_nodes(node_num)
-    }
-
-    pub(crate) fn bin_search_by_children_labels(
-        &self,
-        query: &Token,
-        children_node_nums: &[LoudsNodeNum],
-    ) -> Result<usize, usize> {
-        children_node_nums.binary_search_by(|child_node_num| self.token(*child_node_num).cmp(query))
     }
 
     pub(crate) fn token(&self, node_num: LoudsNodeNum) -> &Token {
@@ -242,6 +244,16 @@ impl<Token: Ord, Value> Trie<Token, Value> {
             self.nodes[(node_num.0 - 2) as usize].value.as_ref()
         } else {
             None
+        }
+    }
+
+    pub(crate) fn kind(&self, node_num: LoudsNodeNum) -> LabelKind {
+        match (self.is_prefix(node_num), self.is_exact(node_num)) {
+            (true, false) => LabelKind::Prefix,
+            (false, true) => LabelKind::Exact,
+            (true, true) => LabelKind::PrefixAndExact,
+            // SAFETY: Since we already have the node, it must at least be a prefix or exact match.
+            _ => unsafe { std::hint::unreachable_unchecked() },
         }
     }
 

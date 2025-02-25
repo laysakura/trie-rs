@@ -216,22 +216,22 @@ let trie = builder.build();
 let mut search = trie.inc_search();
 
 // Query by the byte.
-assert_eq!(search.query(&b'a'), Some(LabelKind::Prefix));
-assert_eq!(search.query(&b'c'), None);
-assert_eq!(search.query(&b'b'), Some(LabelKind::Match));
+assert_eq!(search.next_kind(&b'a'), Some(LabelKind::Prefix));
+assert_eq!(search.next_kind(&b'c'), None);
+assert_eq!(search.next_kind(&b'b'), Some(LabelKind::Exact));
 
 // Reset the query to go again.
 search.reset();
 
 // For unicode its easier to use .query_until().
-assert_eq!(search.query_until("す"), Ok(LabelKind::Prefix));
-assert_eq!(search.query_until("し"), Ok(LabelKind::PrefixAndMatch));
-assert_eq!(search.query_until("や"), Ok(LabelKind::Match));
-assert_eq!(search.query(&b'a'), None);
-assert_eq!(search.query_until("a"), Err(0));
+assert_eq!(search.next_label_kind('す'), Ok(LabelKind::Prefix));
+assert_eq!(search.next_label_kind('し'), Ok(LabelKind::PrefixAndExact));
+assert_eq!(search.next_label_kind('や'), Ok(LabelKind::Exact));
+assert_eq!(search.next_kind(&b'a'), None);
+assert_eq!(search.next_label_kind('a'), Err(0));
 
 search.reset();
-assert_eq!(search.query_until("ab-NO-MATCH-"), Err(2)); // No match on byte at index 2.
+assert_eq!(search.next_label_kind("ab-NO-MATCH-"), Err(2)); // No match on byte at index 2.
 ```
 
 ## Features
