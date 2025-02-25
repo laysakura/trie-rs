@@ -1,11 +1,29 @@
 //! A trie map stores a value with each word or key.
-use super::Trie;
 use crate::inc_search::IncSearch;
 use crate::iter::{PostfixIter, PrefixIter, SearchIter};
 use crate::label::Label;
 use crate::try_collect::{TryCollect, TryFromIterator};
-use louds_rs::{AncestorNodeIter, ChildNodeIter, LoudsNodeNum};
+use louds_rs::{AncestorNodeIter, ChildNodeIter, Louds, LoudsNodeNum};
 use std::iter::FromIterator;
+
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "mem_dbg", derive(mem_dbg::MemDbg, mem_dbg::MemSize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub(super) struct Node<Token, Value> {
+    pub(super) token: Token,
+    pub(super) value: Option<Value>,
+}
+
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "mem_dbg", derive(mem_dbg::MemDbg, mem_dbg::MemSize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+/// A trie for `Label`s (sequences of `Token`s); each sequence has an associated `Value`.
+pub struct Trie<Token, Value> {
+    pub(super) louds: Louds,
+
+    /// (LoudsNodeNum - 2) -> Node
+    pub(super) nodes: Vec<Node<Token, Value>>,
+}
 
 impl<Token: Ord, Value> Trie<Token, Value> {
     /// Return `Some(&Value)` if query is an exact match.
@@ -246,12 +264,12 @@ impl<Token: Ord, Value> Trie<Token, Value> {
     }
 
     pub(crate) fn token(&self, node_num: LoudsNodeNum) -> &Token {
-        &self.trie_tokens[(node_num.0 - 2) as usize].token
+        &self.nodes[(node_num.0 - 2) as usize].token
     }
 
     pub(crate) fn is_terminal(&self, node_num: LoudsNodeNum) -> bool {
         if node_num.0 >= 2 {
-            self.trie_tokens[(node_num.0 - 2) as usize].value.is_some()
+            self.nodes[(node_num.0 - 2) as usize].value.is_some()
         } else {
             false
         }
@@ -259,14 +277,14 @@ impl<Token: Ord, Value> Trie<Token, Value> {
 
     pub(crate) fn value(&self, node_num: LoudsNodeNum) -> Option<&Value> {
         if node_num.0 >= 2 {
-            self.trie_tokens[(node_num.0 - 2) as usize].value.as_ref()
+            self.nodes[(node_num.0 - 2) as usize].value.as_ref()
         } else {
             None
         }
     }
 
     pub(crate) fn value_mut(&mut self, node_num: LoudsNodeNum) -> Option<&mut Value> {
-        self.trie_tokens[(node_num.0 - 2) as usize].value.as_mut()
+        self.nodes[(node_num.0 - 2) as usize].value.as_mut()
     }
 
     pub(crate) fn child_to_ancestors(&self, node_num: LoudsNodeNum) -> AncestorNodeIter {

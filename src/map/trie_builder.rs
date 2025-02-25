@@ -1,8 +1,15 @@
+use super::trie::*;
 use crate::internal::naive_trie::NaiveTrie;
 use crate::label::Label;
-use crate::map::TrieToken;
-use crate::map::{Trie, TrieBuilder};
 use louds_rs::Louds;
+
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "mem_dbg", derive(mem_dbg::MemDbg, mem_dbg::MemSize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+/// A trie builder for [Trie].
+pub struct TrieBuilder<Token, Value> {
+    naive_trie: NaiveTrie<Token, Value>,
+}
 
 impl<Token: Ord, Value> Default for TrieBuilder<Token, Value> {
     fn default() -> Self {
@@ -25,13 +32,13 @@ impl<Token: Ord, Value> TrieBuilder<Token, Value> {
     /// Build a [Trie].
     pub fn build(self) -> Trie<Token, Value> {
         let mut louds_bits: Vec<bool> = vec![true, false];
-        let mut trie_tokens: Vec<TrieToken<Token, Value>> = vec![];
-        for node in self.naive_trie.into_iter() {
-            match node {
+        let mut nodes: Vec<Node<Token, Value>> = vec![];
+        for naive_node in self.naive_trie.into_iter() {
+            match naive_node {
                 NaiveTrie::Root(_) => {}
                 NaiveTrie::IntermOrLeaf(n) => {
                     louds_bits.push(true);
-                    trie_tokens.push(TrieToken {
+                    nodes.push(Node {
                         token: n.token,
                         value: n.value,
                     });
@@ -43,6 +50,6 @@ impl<Token: Ord, Value> TrieBuilder<Token, Value> {
         }
         let louds = Louds::from(&louds_bits[..]);
 
-        Trie { louds, trie_tokens }
+        Trie { louds, nodes }
     }
 }
