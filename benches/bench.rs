@@ -28,7 +28,7 @@ mod trie {
     use std::env;
     use std::fs::File;
     use std::io::{BufRead, BufReader};
-    use trie_rs::{Trie, TrieBuilder};
+    use trie_rs::set::{Trie, TrieBuilder};
 
     lazy_static! {
         // Construct Japanese dictionary using EDICT (http://www.edrdg.org/jmdict/edict.html).
