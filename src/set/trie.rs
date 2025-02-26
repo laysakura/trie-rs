@@ -8,6 +8,8 @@ use std::iter::FromIterator;
 #[cfg(feature = "mem_dbg")]
 use mem_dbg::MemDbg;
 
+use super::KeyRef;
+
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "mem_dbg", derive(mem_dbg::MemDbg, mem_dbg::MemSize))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -15,10 +17,15 @@ use mem_dbg::MemDbg;
 pub struct Trie<Token>(pub map::Trie<Token, ()>);
 
 impl<Token: Ord> Trie<Token> {
-    /// Return true if `query` is an exact match.
+    /// Get a key reference for a label.
+    pub fn get(&self, label: impl Label<Token>) -> Option<KeyRef<'_, Token>> {
+        self.0.get(label).map(KeyRef)
+    }
+
+    /// Return true if `label` is an exact match.
     ///
     /// # Arguments
-    /// * `query` - The query to search for.
+    /// * `label` - The label to search for.
     ///
     /// # Examples
     /// In the following example we illustrate how to query an exact match.
@@ -33,14 +40,14 @@ impl<Token: Ord> Trie<Token> {
     /// assert!(!trie.is_exact("appla"));
     ///
     /// ```
-    pub fn is_exact(&self, query: impl Label<Token>) -> bool {
-        self.0.get_value(query).is_some()
+    pub fn is_exact(&self, label: impl Label<Token>) -> bool {
+        self.0.get_value(label).is_some()
     }
 
-    /// Return the common prefixes of `query`.
+    /// Return the common prefixes of `label`.
     ///
     /// # Arguments
-    /// * `query` - The query to search for.
+    /// * `label` - The label to search for.
     ///
     /// # Examples
     /// In the following example we illustrate how to query the common prefixes of a query string.
@@ -57,35 +64,35 @@ impl<Token: Ord> Trie<Token> {
     /// ```
     pub fn common_prefix_search<C, M>(
         &self,
-        query: impl Label<Token>,
+        label: impl Label<Token>,
     ) -> Keys<PrefixIter<'_, Token, (), C, M>>
     where
         C: TryFromIterator<Token, M>,
         Token: Clone,
     {
         // TODO: We could return Keys iterators instead of collecting.
-        self.0.common_prefix_search(query).keys()
+        self.0.common_prefix_search(label).keys()
     }
 
-    /// Return all entries that match `query`.
+    /// Return all entries that match `label`.
     pub fn predictive_search<C, M>(
         &self,
-        query: impl Label<Token>,
+        label: impl Label<Token>,
     ) -> Keys<SearchIter<'_, Token, (), C, M>>
     where
         C: TryFromIterator<Token, M> + Clone,
         Token: Clone,
     {
-        self.0.predictive_search(query).keys()
+        self.0.predictive_search(label).keys()
     }
 
-    /// Return the postfixes of all entries that match `query`.
+    /// Return the postfixes of all entries that match `label`.
     ///
     /// # Arguments
-    /// * `query` - The query to search for.
+    /// * `label` - The label to search for.
     ///
     /// # Examples
-    /// In the following example we illustrate how to query the postfixes of a query string.
+    /// In the following example we illustrate how to query the postfixes of a label.
     ///
     /// ```rust
     /// use trie_rs::set::Trie;
@@ -103,13 +110,13 @@ impl<Token: Ord> Trie<Token> {
     /// ```
     pub fn postfix_search<C, M>(
         &self,
-        query: impl Label<Token>,
+        label: impl Label<Token>,
     ) -> Keys<PostfixIter<'_, Token, (), C, M>>
     where
         C: TryFromIterator<Token, M>,
         Token: Clone,
     {
-        self.0.postfix_search(query).keys()
+        self.0.postfix_search(label).keys()
     }
 
     /// Returns an iterator across all keys in the trie.
@@ -137,27 +144,27 @@ impl<Token: Ord> Trie<Token> {
         self.postfix_search(&[] as &[Token])
     }
 
-    /// Create an incremental search. Useful for interactive applications. See
-    /// [crate::inc_search] for details.
+    /// Create an incremental search.
+    /// Useful for interactive applications.
+    /// See [crate::inc_search] for details.
     pub fn inc_search(&self) -> IncSearch<'_, Token, ()> {
         IncSearch::new(&self.0)
     }
 
-    /// Return true if `query` is a prefix.
+    /// Return true if `label` is a prefix.
     ///
-    /// Note: A prefix may be an exact match or not, and an exact match may be a
-    /// prefix or not.
-    pub fn is_prefix(&self, query: impl Label<Token>) -> bool {
-        self.0.get(query).map(|n| n.is_prefix()).unwrap_or_default()
+    /// Note: A prefix may be an exact match or not, and an exact match may be a prefix or not.
+    pub fn is_prefix(&self, label: impl Label<Token>) -> bool {
+        self.0.get(label).map(|n| n.is_prefix()).unwrap_or_default()
     }
 
-    /// Return the longest shared prefix of `query`.
-    pub fn longest_prefix<C, M>(&self, query: impl Label<Token>) -> Option<C>
+    /// Return the longest shared prefix of `label`.
+    pub fn longest_prefix<C, M>(&self, label: impl Label<Token>) -> Option<C>
     where
         C: TryFromIterator<Token, M>,
         Token: Clone,
     {
-        self.0.longest_prefix(query)
+        self.0.longest_prefix(label)
     }
 }
 
