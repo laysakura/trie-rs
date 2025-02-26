@@ -5,14 +5,14 @@
 //! The motivation for this struct is for "online" or interactive use cases. One
 //! often accumulates input to match against a trie. Using the standard
 //! [`exact_match()`][crate::trie::Trie::exact_match] faculties which has a time
-//! complexity of _O(m log n)_ where _m_ is the query string length and _n_ is
+//! complexity of _O(m log n)_ where _m_ is the label length and _n_ is
 //! the number of entries in the trie. Consider this loop where we simulate
 //! accumulating a query.
 //!
 //! ```rust
 //! use trie_rs::set::Trie;
 //!
-//! let q = "appli"; // query string
+//! let q = "appli"; // label
 //! let mut is_match: bool;
 //! let trie = Trie::<u8>::from_iter(vec!["appli", "application"]);
 //! for i in 0..q.len() - 1 {
@@ -28,11 +28,11 @@
 //! n)_ which returns an [LabelKind] enum.
 //!
 //! ```ignore
-//! let q = "appli"; // query string
+//! let q = "appli"; // label
 //! let inc_search = trie.inc_search();
 //! let mut is_match: bool;
 //! for i = 0..q.len() {
-//!     is_match = inc_search.query(q[i]).unwrap().is_match();
+//!     is_match = inc_search.next_kind(q[i]).unwrap().is_match();
 //! }
 //! ```
 //!

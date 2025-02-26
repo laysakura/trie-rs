@@ -81,44 +81,30 @@ impl<Token: Ord, Value> Trie<Token, Value> {
         IncSearch::new(self)
     }
 
-    /// Return all entries and their values that match `query`.
+    /// Return all entries and their values that match `label`.
     pub fn predictive_search<C, M>(
         &self,
-        query: impl Label<Token>,
+        label: impl Label<Token>,
     ) -> SearchIter<'_, Token, Value, C, M>
     where
         C: TryFromIterator<Token, M> + Clone,
         Token: Clone,
     {
-        SearchIter::new(self, query)
+        SearchIter::new(self, label)
     }
 
-    /// Return the postfixes and values of all entries that match `query`.
+    /// Return the postfixes and values of all entries that match `label`.
     pub fn postfix_search<C, M>(
         &self,
-        query: impl Label<Token>,
+        label: impl Label<Token>,
     ) -> PostfixIter<'_, Token, Value, C, M>
     where
         C: TryFromIterator<Token, M>,
         Token: Clone,
     {
-        let mut cur_node_num = LoudsNodeNum(1);
-        let mut children_node_nums = Vec::new(); // reuse allocated space
-
-        // Consumes query (prefix)
-        for chr in query.into_tokens() {
-            children_node_nums.clear();
-            children_node_nums.extend(self.children_node_nums(cur_node_num));
-            let res = self.bin_search_by_children_labels(&chr, &children_node_nums[..]);
-            match res {
-                Ok(i) => cur_node_num = children_node_nums[i],
-                Err(_) => {
-                    return PostfixIter::empty(self);
-                }
-            }
-        }
-
-        PostfixIter::new(self, cur_node_num)
+        self.get(label)
+            .map(|n| n.postfix_search())
+            .unwrap_or_else(|| PostfixIter::empty(self))
     }
 
     /// Returns an iterator across all keys in the trie.
@@ -142,20 +128,20 @@ impl<Token: Ord, Value> Trie<Token, Value> {
         PostfixIter::new(self, LoudsNodeNum(1))
     }
 
-    /// Return the common prefixes of `query`.
+    /// Return the common prefixes of `label`.
     pub fn common_prefix_search<L, M>(
         &self,
-        query: impl Label<Token>,
+        label: impl Label<Token>,
     ) -> PrefixIter<'_, Token, Value, L, M>
     where
         L: TryFromIterator<Token, M>,
         Token: Clone,
     {
-        PrefixIter::new(self, query)
+        PrefixIter::new(self, label)
     }
 
-    /// Return the longest shared prefix or terminal of `query`.
-    pub fn longest_prefix<C, M>(&self, query: impl Label<Token>) -> Option<C>
+    /// Return the longest shared prefix or terminal of `label`.
+    pub fn longest_prefix<C, M>(&self, label: impl Label<Token>) -> Option<C>
     where
         C: TryFromIterator<Token, M>,
         Token: Clone,
@@ -164,11 +150,11 @@ impl<Token: Ord, Value> Trie<Token, Value> {
         let mut buffer = Vec::new();
         let mut children_node_nums = Vec::new(); // reuse allocated space
 
-        // Consumes query (prefix)
-        for chr in query.into_tokens() {
+        // Consumes label (prefix)
+        for token in label.into_tokens() {
             children_node_nums.clear();
             children_node_nums.extend(self.children_node_nums(cur_node_num));
-            let res = self.bin_search_by_children_labels(&chr, &children_node_nums[..]);
+            let res = self.bin_search_by_children_labels(&token, &children_node_nums[..]);
             match res {
                 Ok(i) => {
                     cur_node_num = children_node_nums[i];
@@ -401,9 +387,9 @@ mod search_tests {
             $(
                 #[test]
                 fn $name() {
-                    let (query, expected_match) = $value;
+                    let (label, expected_match) = $value;
                     let trie = super::build_trie();
-                    let result = trie.get_value(query);
+                    let result = trie.get_value(label);
                     assert_eq!(result, expected_match);
                 }
             )*
@@ -428,9 +414,9 @@ mod search_tests {
             $(
                 #[test]
                 fn $name() {
-                    let (query, expected_match) = $value;
+                    let (label, expected_match) = $value;
                     let trie = super::build_trie();
-                    let result = trie.get(query).filter(|n| n.is_prefix()).is_some();
+                    let result = trie.get(label).filter(|n| n.is_prefix()).is_some();
                     assert_eq!(result, expected_match);
                 }
             )*
@@ -456,9 +442,9 @@ mod search_tests {
             $(
                 #[test]
                 fn $name() {
-                    let (query, expected_match) = $value;
+                    let (label, expected_match) = $value;
                     let trie = super::build_trie();
-                    let result = trie.get(query).map(|n| n.children().count());
+                    let result = trie.get(label).map(|n| n.children().count());
                     assert_eq!(result, expected_match);
                 }
             )*
@@ -496,9 +482,9 @@ mod search_tests {
             $(
                 #[test]
                 fn $name() {
-                    let (query, expected_match) = $value;
+                    let (label, expected_match) = $value;
                     let trie = super::build_trie();
-                    let result: Option<String> = trie.longest_prefix(query);
+                    let result: Option<String> = trie.longest_prefix(label);
                     let expected_match = expected_match.map(str::to_string);
                     assert_eq!(result, expected_match);
                 }
@@ -528,9 +514,9 @@ mod search_tests {
             $(
                 #[test]
                 fn $name() {
-                    let (query, expected_results) = $value;
+                    let (label, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results: Vec<(String, &u8)> = trie.predictive_search(query).collect();
+                    let results: Vec<(String, &u8)> = trie.predictive_search(label).collect();
                     let expected_results: Vec<(String, &u8)> = expected_results.iter().map(|s| (s.0.to_string(), &s.1)).collect();
                     assert_eq!(results, expected_results);
                 }
@@ -555,9 +541,9 @@ mod search_tests {
             $(
                 #[test]
                 fn $name() {
-                    let (query, expected_results) = $value;
+                    let (label, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results: Vec<(String, &u8)> = trie.common_prefix_search(query).collect();
+                    let results: Vec<(String, &u8)> = trie.common_prefix_search(label).collect();
                     let expected_results: Vec<(String, &u8)> = expected_results.iter().map(|s| (s.0.to_string(), &s.1)).collect();
                     assert_eq!(results, expected_results);
                 }
@@ -583,9 +569,9 @@ mod search_tests {
             $(
                 #[test]
                 fn $name() {
-                    let (query, expected_results) = $value;
+                    let (label, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results: Vec<(String, &u8)> = trie.postfix_search(query).collect();
+                    let results: Vec<(String, &u8)> = trie.postfix_search(label).collect();
                     let expected_results: Vec<(String, &u8)> = expected_results.iter().map(|s| (s.0.to_string(), &s.1)).collect();
                     assert_eq!(results, expected_results);
                 }
@@ -611,9 +597,9 @@ mod search_tests {
             $(
                 #[test]
                 fn $name() {
-                    let (query, expected_results) = $value;
+                    let (label, expected_results) = $value;
                     let trie = super::build_trie2();
-                    let results: Vec<(String, &u8)> = trie.postfix_search(query).collect();
+                    let results: Vec<(String, &u8)> = trie.postfix_search(label).collect();
                     let expected_results: Vec<(String, &u8)> = expected_results.iter().map(|s| (s.0.to_string(), &s.1)).collect();
                     assert_eq!(results, expected_results);
                 }

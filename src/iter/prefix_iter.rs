@@ -5,10 +5,10 @@ use louds_rs::LoudsNodeNum;
 use std::marker::PhantomData;
 
 #[derive(Debug, Clone)]
-/// Iterates through all the common prefixes of a given query.
+/// Iterates through all the common prefixes of a given label.
 pub struct PrefixIter<'a, Token, Value, C, M> {
     trie: &'a Trie<Token, Value>,
-    query: Vec<Token>,
+    label: Vec<Token>,
     index: usize,
     node: LoudsNodeNum,
     buffer: Vec<&'a Token>,
@@ -19,10 +19,10 @@ pub struct PrefixIter<'a, Token, Value, C, M> {
 
 impl<'a, Token: Ord + Clone, Value, C, M> PrefixIter<'a, Token, Value, C, M> {
     #[inline]
-    pub(crate) fn new(trie: &'a Trie<Token, Value>, query: impl Label<Token>) -> Self {
+    pub(crate) fn new(trie: &'a Trie<Token, Value>, label: impl Label<Token>) -> Self {
         Self {
             trie,
-            query: query.into_tokens().collect(),
+            label: label.into_tokens().collect(),
             index: 0,
             node: LoudsNodeNum(1),
             buffer: Vec::new(),
@@ -40,7 +40,7 @@ where
     type Item = (C, &'a Value);
     fn next(&mut self) -> Option<Self::Item> {
         while self.consume.is_none() {
-            if let Some(chr) = self.query.get(self.index) {
+            if let Some(chr) = self.label.get(self.index) {
                 self.children_node_nums.clear();
                 self.children_node_nums
                     .extend(self.trie.children_node_nums(self.node));

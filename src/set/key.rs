@@ -1,9 +1,15 @@
-use crate::{label::LabelKind, map::NodeRef};
+use crate::{
+    iter::{Keys, KeysExt, PostfixIter},
+    label::LabelKind,
+    map::NodeRef,
+    try_collect::TryFromIterator,
+};
 
 /// A reference to a trie key.
+#[derive(Debug, PartialEq, Eq)]
 pub struct KeyRef<'t, Token>(pub(crate) NodeRef<'t, Token, ()>);
 
-impl<'t, Token> KeyRef<'t, Token> {
+impl<Token> KeyRef<'_, Token> {
     /// Returns the kind of the node's label.
     #[inline]
     pub fn kind(&self) -> LabelKind {
@@ -31,5 +37,14 @@ impl<'t, Token> KeyRef<'t, Token> {
     /// Iterate over child nodes.
     pub fn children(&self) -> impl Iterator<Item = KeyRef<'_, Token>> {
         self.0.children().map(KeyRef)
+    }
+
+    /// Returns the postfixes and values of all children of this node.
+    pub fn postfix_search<C, M>(&self) -> Keys<PostfixIter<'_, Token, (), C, M>>
+    where
+        C: TryFromIterator<Token, M>,
+        Token: Clone + Ord,
+    {
+        PostfixIter::new(self.0.trie, self.0.node_num).keys()
     }
 }

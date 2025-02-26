@@ -4,7 +4,7 @@ use louds_rs::LoudsNodeNum;
 use std::marker::PhantomData;
 
 #[derive(Debug, Clone)]
-/// Iterates through all the postfixes of a matching query.
+/// Iterates through all the postfixes of a matching label.
 pub struct PostfixIter<'a, Token, Value, C, M> {
     trie: &'a Trie<Token, Value>,
     queue: Vec<(usize, LoudsNodeNum)>,

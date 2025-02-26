@@ -52,21 +52,19 @@ impl<'t, Token, Value> NodeRef<'t, Token, Value> {
                 node_num,
             })
     }
-}
 
-impl<'t, Token: Ord, Value> NodeRef<'t, Token, Value> {
     /// Returns the postfixes and values of all children of this node.
     #[inline]
-    pub fn iter_postfix<C, M>(&self) -> PostfixIter<'_, Token, Value, C, M>
+    pub fn postfix_search<C, M>(&self) -> PostfixIter<'t, Token, Value, C, M>
     where
         C: TryFromIterator<Token, M>,
-        Token: Clone,
+        Token: Clone + Ord,
     {
-        PostfixIter::new(&self.trie, self.node_num)
+        PostfixIter::new(self.trie, self.node_num)
     }
 }
 
-impl<'t, Token, Value> PartialEq for NodeRef<'t, Token, Value> {
+impl<Token, Value> PartialEq for NodeRef<'_, Token, Value> {
     fn eq(&self, other: &Self) -> bool {
         use std::ptr::from_ref;
 
@@ -74,9 +72,9 @@ impl<'t, Token, Value> PartialEq for NodeRef<'t, Token, Value> {
     }
 }
 
-impl<'t, Token, Value> Eq for NodeRef<'t, Token, Value> {}
+impl<Token, Value> Eq for NodeRef<'_, Token, Value> {}
 
-impl<'t, Token: fmt::Debug, Value: fmt::Debug> fmt::Debug for NodeRef<'t, Token, Value> {
+impl<Token: fmt::Debug, Value: fmt::Debug> fmt::Debug for NodeRef<'_, Token, Value> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_tuple("NodeRef")
             .field(self.token())
@@ -91,7 +89,7 @@ pub struct NodeMut<'t, Token, Value> {
     pub(crate) node_num: LoudsNodeNum,
 }
 
-impl<'t, Token, Value> NodeMut<'t, Token, Value> {
+impl<Token, Value> NodeMut<'_, Token, Value> {
     /// Converts to an immutable node reference.
     #[inline]
     pub fn as_ref(&self) -> NodeRef<'_, Token, Value> {
@@ -102,7 +100,7 @@ impl<'t, Token, Value> NodeMut<'t, Token, Value> {
     }
 }
 
-impl<'t, Token, Value> NodeMut<'t, Token, Value> {
+impl<Token, Value> NodeMut<'_, Token, Value> {
     /// Returns the kind of the node's label.
     #[inline]
     pub fn kind(&self) -> LabelKind {
@@ -148,28 +146,26 @@ impl<'t, Token, Value> NodeMut<'t, Token, Value> {
                 node_num,
             })
     }
-}
 
-impl<'t, Token: Ord, Value> NodeMut<'t, Token, Value> {
     /// Returns the postfixes and values of all children of this node.
-    pub fn iter_postfix<C, M>(&self) -> PostfixIter<'_, Token, Value, C, M>
+    pub fn postfix_search<C, M>(&self) -> PostfixIter<'_, Token, Value, C, M>
     where
         C: TryFromIterator<Token, M>,
-        Token: Clone,
+        Token: Clone + Ord,
     {
-        PostfixIter::new(&self.trie, self.node_num)
+        PostfixIter::new(self.trie, self.node_num)
     }
 }
 
-impl<'t, Token, Value> PartialEq for NodeMut<'t, Token, Value> {
+impl<Token, Value> PartialEq for NodeMut<'_, Token, Value> {
     fn eq(&self, other: &Self) -> bool {
         self.as_ref().eq(&other.as_ref())
     }
 }
 
-impl<'t, Token, Value> Eq for NodeMut<'t, Token, Value> {}
+impl<Token, Value> Eq for NodeMut<'_, Token, Value> {}
 
-impl<'t, Token: fmt::Debug, Value: fmt::Debug> fmt::Debug for NodeMut<'t, Token, Value> {
+impl<Token: fmt::Debug, Value: fmt::Debug> fmt::Debug for NodeMut<'_, Token, Value> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_tuple("NodeRef")
             .field(self.token())

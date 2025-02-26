@@ -43,12 +43,12 @@ builder.insert("🍣");
 
 let trie = builder.build();
 
-// exact_match(): Find a word exactly match to query.
+// is_exact(): Find a node that exactly matches a label.
 assert_eq!(trie.is_exact("すし"), true);
 assert_eq!(trie.is_exact("🍣"), true);
 assert_eq!(trie.is_exact("🍜"), false);
 
-// predictive_search(): Find words which include `query` as their prefix.
+// predictive_search(): Find words which include the label as their prefix.
 let results_in_u8s: Vec<Vec<u8>> = trie.predictive_search("すし").collect();
 let results_in_str: Vec<String> = trie.predictive_search("すし").collect();
 assert_eq!(
@@ -63,7 +63,7 @@ assert_eq!(
     ]  // Sorted by `Vec<u8>`'s order
 );
 
-// common_prefix_search(): Find words which is included in `query`'s prefix.
+// common_prefix_search(): Find words that are included in a label's prefix.
 let results_in_u8s: Vec<Vec<u8>> = trie.common_prefix_search("すしや").collect();
 let results_in_str: Vec<String> = trie.common_prefix_search("すしや").collect();
 assert_eq!(
@@ -184,7 +184,7 @@ builder.insert("🍣", 7);
 
 let mut trie = builder.build();
 
-// get_value(): Find a word exactly match to query.
+// get_value(): Find the value for an exact match.
 assert_eq!(trie.get_value("すし"), Some(&6));
 assert_eq!(trie.get_value("🍣"), Some(&7));
 assert_eq!(trie.get_value("🍜"), None);
@@ -215,7 +215,7 @@ builder.insert("すしをにぎる");
 let trie = builder.build();
 let mut search = trie.inc_search();
 
-// Query by the byte.
+// Query by the byte with `.next()` or `.next_kind()`.
 assert_eq!(search.next_kind(&b'a'), Some(LabelKind::Prefix));
 assert_eq!(search.next_kind(&b'c'), None);
 assert_eq!(search.next_kind(&b'b'), Some(LabelKind::Exact));
@@ -223,7 +223,7 @@ assert_eq!(search.next_kind(&b'b'), Some(LabelKind::Exact));
 // Reset the query to go again.
 search.reset();
 
-// For unicode its easier to use .query_until().
+// For unicode its easier to use `.next_label()` or `.next_label_kind()`.
 assert_eq!(search.next_label_kind('す'), Ok(LabelKind::Prefix));
 assert_eq!(search.next_label_kind('し'), Ok(LabelKind::PrefixAndExact));
 assert_eq!(search.next_label_kind('や'), Ok(LabelKind::Exact));

@@ -6,7 +6,7 @@ use louds_rs::LoudsNodeNum;
 use std::marker::PhantomData;
 
 #[derive(Debug, Clone)]
-/// Iterates through all the matches of a query.
+/// Iterates through all the matches of a label.
 pub struct SearchIter<'a, Token, Value, C, M> {
     prefix: Vec<Token>,
     first: Option<(C, &'a Value)>,
@@ -18,16 +18,16 @@ impl<'a, Token: Ord + Clone, Value, C, M> SearchIter<'a, Token, Value, C, M>
 where
     C: TryFromIterator<Token, M> + Clone,
 {
-    pub(crate) fn new(trie: &'a Trie<Token, Value>, query: impl Label<Token>) -> Self {
+    pub(crate) fn new(trie: &'a Trie<Token, Value>, label: impl Label<Token>) -> Self {
         let mut cur_node_num = LoudsNodeNum(1);
         let mut prefix = Vec::new();
         let mut children_node_nums = Vec::new(); // reuse allocated space
 
-        // Consumes query (prefix)
-        for chr in query.into_tokens() {
+        // Consumes label (prefix)
+        for token in label.into_tokens() {
             children_node_nums.clear();
             children_node_nums.extend(trie.children_node_nums(cur_node_num));
-            let res = trie.bin_search_by_children_labels(&chr, &children_node_nums[..]);
+            let res = trie.bin_search_by_children_labels(&token, &children_node_nums[..]);
             match res {
                 Ok(i) => cur_node_num = children_node_nums[i],
                 Err(_) => return Self::empty(trie),
@@ -72,7 +72,6 @@ where
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         match self.first.take() {
-            // None => None,
             None => self.postfix_iter.next().map(|(postfix, v)| {
                 let entry = C::try_from_iter(self.prefix.clone().into_iter().chain(postfix))
                     .expect("Could not collect postfix");
@@ -85,28 +84,3 @@ where
         }
     }
 }
-
-// impl<'a, Token: Ord + Clone, Value, C> Iterator for SearchIter<'a, Token, Value, C, Collect>
-// where C: TryFromIterator<Token, Collect> + Extend<Token> + Clone,
-// Vec<Token>: TryFromIterator<Token, Collect>
-// {
-//     type Item = (C, &'a Value);
-//     #[inline]
-//     fn next(&mut self) -> Option<Self::Item> {
-//         match self.first.take() {
-//             // None => None,
-//             None => self.postfix_iter.next().map(|(postfix, v)| {
-//                 let mut entry = self.prefix.clone();
-//                 entry.extend(postfix.into_iter());
-//                 (entry, v)
-//             }),
-//             x => x
-//         }
-//     }
-// }
-
-// impl<'a, Token: Ord, V> Value<V> for frayed::defray::Group<'a, SearchIter<'_, Token, V>> {
-//     fn value(&self) -> Option<&V> {
-//         self.parent.iter_ref().value()
-//     }
-// }

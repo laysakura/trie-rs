@@ -44,13 +44,20 @@ impl<Token: Ord> Trie<Token> {
         self.0.get_value(label).is_some()
     }
 
+    /// Return true if `label` is a prefix.
+    ///
+    /// Note: A prefix may be an exact match or not, and an exact match may be a prefix or not.
+    pub fn is_prefix(&self, label: impl Label<Token>) -> bool {
+        self.0.get(label).map(|n| n.is_prefix()).unwrap_or_default()
+    }
+
     /// Return the common prefixes of `label`.
     ///
     /// # Arguments
     /// * `label` - The label to search for.
     ///
     /// # Examples
-    /// In the following example we illustrate how to query the common prefixes of a query string.
+    /// In the following example we illustrate how to query the common prefixes of a label.
     ///
     /// ```rust
     /// use trie_rs::set::Trie;
@@ -149,13 +156,6 @@ impl<Token: Ord> Trie<Token> {
     /// See [crate::inc_search] for details.
     pub fn inc_search(&self) -> IncSearch<'_, Token, ()> {
         IncSearch::new(&self.0)
-    }
-
-    /// Return true if `label` is a prefix.
-    ///
-    /// Note: A prefix may be an exact match or not, and an exact match may be a prefix or not.
-    pub fn is_prefix(&self, label: impl Label<Token>) -> bool {
-        self.0.get(label).map(|n| n.is_prefix()).unwrap_or_default()
     }
 
     /// Return the longest shared prefix of `label`.
@@ -301,9 +301,9 @@ mod search_tests {
             $(
                 #[test]
                 fn $name() {
-                    let (query, expected_match) = $value;
+                    let (label, expected_match) = $value;
                     let trie = super::build_trie();
-                    let result = trie.is_exact(query);
+                    let result = trie.is_exact(label);
                     assert_eq!(result, expected_match);
                 }
             )*
@@ -328,9 +328,9 @@ mod search_tests {
             $(
                 #[test]
                 fn $name() {
-                    let (query, expected_match) = $value;
+                    let (label, expected_match) = $value;
                     let trie = super::build_trie();
-                    let result = trie.is_prefix(query);
+                    let result = trie.is_prefix(label);
                     assert_eq!(result, expected_match);
                 }
             )*
@@ -359,9 +359,9 @@ mod search_tests {
             $(
                 #[test]
                 fn $name() {
-                    let (query, expected_results) = $value;
+                    let (label, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results: Vec<String> = trie.predictive_search(query).collect();
+                    let results: Vec<String> = trie.predictive_search(label).collect();
                     assert_eq!(results, expected_results);
                 }
             )*
@@ -385,9 +385,9 @@ mod search_tests {
             $(
                 #[test]
                 fn $name() {
-                    let (query, expected_results) = $value;
+                    let (label, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results: Vec<String> = trie.common_prefix_search(query).collect();
+                    let results: Vec<String> = trie.common_prefix_search(label).collect();
                     assert_eq!(results, expected_results);
                 }
             )*
