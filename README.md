@@ -48,9 +48,17 @@ assert_eq!(trie.is_exact("すし"), true);
 assert_eq!(trie.is_exact("🍣"), true);
 assert_eq!(trie.is_exact("🍜"), false);
 
-// predictive_search(): Find words which include the label as their prefix.
-let results_in_u8s: Vec<Vec<u8>> = trie.predictive_search("すし").collect();
-let results_in_str: Vec<String> = trie.predictive_search("すし").collect();
+// start_with(): Find words which include the label as their prefix.
+let results_in_u8s: Vec<Vec<u8>> = trie
+    .starts_with("すし")
+    .labels()
+    .filter_map(Result::ok)
+    .collect();
+let results_in_str: Vec<String> = trie
+    .starts_with("すし")
+    .labels()
+    .filter_map(Result::ok)
+    .collect();
 assert_eq!(
     results_in_str,
     vec![
@@ -63,9 +71,17 @@ assert_eq!(
     ]  // Sorted by `Vec<u8>`'s order
 );
 
-// common_prefix_search(): Find words that are included in a label's prefix.
-let results_in_u8s: Vec<Vec<u8>> = trie.common_prefix_search("すしや").collect();
-let results_in_str: Vec<String> = trie.common_prefix_search("すしや").collect();
+// prefixes_of(): Find words that are included in a label's prefix.
+let results_in_u8s: Vec<Vec<u8>> = trie
+    .prefixes_of("すしや")
+    .labels()
+    .filter_map(Result::ok)
+    .collect();
+let results_in_str: Vec<String> = trie
+    .prefixes_of("すしや")
+    .labels()
+    .filter_map(Result::ok)
+    .collect();
 assert_eq!(
     results_in_str,
     vec![
@@ -107,7 +123,11 @@ assert_eq!(
     trie.is_exact(vec!["a", "woman", "on", "the", "beach"]),
     true
 );
-let r: Vec<Vec<&str>> = trie.predictive_search(vec!["a", "woman", "on"]).collect();
+
+let r: Vec<Vec<&str>> = trie.starts_with(vec!["a", "woman", "on"])
+    .labels()
+    .filter_map(Result::ok)
+    .collect();
 assert_eq!(
     r,
     vec![
@@ -115,7 +135,12 @@ assert_eq!(
         ["a", "woman", "on", "the", "run"],
     ],
 );
-let s: Vec<Vec<&str>> = trie.common_prefix_search(vec!["a", "woman", "on", "the", "beach"]).collect();
+
+let s: Vec<Vec<&str>> = trie
+    .prefixes_of(vec!["a", "woman", "on", "the", "beach"])
+    .labels()
+    .filter_map(Result::ok)
+    .collect();
 assert_eq!(
     s,
     vec![vec!["a", "woman"], vec!["a", "woman", "on", "the", "beach"]],
@@ -149,7 +174,11 @@ let trie = builder.build();
 
 assert_eq!(trie.is_exact([5, 3, 5, 9, 4, 0, 8, 1, 2, 8]), true);
 
-let t: Vec<Vec<u8>> = trie.predictive_search([3]).collect();
+let t: Vec<Vec<u8>> = trie
+    .starts_with([3])
+    .labels()
+    .filter_map(Result::ok)
+    .collect();
 assert_eq!(
     t,
     vec![
@@ -157,7 +186,12 @@ assert_eq!(
         [3, 4, 2, 1, 1, 7, 0, 6, 7, 9],
     ],
 );
-let u: Vec<Vec<u8>> = trie.common_prefix_search([1, 4, 1, 5, 9, 2, 6, 5, 3, 5]).collect();
+
+let u: Vec<Vec<u8>> = trie
+    .prefixes_of([1, 4, 1, 5, 9, 2, 6, 5, 3, 5])
+    .labels()
+    .filter_map(Result::ok)
+    .collect();
 assert_eq!(
     u,
     vec![[1, 4, 1, 5, 9, 2, 6, 5, 3, 5]],

@@ -28,6 +28,7 @@ mod trie {
     use std::env;
     use std::fs::File;
     use std::io::{BufRead, BufReader};
+    use trie_rs::iter::KeyIterExt;
     use trie_rs::set::{Trie, TrieBuilder};
 
     lazy_static! {
@@ -130,10 +131,14 @@ mod trie {
                         // when `setup` time is far longer than `routine` time.
                         // Tested function takes too short compared to build().
                         // So loop many times.
-                        let results_in_u8s: Vec<Vec<u8>> = trie.predictive_search("すし").collect();
+                        let results_in_u8s: Vec<Vec<u8>> = trie
+                            .starts_with("すし")
+                            .labels()
+                            .collect::<Result<_, _>>()
+                            .unwrap();
                         for _ in 0..(times - 1) {
-                            for entry in trie.predictive_search::<Vec<u8>, _>("すし") {
-                                black_box(entry);
+                            for entry in trie.starts_with("すし").labels::<String>() {
+                                black_box(entry.unwrap());
                             }
                         }
 
@@ -170,7 +175,11 @@ mod trie {
                 b.iter_batched(
                     || &TRIE_EDICT,
                     |trie| {
-                        let results: Vec<Vec<u8>> = trie.predictive_search("す").collect();
+                        let results: Vec<Vec<u8>> = trie
+                            .starts_with("す")
+                            .labels()
+                            .filter_map(Result::ok)
+                            .collect();
                         assert_eq!(results.len(), 4220);
                         let results_in_u8s = results.into_iter().take(100);
                         assert_eq!(results_in_u8s.len(), 100);
@@ -191,8 +200,12 @@ mod trie {
                 b.iter_batched(
                     || &TRIE_EDICT,
                     |trie| {
-                        let results_in_u8s: Vec<Vec<u8>> =
-                            trie.predictive_search("す").take(100).collect();
+                        let results_in_u8s: Vec<Vec<u8>> = trie
+                            .starts_with("す")
+                            .take(100)
+                            .labels()
+                            .filter_map(Result::ok)
+                            .collect();
                         assert_eq!(results_in_u8s.len(), 100);
                     },
                     BatchSize::SmallInput,
@@ -218,11 +231,14 @@ mod trie {
                         // when `setup` time is far longer than `routine` time.
                         // Tested function takes too short compared to build().
                         // So loop many times.
-                        let results_in_str: Vec<String> =
-                            trie.common_prefix_search("すしをにぎる").collect();
+                        let results_in_str: Vec<String> = trie
+                            .prefixes_of("すしをにぎる")
+                            .labels()
+                            .filter_map(Result::ok)
+                            .collect();
                         for _ in 0..(times - 1) {
-                            for entry in trie.common_prefix_search("すしをにぎる") {
-                                black_box::<Vec<u8>>(entry);
+                            for entry in trie.prefixes_of("すしをにぎる").labels::<Vec<_>>() {
+                                black_box(entry.unwrap());
                             }
                         }
                         assert_eq!(results_in_str, vec!["す", "すし", "すしをにぎる"]);
@@ -249,12 +265,14 @@ mod trie {
                         // iter_batched() does not properly time `routine` time when `setup` time is far longer than `routine` time.
                         // Tested function takes too short compared to build(). So loop many times.
                         let result = trie
-                            .common_prefix_search::<Vec<u8>, _>("すしをにぎる")
+                            .prefixes_of("すしをにぎる")
+                            .labels::<Vec<_>>()
                             .next()
                             .is_some();
                         for _ in 0..(times - 1) {
                             let _ = trie
-                                .common_prefix_search::<Vec<u8>, _>("すしをにぎる")
+                                .prefixes_of("すしをにぎる")
+                                .labels::<Vec<_>>()
                                 .next()
                                 .is_some();
                         }

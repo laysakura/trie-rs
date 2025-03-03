@@ -4,7 +4,7 @@
 //!
 //! The motivation for this struct is for "online" or interactive use cases. One
 //! often accumulates input to match against a trie. Using the standard
-//! [`exact_match()`][crate::trie::Trie::exact_match] faculties which has a time
+//! [`get()`][crate::set::Trie::get] faculties which has a time
 //! complexity of _O(m log n)_ where _m_ is the label length and _n_ is
 //! the number of entries in the trie. Consider this loop where we simulate
 //! accumulating a query.
@@ -25,7 +25,7 @@
 //! time, the loop has effectively complexity of _O(m<sup>2</sup> log n)_.
 //!
 //! Using the incremental search, the time complexity of each query is _O(log
-//! n)_ which returns an [LabelKind] enum.
+//! n)_ which returns an [`LabelKind`] enum.
 //!
 //! ```ignore
 //! let q = "appli"; // label

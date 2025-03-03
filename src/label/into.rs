@@ -8,7 +8,7 @@ pub trait IntoLabel<Token>: Iterator<Item = Token> {
         Self: Sized;
 }
 
-impl<Token, T: Iterator<Item = Token>> IntoLabel<Token> for T {
+impl<Token, T: Iterator<Item = Token> + ?Sized> IntoLabel<Token> for T {
     fn into_label(self) -> LabelIter<Token, Self>
     where
         Self: Sized,
@@ -21,7 +21,9 @@ impl<Token, T: Iterator<Item = Token>> IntoLabel<Token> for T {
 pub struct LabelIter<Token, Iter: Iterator<Item = Token>>(Iter);
 
 impl<Token, Iter: Iterator<Item = Token>> Label<Token> for LabelIter<Token, Iter> {
-    fn into_tokens(self) -> impl Iterator<Item = Token> {
+    type IntoTokens = Iter;
+
+    fn into_tokens(self) -> Self::IntoTokens {
         self.0
     }
 }

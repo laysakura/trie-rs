@@ -1,7 +1,7 @@
 //! A trie map stores a value with each word or key.
 use crate::inc_search::IncSearch;
-use crate::iter::{PostfixIter, PrefixIter, SearchIter};
 use crate::label::{Label, LabelKind};
+use crate::search::{PostfixIter, PrefixIter};
 use crate::try_collect::{TryCollect, TryFromIterator};
 use louds_rs::{AncestorNodeIter, ChildNodeIter, Louds, LoudsNodeNum};
 use std::iter::FromIterator;
@@ -81,29 +81,29 @@ impl<Token: Ord, Value> Trie<Token, Value> {
         IncSearch::new(self)
     }
 
-    /// Return all entries and their values that match `label`.
-    pub fn predictive_search<C, M>(
-        &self,
-        label: impl Label<Token>,
-    ) -> SearchIter<'_, Token, Value, C, M>
+    /// Returns the exact matches as suffixes that follow after this node.
+    ///
+    /// e.g. "app" → "le" (as in "apple")
+    ///
+    /// Strips this node from the results; to include this node as a prefix, see [`Self::starts_with`].
+    pub fn suffixes_of(&self, label: impl Label<Token>) -> PostfixIter<'_, Token, Value>
     where
-        C: TryFromIterator<Token, M> + Clone,
-        Token: Clone,
-    {
-        SearchIter::new(self, label)
-    }
-
-    /// Return the postfixes and values of all entries that match `label`.
-    pub fn postfix_search<C, M>(
-        &self,
-        label: impl Label<Token>,
-    ) -> PostfixIter<'_, Token, Value, C, M>
-    where
-        C: TryFromIterator<Token, M>,
         Token: Clone,
     {
         self.get(label)
-            .map(|n| n.postfix_search())
+            .map(|n| PostfixIter::suffixes_of(n.trie, n.node_num))
+            .unwrap_or_else(|| PostfixIter::empty(self))
+    }
+
+    /// Returns the exact matches that follow after this node.
+    ///
+    /// e.g. "app" → "apple"
+    pub fn starts_with(&self, label: impl Label<Token>) -> PostfixIter<'_, Token, Value>
+    where
+        Token: Clone,
+    {
+        self.get(label)
+            .map(|n| n.starts_with())
             .unwrap_or_else(|| PostfixIter::empty(self))
     }
 
@@ -117,26 +117,21 @@ impl<Token: Ord, Value> Trie<Token, Value> {
     /// ```rust
     /// use trie_rs::map::Trie;
     /// let trie = Trie::<u8, _>::from_iter([("a", 0), ("app", 1), ("apple", 2), ("better", 3), ("application", 4)]);
-    /// let results: Vec<(String, &u8)> = trie.iter().collect();
+    /// let results: Vec<(String, &u8)> = trie.iter().pairs().filter_map(Result::ok).collect();
     /// assert_eq!(results, [("a".to_string(), &0u8), ("app".to_string(), &1u8), ("apple".to_string(), &2u8), ("application".to_string(), &4u8), ("better".to_string(), &3u8)]);
     /// ```
-    pub fn iter<C, M>(&self) -> PostfixIter<'_, Token, Value, C, M>
+    pub fn iter(&self) -> PostfixIter<'_, Token, Value>
     where
-        C: TryFromIterator<Token, M>,
         Token: Clone,
     {
-        PostfixIter::new(self, LoudsNodeNum(1))
+        PostfixIter::suffixes_of(self, LoudsNodeNum(1))
     }
 
     /// Return the common prefixes of `label`.
-    pub fn common_prefix_search<L, M>(
+    pub fn prefixes_of<L: Label<Token>>(
         &self,
-        label: impl Label<Token>,
-    ) -> PrefixIter<'_, Token, Value, L, M>
-    where
-        L: TryFromIterator<Token, M>,
-        Token: Clone,
-    {
+        label: L,
+    ) -> PrefixIter<'_, Token, Value, L::IntoTokens> {
         PrefixIter::new(self, label)
     }
 
@@ -250,6 +245,11 @@ impl<Token, Value> Trie<Token, Value> {
     pub(crate) fn child_to_ancestors(&self, node_num: LoudsNodeNum) -> AncestorNodeIter {
         self.louds.child_to_ancestors(node_num)
     }
+
+    pub(crate) fn child_to_parent(&self, node_num: LoudsNodeNum) -> LoudsNodeNum {
+        let index = self.louds.node_num_to_index(node_num);
+        self.louds.child_to_parent(index)
+    }
 }
 
 impl<Token, Value, L> FromIterator<(L, Value)> for Trie<Token, Value>
@@ -300,7 +300,11 @@ mod search_tests {
     #[test]
     fn sanity_check() {
         let trie = build_trie();
-        let v: Vec<(String, &u8)> = trie.predictive_search("apple").collect();
+        let v: Vec<(String, &u8)> = trie
+            .starts_with("apple")
+            .pairs()
+            .filter_map(Result::ok)
+            .collect();
         assert_eq!(v, vec![("apple".to_string(), &2)]);
     }
 
@@ -351,15 +355,15 @@ mod search_tests {
     fn use_empty_queries() {
         let trie = build_trie();
         assert!(trie.get_value("").is_none());
-        let _ = trie.predictive_search::<String, _>("").next();
-        let _ = trie.postfix_search::<String, _>("").next();
-        let _ = trie.common_prefix_search::<String, _>("").next();
+        let _ = trie.starts_with("").next();
+        let _ = trie.suffixes_of("").next();
+        let _ = trie.prefixes_of("").next();
     }
 
     #[test]
     fn insert_order_dependent() {
         let trie: Trie<u8, u8> = Trie::from_iter([("a", 0), ("app", 1), ("apple", 2)]);
-        let results: Vec<(String, &u8)> = trie.iter().collect();
+        let results: Vec<(String, &u8)> = trie.iter().pairs().filter_map(Result::ok).collect();
         assert_eq!(
             results,
             [
@@ -370,7 +374,7 @@ mod search_tests {
         );
 
         let trie: Trie<u8, u8> = Trie::from_iter([("a", 0), ("apple", 2), ("app", 1)]);
-        let results: Vec<(String, &u8)> = trie.iter().collect();
+        let results: Vec<(String, &u8)> = trie.iter().pairs().filter_map(Result::ok).collect();
         assert_eq!(
             results,
             [
@@ -466,12 +470,12 @@ mod search_tests {
         #[test]
         fn t10() {
             let trie = super::build_trie();
-            let result = trie
+            let result: Vec<_> = trie
                 .get("appl")
                 .unwrap()
                 .children()
                 .map(|n| *n.token())
-                .collect::<Vec<_>>();
+                .collect();
             assert_eq!(result, vec![b'e', b'i']);
         }
     }
@@ -508,7 +512,7 @@ mod search_tests {
         }
     }
 
-    mod predictive_search_tests {
+    mod starts_with_tests {
         macro_rules! parameterized_tests {
             ($($name:ident: $value:expr,)*) => {
             $(
@@ -516,7 +520,7 @@ mod search_tests {
                 fn $name() {
                     let (label, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results: Vec<(String, &u8)> = trie.predictive_search(label).collect();
+                    let results: Vec<(String, &u8)> = trie.starts_with(label).pairs().filter_map(Result::ok).collect();
                     let expected_results: Vec<(String, &u8)> = expected_results.iter().map(|s| (s.0.to_string(), &s.1)).collect();
                     assert_eq!(results, expected_results);
                 }
@@ -535,7 +539,9 @@ mod search_tests {
         }
     }
 
-    mod common_prefix_search_tests {
+    mod prefixes_of_tests {
+        use crate::iter::NodeIterExt;
+
         macro_rules! parameterized_tests {
             ($($name:ident: $value:expr,)*) => {
             $(
@@ -543,9 +549,9 @@ mod search_tests {
                 fn $name() {
                     let (label, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results: Vec<(String, &u8)> = trie.common_prefix_search(label).collect();
+                    let results: Result<Vec<(String, &u8)>, _> = trie.prefixes_of(label).pairs().collect();
                     let expected_results: Vec<(String, &u8)> = expected_results.iter().map(|s| (s.0.to_string(), &s.1)).collect();
-                    assert_eq!(results, expected_results);
+                    assert_eq!(results, Ok(expected_results));
                 }
             )*
             }
@@ -563,7 +569,7 @@ mod search_tests {
         }
     }
 
-    mod postfix_search_tests {
+    mod suffixes_of_tests {
         macro_rules! parameterized_tests {
             ($($name:ident: $value:expr,)*) => {
             $(
@@ -571,7 +577,7 @@ mod search_tests {
                 fn $name() {
                     let (label, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results: Vec<(String, &u8)> = trie.postfix_search(label).collect();
+                    let results: Vec<(String, &u8)> = trie.suffixes_of(label).pairs().filter_map(Result::ok).collect();
                     let expected_results: Vec<(String, &u8)> = expected_results.iter().map(|s| (s.0.to_string(), &s.1)).collect();
                     assert_eq!(results, expected_results);
                 }
@@ -599,7 +605,7 @@ mod search_tests {
                 fn $name() {
                     let (label, expected_results) = $value;
                     let trie = super::build_trie2();
-                    let results: Vec<(String, &u8)> = trie.postfix_search(label).collect();
+                    let results: Vec<(String, &u8)> = trie.suffixes_of(label).pairs().filter_map(Result::ok).collect();
                     let expected_results: Vec<(String, &u8)> = expected_results.iter().map(|s| (s.0.to_string(), &s.1)).collect();
                     assert_eq!(results, expected_results);
                 }

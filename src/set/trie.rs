@@ -1,7 +1,8 @@
 use crate::inc_search::IncSearch;
-use crate::iter::{Keys, KeysExt, PostfixIter, PrefixIter, SearchIter};
+use crate::iter::{Keys, KeysExt};
 use crate::label::Label;
 use crate::map;
+use crate::search::{PostfixIter, PrefixIter};
 use crate::try_collect::TryFromIterator;
 use std::iter::FromIterator;
 
@@ -64,66 +65,54 @@ impl<Token: Ord> Trie<Token> {
     ///
     /// let trie = Trie::<u8>::from_iter(["a", "app", "apple", "better", "application"]);
     ///
-    /// let results: Vec<String> = trie.common_prefix_search("application").collect();
+    /// let results: Vec<String> = trie.prefixes_of("application").labels().collect::<Result<_, _>>().unwrap();
     ///
     /// assert_eq!(results, vec!["a", "app", "application"]);
     ///
     /// ```
-    pub fn common_prefix_search<C, M>(
+    pub fn prefixes_of<L: Label<Token>>(
         &self,
-        label: impl Label<Token>,
-    ) -> Keys<PrefixIter<'_, Token, (), C, M>>
-    where
-        C: TryFromIterator<Token, M>,
-        Token: Clone,
-    {
+        label: L,
+    ) -> Keys<PrefixIter<'_, Token, (), L::IntoTokens>> {
         // TODO: We could return Keys iterators instead of collecting.
-        self.0.common_prefix_search(label).keys()
+        self.0.prefixes_of(label).keys()
     }
 
     /// Return all entries that match `label`.
-    pub fn predictive_search<C, M>(
-        &self,
-        label: impl Label<Token>,
-    ) -> Keys<SearchIter<'_, Token, (), C, M>>
+    pub fn starts_with(&self, label: impl Label<Token>) -> Keys<PostfixIter<'_, Token, ()>>
     where
-        C: TryFromIterator<Token, M> + Clone,
         Token: Clone,
     {
-        self.0.predictive_search(label).keys()
+        self.0.starts_with(label).keys()
     }
 
-    /// Return the postfixes of all entries that match `label`.
+    /// Return the suffixes of all entries that match `label`.
     ///
     /// # Arguments
     /// * `label` - The label to search for.
     ///
     /// # Examples
-    /// In the following example we illustrate how to query the postfixes of a label.
+    /// In the following example we illustrate how to query the suffixes of a label.
     ///
     /// ```rust
     /// use trie_rs::set::Trie;
     ///
     /// let trie = Trie::<u8>::from_iter(["a", "app", "apple", "better", "application"]);
     ///
-    /// let results: Vec<String> = trie.postfix_search("application").collect();
+    /// let results: Vec<String> = trie.suffixes_of("application").labels().collect::<Result<_, _>>().unwrap();
     ///
     /// assert!(results.is_empty());
     ///
-    /// let results: Vec<String> = trie.postfix_search("app").collect();
+    /// let results: Vec<String> = trie.suffixes_of("app").labels().collect::<Result<_, _>>().unwrap();
     ///
     /// assert_eq!(results, vec!["le", "lication"]);
     ///
     /// ```
-    pub fn postfix_search<C, M>(
-        &self,
-        label: impl Label<Token>,
-    ) -> Keys<PostfixIter<'_, Token, (), C, M>>
+    pub fn suffixes_of(&self, label: impl Label<Token>) -> Keys<PostfixIter<'_, Token, ()>>
     where
-        C: TryFromIterator<Token, M>,
         Token: Clone,
     {
-        self.0.postfix_search(label).keys()
+        self.0.suffixes_of(label).keys()
     }
 
     /// Returns an iterator across all keys in the trie.
@@ -138,17 +127,16 @@ impl<Token: Ord> Trie<Token> {
     ///
     /// let trie = Trie::<u8>::from_iter(["a", "app", "apple", "better", "application"]);
     ///
-    /// let results: Vec<String> = trie.iter().collect();
+    /// let results: Vec<String> = trie.iter().labels().collect::<Result<_, _>>().unwrap();
     ///
     /// assert_eq!(results, vec!["a", "app", "apple", "application", "better"]);
     ///
     /// ```
-    pub fn iter<C, M>(&self) -> Keys<PostfixIter<'_, Token, (), C, M>>
+    pub fn iter(&self) -> Keys<PostfixIter<'_, Token, ()>>
     where
-        C: TryFromIterator<Token, M>,
         Token: Clone,
     {
-        self.postfix_search(&[] as &[Token])
+        self.0.iter().keys()
     }
 
     /// Create an incremental search.
@@ -246,9 +234,9 @@ mod search_tests {
     fn use_empty_queries() {
         let trie = build_trie();
         assert!(!trie.is_exact(""));
-        let _ = trie.predictive_search::<String, _>("").next();
-        let _ = trie.postfix_search::<String, _>("").next();
-        let _ = trie.common_prefix_search::<String, _>("").next();
+        let _ = trie.starts_with("").next();
+        let _ = trie.suffixes_of("").next();
+        let _ = trie.prefixes_of("").next();
     }
 
     #[cfg(feature = "mem_dbg")]
@@ -361,7 +349,7 @@ mod search_tests {
                 fn $name() {
                     let (label, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results: Vec<String> = trie.predictive_search(label).collect();
+                    let results: Vec<String> = trie.starts_with(label).labels().collect::<Result<_, _>>().unwrap();
                     assert_eq!(results, expected_results);
                 }
             )*
@@ -387,7 +375,7 @@ mod search_tests {
                 fn $name() {
                     let (label, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results: Vec<String> = trie.common_prefix_search(label).collect();
+                    let results: Vec<String> = trie.prefixes_of(label).labels().collect::<Result<_, _>>().unwrap();
                     assert_eq!(results, expected_results);
                 }
             )*
