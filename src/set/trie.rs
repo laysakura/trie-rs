@@ -1,9 +1,10 @@
 use crate::inc_search::IncSearch;
-use crate::iter::{Keys, KeysExt};
+use crate::iter::{Keys, KeysExt, Labels};
 use crate::label::Label;
 use crate::map;
-use crate::search::{PostfixIter, PrefixIter};
+use crate::search::{PostfixCollect, PostfixIter, PrefixCollect, PrefixIter};
 use crate::try_collect::TryFromIterator;
+use crate::try_from::TryFromTokens;
 use std::iter::FromIterator;
 
 #[cfg(feature = "mem_dbg")]
@@ -78,12 +79,37 @@ impl<Token: Ord> Trie<Token> {
         self.0.prefixes_of(label).keys()
     }
 
-    /// Return all entries that match `label`.
+    /// TODO
+    pub fn prefixes_of_labels<L>(
+        &self,
+        label: impl Label<Token>,
+    ) -> Labels<PrefixCollect<'_, Token, (), L>>
+    where
+        Token: Clone,
+        L: TryFromTokens<Token>,
+    {
+        // TODO: We could return Keys iterators instead of collecting.
+        Labels(self.0.prefixes_of_pairs(label))
+    }
+
+    /// Return all entries that start with `label`.
     pub fn starts_with(&self, label: impl Label<Token>) -> Keys<PostfixIter<'_, Token, ()>>
     where
         Token: Clone,
     {
         self.0.starts_with(label).keys()
+    }
+
+    /// Return all labels that start with `label`.
+    pub fn starts_with_labels<L>(
+        &self,
+        label: impl Label<Token>,
+    ) -> Labels<PostfixCollect<'_, Token, (), L>>
+    where
+        Token: Clone,
+        L: TryFromTokens<Token>,
+    {
+        Labels(self.0.starts_with_pairs(label))
     }
 
     /// Return the suffixes of all entries that match `label`.
@@ -113,6 +139,39 @@ impl<Token: Ord> Trie<Token> {
         Token: Clone,
     {
         self.0.suffixes_of(label).keys()
+    }
+
+    /// Return the suffixes of all entries that match `label` as labels.
+    ///
+    /// # Arguments
+    /// * `label` - The label to search for.
+    ///
+    /// # Examples
+    /// In the following example we illustrate how to query the suffixes of a label.
+    ///
+    /// ```rust
+    /// use trie_rs::set::Trie;
+    ///
+    /// let trie = Trie::<u8>::from_iter(["a", "app", "apple", "better", "application"]);
+    ///
+    /// let results: Vec<String> = trie.suffixes_of("application").labels().collect::<Result<_, _>>().unwrap();
+    ///
+    /// assert!(results.is_empty());
+    ///
+    /// let results: Vec<String> = trie.suffixes_of("app").labels().collect::<Result<_, _>>().unwrap();
+    ///
+    /// assert_eq!(results, vec!["le", "lication"]);
+    ///
+    /// ```
+    pub fn suffixes_of_labels<L>(
+        &self,
+        label: impl Label<Token>,
+    ) -> Labels<PostfixCollect<'_, Token, (), L>>
+    where
+        Token: Clone,
+        L: TryFromTokens<Token>,
+    {
+        Labels(self.0.suffixes_of_pairs(label))
     }
 
     /// Returns an iterator across all keys in the trie.

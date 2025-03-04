@@ -10,7 +10,7 @@ impl<'t, I, Token: 't> Keys<I>
 where
     I: Iterator<Item = NodeIter<'t, Token, ()>>,
 {
-    ///Creates a new `Keys` iterator.
+    /// Creates a new `Keys` iterator.
     pub fn new(iter: I) -> Self {
         Self(iter)
     }
@@ -22,7 +22,7 @@ where
         Token: Clone,
     {
         self.0
-            .map(|iter| L::try_from_tokens(TokenIter::new(iter), true))
+            .map(|iter| L::try_from_reverse_tokens(TokenIter::new(iter)))
     }
 }
 

@@ -16,7 +16,7 @@ impl<'t, Token> KeyIter<'t, Token> {
     {
         let tokens = self.map(|n| n.token().clone());
 
-        let label = L::try_from_tokens(tokens, true)?;
+        let label = L::try_from_reverse_tokens(tokens)?;
 
         Ok(label)
     }

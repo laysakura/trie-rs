@@ -102,6 +102,6 @@ where
     where
         L: TryFromTokens<Token>,
     {
-        self.map(|i| L::try_from_tokens(i.tokens(), true))
+        self.map(|i| L::try_from_reverse_tokens(i.tokens()))
     }
 }

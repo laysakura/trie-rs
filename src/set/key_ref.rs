@@ -48,7 +48,7 @@ impl<'t, Token> KeyRef<'t, Token> {
         Token: Clone,
     {
         let tokens = self.range().map(|k| k.token().clone());
-        L::try_from_tokens(tokens, true)
+        L::try_from_reverse_tokens(tokens)
     }
 
     /// Returns the exact matches that come before this node.

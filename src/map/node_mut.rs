@@ -63,7 +63,7 @@ impl<'t, Token, Value> NodeMut<'t, Token, Value> {
     where
         Token: Clone,
     {
-        L::try_from_tokens(self.range().map(|n| n.token().clone()), true)
+        L::try_from_reverse_tokens(self.range().map(|n| n.token().clone()))
     }
 
     /// Returns the exact matches that come before this node.

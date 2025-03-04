@@ -28,7 +28,6 @@ mod trie {
     use std::env;
     use std::fs::File;
     use std::io::{BufRead, BufReader};
-    use trie_rs::iter::KeyIterExt;
     use trie_rs::set::{Trie, TrieBuilder};
 
     lazy_static! {
@@ -131,14 +130,11 @@ mod trie {
                         // when `setup` time is far longer than `routine` time.
                         // Tested function takes too short compared to build().
                         // So loop many times.
-                        let results_in_u8s: Vec<Vec<u8>> = trie
-                            .starts_with("すし")
-                            .labels()
-                            .collect::<Result<_, _>>()
-                            .unwrap();
+                        let results_in_u8s: Vec<Vec<u8>> =
+                            trie.starts_with_labels("すし").collect();
                         for _ in 0..(times - 1) {
-                            for entry in trie.starts_with("すし").labels::<String>() {
-                                black_box(entry.unwrap());
+                            for entry in trie.starts_with_labels::<String>("すし") {
+                                black_box(entry);
                             }
                         }
 
@@ -175,11 +171,7 @@ mod trie {
                 b.iter_batched(
                     || &TRIE_EDICT,
                     |trie| {
-                        let results: Vec<Vec<u8>> = trie
-                            .starts_with("す")
-                            .labels()
-                            .filter_map(Result::ok)
-                            .collect();
+                        let results: Vec<Vec<u8>> = trie.starts_with_labels("す").collect();
                         assert_eq!(results.len(), 4220);
                         let results_in_u8s = results.into_iter().take(100);
                         assert_eq!(results_in_u8s.len(), 100);
@@ -200,12 +192,8 @@ mod trie {
                 b.iter_batched(
                     || &TRIE_EDICT,
                     |trie| {
-                        let results_in_u8s: Vec<Vec<u8>> = trie
-                            .starts_with("す")
-                            .take(100)
-                            .labels()
-                            .filter_map(Result::ok)
-                            .collect();
+                        let results_in_u8s: Vec<Vec<u8>> =
+                            trie.starts_with_labels("す").take(100).collect();
                         assert_eq!(results_in_u8s.len(), 100);
                     },
                     BatchSize::SmallInput,
@@ -231,14 +219,11 @@ mod trie {
                         // when `setup` time is far longer than `routine` time.
                         // Tested function takes too short compared to build().
                         // So loop many times.
-                        let results_in_str: Vec<String> = trie
-                            .prefixes_of("すしをにぎる")
-                            .labels()
-                            .filter_map(Result::ok)
-                            .collect();
+                        let results_in_str: Vec<String> =
+                            trie.prefixes_of_labels("すしをにぎる").collect();
                         for _ in 0..(times - 1) {
-                            for entry in trie.prefixes_of("すしをにぎる").labels::<Vec<_>>() {
-                                black_box(entry.unwrap());
+                            for entry in trie.prefixes_of_labels::<Vec<_>>("すしをにぎる") {
+                                black_box(entry);
                             }
                         }
                         assert_eq!(results_in_str, vec!["す", "すし", "すしをにぎる"]);
@@ -265,14 +250,12 @@ mod trie {
                         // iter_batched() does not properly time `routine` time when `setup` time is far longer than `routine` time.
                         // Tested function takes too short compared to build(). So loop many times.
                         let result = trie
-                            .prefixes_of("すしをにぎる")
-                            .labels::<Vec<_>>()
+                            .prefixes_of_labels::<Vec<_>>("すしをにぎる")
                             .next()
                             .is_some();
                         for _ in 0..(times - 1) {
                             let _ = trie
-                                .prefixes_of("すしをにぎる")
-                                .labels::<Vec<_>>()
+                                .prefixes_of_labels::<Vec<_>>("すしをにぎる")
                                 .next()
                                 .is_some();
                         }
