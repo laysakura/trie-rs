@@ -3,7 +3,6 @@ use crate::iter::{Keys, KeysExt, Labels};
 use crate::label::Label;
 use crate::map;
 use crate::search::{PostfixCollect, PostfixIter, PrefixCollect, PrefixIter};
-use crate::try_collect::TryFromIterator;
 use crate::try_from::TryFromTokens;
 use std::iter::FromIterator;
 
@@ -206,12 +205,8 @@ impl<Token: Ord> Trie<Token> {
     }
 
     /// Return the longest shared prefix of `label`.
-    pub fn longest_prefix<C, M>(&self, label: impl Label<Token>) -> Option<C>
-    where
-        C: TryFromIterator<Token, M>,
-        Token: Clone,
-    {
-        self.0.longest_prefix(label)
+    pub fn path_of(&self, label: impl Label<Token>) -> Option<KeyRef<'_, Token>> {
+        self.0.path_of(label).map(KeyRef)
     }
 }
 

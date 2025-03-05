@@ -2,7 +2,6 @@
 use crate::inc_search::IncSearch;
 use crate::label::{Label, LabelKind};
 use crate::search::{PostfixCollect, PostfixIter, PrefixCollect, PrefixIter};
-use crate::try_collect::{TryCollect, TryFromIterator};
 use crate::try_from::TryFromTokens;
 use louds_rs::{AncestorNodeIter, ChildNodeIter, Louds, LoudsNodeNum};
 use std::iter::FromIterator;
@@ -181,29 +180,20 @@ impl<Token: Ord, Value> Trie<Token, Value> {
     }
 
     /// Return the longest shared prefix or terminal of `label`.
-    pub fn longest_prefix<C, M>(&self, label: impl Label<Token>) -> Option<C>
-    where
-        C: TryFromIterator<Token, M>,
-        Token: Clone,
-    {
+    pub fn path_of(&self, label: impl Label<Token>) -> Option<NodeRef<'_, Token, Value>> {
         let mut cur_node_num = LoudsNodeNum(1);
-        let mut buffer = Vec::new();
         let mut children_node_nums = Vec::new(); // reuse allocated space
 
         // Consumes label (prefix)
         for token in label.into_tokens() {
             children_node_nums.clear();
             children_node_nums.extend(self.children_node_nums(cur_node_num));
-            let res = self.bin_search_by_children_labels(&token, &children_node_nums[..]);
-            match res {
-                Ok(i) => {
-                    cur_node_num = children_node_nums[i];
-                    buffer.push(cur_node_num);
-                }
-                Err(_) => {
-                    return None;
-                }
-            }
+
+            let i = self
+                .bin_search_by_children_labels(&token, &children_node_nums[..])
+                .ok()?;
+
+            cur_node_num = children_node_nums[i];
         }
 
         // Walk the trie as long as there is only one path and it isn't a terminal value.
@@ -214,22 +204,17 @@ impl<Token: Ord, Value> Trie<Token, Value> {
             match (first, second) {
                 (Some(child_node_num), None) => {
                     cur_node_num = child_node_num;
-                    buffer.push(child_node_num);
                 }
-                _ => break,
+                _ => return None,
             }
         }
-        if buffer.is_empty() {
-            None
-        } else {
-            Some(
-                buffer
-                    .into_iter()
-                    .map(|x| self.token(x).clone())
-                    .try_collect()
-                    .expect("Could not collect"),
-            )
-        }
+
+        let node_ref = NodeRef {
+            trie: &self,
+            node_num: cur_node_num,
+        };
+
+        Some(node_ref)
     }
 
     pub(crate) fn bin_search_by_children_labels(
@@ -533,7 +518,7 @@ mod search_tests {
                 fn $name() {
                     let (label, expected_match) = $value;
                     let trie = super::build_trie();
-                    let result: Option<String> = trie.longest_prefix(label);
+                    let result: Option<String> = trie.path_of(label).and_then(|n| n.label().ok());
                     let expected_match = expected_match.map(str::to_string);
                     assert_eq!(result, expected_match);
                 }
@@ -545,7 +530,7 @@ mod search_tests {
             t1: ("a", Some("a")),
             t2: ("ap", Some("app")),
             t3: ("app", Some("app")),
-            t4: ("appl", Some("appl")),
+            t4: ("appl", None),
             t5: ("appli", Some("application")),
             t6: ("b", Some("better")),
             t7: ("アップル🍎", Some("アップル🍎")),
