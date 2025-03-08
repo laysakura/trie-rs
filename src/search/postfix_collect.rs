@@ -39,11 +39,9 @@ where
             buffer.push(trie.token(root));
         }
 
-        let mut queue: Vec<_> = vec![(0, root)];
-        queue.reverse();
         Self {
             trie,
-            queue,
+            queue: vec![(0, root)],
             buffer,
             start: len,
             _collector: PhantomData,
@@ -75,11 +73,11 @@ where
     }
 }
 
-impl<'a, Token: Ord + Clone, Value, L> Iterator for PostfixCollect<'a, Token, Value, L>
+impl<'t, Token: Ord + Clone, Value, L> Iterator for PostfixCollect<'t, Token, Value, L>
 where
     L: TryFromTokens<Token>,
 {
-    type Item = (L, &'a Value);
+    type Item = L::Zip<&'t Value>;
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         use std::cmp::Ordering;
@@ -110,7 +108,7 @@ where
         };
 
         let tokens = self.buffer.iter().cloned().cloned();
-        let label = L::try_from_tokens(tokens).unwrap();
-        Some((label, value))
+        let label = L::try_from_tokens(tokens);
+        Some(L::zip(label, value))
     }
 }

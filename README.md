@@ -49,14 +49,13 @@ assert_eq!(trie.is_exact("🍣"), true);
 assert_eq!(trie.is_exact("🍜"), false);
 
 // start_with(): Find words which include the label as their prefix.
-let results_in_u8s: Vec<Vec<u8>> = trie
+let results_in_u8s: Vec<_> = trie
     .starts_with("すし")
-    .labels()
-    .filter_map(Result::ok)
+    .labels::<Vec<_>>()
     .collect();
-let results_in_str: Vec<String> = trie
+let results_in_str: Vec<_> = trie
     .starts_with("すし")
-    .labels()
+    .labels::<String>()
     .filter_map(Result::ok)
     .collect();
 assert_eq!(
@@ -72,14 +71,13 @@ assert_eq!(
 );
 
 // prefixes_of(): Find words that are included in a label's prefix.
-let results_in_u8s: Vec<Vec<u8>> = trie
+let results_in_u8s: Vec<_> = trie
     .prefixes_of("すしや")
-    .labels()
-    .filter_map(Result::ok)
+    .labels::<Vec<_>>()
     .collect();
-let results_in_str: Vec<String> = trie
+let results_in_str: Vec<_> = trie
     .prefixes_of("すしや")
-    .labels()
+    .labels::<String>()
     .filter_map(Result::ok)
     .collect();
 assert_eq!(
@@ -124,9 +122,8 @@ assert_eq!(
     true
 );
 
-let r: Vec<Vec<&str>> = trie.starts_with(vec!["a", "woman", "on"])
-    .labels()
-    .filter_map(Result::ok)
+let r: Vec<_> = trie.starts_with(vec!["a", "woman", "on"])
+    .labels::<Vec<_>>()
     .collect();
 assert_eq!(
     r,
@@ -136,10 +133,9 @@ assert_eq!(
     ],
 );
 
-let s: Vec<Vec<&str>> = trie
+let s: Vec<_> = trie
     .prefixes_of(vec!["a", "woman", "on", "the", "beach"])
-    .labels()
-    .filter_map(Result::ok)
+    .labels::<Vec<_>>()
     .collect();
 assert_eq!(
     s,
@@ -174,10 +170,9 @@ let trie = builder.build();
 
 assert_eq!(trie.is_exact([5, 3, 5, 9, 4, 0, 8, 1, 2, 8]), true);
 
-let t: Vec<Vec<u8>> = trie
+let t: Vec<_> = trie
     .starts_with([3])
-    .labels()
-    .filter_map(Result::ok)
+    .labels::<Vec<_>>()
     .collect();
 assert_eq!(
     t,
@@ -187,10 +182,9 @@ assert_eq!(
     ],
 );
 
-let u: Vec<Vec<u8>> = trie
+let u: Vec<_> = trie
     .prefixes_of([1, 4, 1, 5, 9, 2, 6, 5, 3, 5])
-    .labels()
-    .filter_map(Result::ok)
+    .labels::<Vec<_>>()
     .collect();
 assert_eq!(
     u,

@@ -65,7 +65,7 @@ impl<Token: Ord> Trie<Token> {
     ///
     /// let trie = Trie::<u8>::from_iter(["a", "app", "apple", "better", "application"]);
     ///
-    /// let results: Vec<String> = trie.prefixes_of("application").labels().collect::<Result<_, _>>().unwrap();
+    /// let results: Vec<_> = trie.prefixes_of("application").labels::<String>().collect::<Result<_, _>>().unwrap();
     ///
     /// assert_eq!(results, vec!["a", "app", "application"]);
     ///
@@ -82,13 +82,13 @@ impl<Token: Ord> Trie<Token> {
     pub fn prefixes_of_labels<L>(
         &self,
         label: impl Label<Token>,
-    ) -> Labels<PrefixCollect<'_, Token, (), L>>
+    ) -> Labels<PrefixCollect<'_, Token, (), L>, L, Token>
     where
         Token: Clone,
         L: TryFromTokens<Token>,
     {
         // TODO: We could return Keys iterators instead of collecting.
-        Labels(self.0.prefixes_of_pairs(label))
+        Labels::new(self.0.prefixes_of_pairs(label))
     }
 
     /// Return all entries that start with `label`.
@@ -103,12 +103,12 @@ impl<Token: Ord> Trie<Token> {
     pub fn starts_with_labels<L>(
         &self,
         label: impl Label<Token>,
-    ) -> Labels<PostfixCollect<'_, Token, (), L>>
+    ) -> Labels<PostfixCollect<'_, Token, (), L>, L, Token>
     where
         Token: Clone,
         L: TryFromTokens<Token>,
     {
-        Labels(self.0.starts_with_pairs(label))
+        Labels::new(self.0.starts_with_pairs(label))
     }
 
     /// Return the suffixes of all entries that match `label`.
@@ -124,11 +124,11 @@ impl<Token: Ord> Trie<Token> {
     ///
     /// let trie = Trie::<u8>::from_iter(["a", "app", "apple", "better", "application"]);
     ///
-    /// let results: Vec<String> = trie.suffixes_of("application").labels().collect::<Result<_, _>>().unwrap();
+    /// let results: Vec<_> = trie.suffixes_of("application").labels::<String>().collect::<Result<_, _>>().unwrap();
     ///
     /// assert!(results.is_empty());
     ///
-    /// let results: Vec<String> = trie.suffixes_of("app").labels().collect::<Result<_, _>>().unwrap();
+    /// let results: Vec<_> = trie.suffixes_of("app").labels::<String>().collect::<Result<_, _>>().unwrap();
     ///
     /// assert_eq!(results, vec!["le", "lication"]);
     ///
@@ -153,11 +153,11 @@ impl<Token: Ord> Trie<Token> {
     ///
     /// let trie = Trie::<u8>::from_iter(["a", "app", "apple", "better", "application"]);
     ///
-    /// let results: Vec<String> = trie.suffixes_of("application").labels().collect::<Result<_, _>>().unwrap();
+    /// let results: Vec<_> = trie.suffixes_of("application").labels::<String>().collect::<Result<_, _>>().unwrap();
     ///
     /// assert!(results.is_empty());
     ///
-    /// let results: Vec<String> = trie.suffixes_of("app").labels().collect::<Result<_, _>>().unwrap();
+    /// let results: Vec<_> = trie.suffixes_of("app").labels::<String>().collect::<Result<_, _>>().unwrap();
     ///
     /// assert_eq!(results, vec!["le", "lication"]);
     ///
@@ -165,12 +165,12 @@ impl<Token: Ord> Trie<Token> {
     pub fn suffixes_of_labels<L>(
         &self,
         label: impl Label<Token>,
-    ) -> Labels<PostfixCollect<'_, Token, (), L>>
+    ) -> Labels<PostfixCollect<'_, Token, (), L>, L, Token>
     where
         Token: Clone,
         L: TryFromTokens<Token>,
     {
-        Labels(self.0.suffixes_of_pairs(label))
+        Labels::new(self.0.suffixes_of_pairs(label))
     }
 
     /// Returns an iterator across all keys in the trie.
@@ -185,7 +185,7 @@ impl<Token: Ord> Trie<Token> {
     ///
     /// let trie = Trie::<u8>::from_iter(["a", "app", "apple", "better", "application"]);
     ///
-    /// let results: Vec<String> = trie.iter().labels().collect::<Result<_, _>>().unwrap();
+    /// let results: Vec<_> = trie.iter().labels::<String>().collect::<Result<_, _>>().unwrap();
     ///
     /// assert_eq!(results, vec!["a", "app", "apple", "application", "better"]);
     ///
@@ -403,7 +403,7 @@ mod search_tests {
                 fn $name() {
                     let (label, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results: Vec<String> = trie.starts_with(label).labels().collect::<Result<_, _>>().unwrap();
+                    let results: Vec<String> = trie.starts_with(label).labels::<String>().collect::<Result<_, _>>().unwrap();
                     assert_eq!(results, expected_results);
                 }
             )*
@@ -429,7 +429,7 @@ mod search_tests {
                 fn $name() {
                     let (label, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results: Vec<String> = trie.prefixes_of(label).labels().collect::<Result<_, _>>().unwrap();
+                    let results: Vec<String> = trie.prefixes_of(label).labels::<String>().collect::<Result<_, _>>().unwrap();
                     assert_eq!(results, expected_results);
                 }
             )*

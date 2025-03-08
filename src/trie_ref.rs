@@ -37,7 +37,7 @@ pub trait TrieRef<'t, Token: 't> {
     fn range(&'t self) -> Self::Range;
 
     /// Returns the label of this node.
-    fn label<L: TryFromTokens<Token>>(&self) -> Result<L, L::Error>
+    fn label<L: TryFromTokens<Token>>(&self) -> L::Result
     where
         Token: Clone;
 

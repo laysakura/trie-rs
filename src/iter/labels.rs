@@ -1,13 +1,24 @@
-/// Returns labels from `(label, value)` iterators.
-pub struct Labels<I>(pub(crate) I);
+use std::marker::PhantomData;
 
-impl<I, L, Value> Iterator for Labels<I>
+use crate::try_from::TryFromTokens;
+
+/// Returns labels from `(label, value)` iterators.
+pub struct Labels<I, L, Token>(I, PhantomData<L>, PhantomData<Token>);
+
+impl<I, L, Token> Labels<I, L, Token> {
+    pub(crate) fn new(iter: I) -> Self {
+        Self(iter, PhantomData, PhantomData)
+    }
+}
+
+impl<I, L, Token> Iterator for Labels<I, L, Token>
 where
-    I: Iterator<Item = (L, Value)>,
+    L: TryFromTokens<Token>,
+    I: Iterator<Item = L::Zip<&'static ()>>,
 {
-    type Item = L;
+    type Item = L::Result;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.next().map(|(l, _)| l)
+        self.0.next().map(L::unzip)
     }
 }

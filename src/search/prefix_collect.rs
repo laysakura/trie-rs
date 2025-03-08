@@ -34,7 +34,7 @@ impl<'t, Token: Ord + Clone, Value, L> Iterator for PrefixCollect<'t, Token, Val
 where
     L: TryFromTokens<Token>,
 {
-    type Item = (L, &'t Value);
+    type Item = L::Zip<&'t Value>;
     fn next(&mut self) -> Option<Self::Item> {
         let value = loop {
             let token = self.tokens.get(self.index)?;
@@ -57,7 +57,7 @@ where
         };
 
         let tokens = &mut self.tokens[..self.index].into_iter().cloned();
-        let label = L::try_from_tokens(tokens).unwrap();
-        Some((label, value))
+        let label = L::try_from_tokens(tokens);
+        Some(L::zip(label, value))
     }
 }

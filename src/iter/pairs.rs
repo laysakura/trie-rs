@@ -23,9 +23,9 @@ where
     I: Iterator<Item = NodeIter<'t, Token, Value>>,
     L: TryFromTokens<Token>,
 {
-    type Item = Result<(L, &'t Value), L::Error>;
+    type Item = L::Zip<&'t Value>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|i| i.pair())
+        self.iter.next().map(|i| i.pair::<L>())
     }
 }

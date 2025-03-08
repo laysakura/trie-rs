@@ -16,7 +16,7 @@ where
     }
 
     /// Convert key iterators to labels.
-    pub fn labels<L>(self) -> impl Iterator<Item = Result<L, L::Error>>
+    pub fn labels<L>(self) -> impl Iterator<Item = L::Result>
     where
         L: TryFromTokens<Token>,
         Token: Clone,

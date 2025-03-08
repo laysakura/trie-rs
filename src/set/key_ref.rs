@@ -43,7 +43,7 @@ impl<'t, Token> KeyRef<'t, Token> {
     }
 
     /// Returns the label of this node.
-    pub fn label<L: TryFromTokens<Token>>(&self) -> Result<L, L::Error>
+    pub fn label<L: TryFromTokens<Token>>(&self) -> L::Result
     where
         Token: Clone,
     {
@@ -122,11 +122,11 @@ impl<'t, Token> TrieRef<'t, Token> for KeyRef<'t, Token> {
         self.range()
     }
 
-    fn label<L: TryFromTokens<Token>>(&self) -> Result<L, L::Error>
+    fn label<L: TryFromTokens<Token>>(&self) -> L::Result
     where
         Token: Clone,
     {
-        self.label()
+        self.label::<L>()
     }
 
     fn prefixes_of(&'t self) -> Self::Prefixes

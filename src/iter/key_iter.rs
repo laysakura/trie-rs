@@ -10,15 +10,12 @@ pub struct KeyIter<'t, Token>(pub(crate) NodeIter<'t, Token, ()>);
 
 impl<'t, Token> KeyIter<'t, Token> {
     /// Convert keys to a label.
-    pub fn label<L: TryFromTokens<Token>>(self) -> Result<L, L::Error>
+    pub fn label<L: TryFromTokens<Token>>(self) -> L::Result
     where
         Token: Clone,
     {
         let tokens = self.map(|n| n.token().clone());
-
-        let label = L::try_from_reverse_tokens(tokens)?;
-
-        Ok(label)
+        L::try_from_reverse_tokens(tokens)
     }
 }
 

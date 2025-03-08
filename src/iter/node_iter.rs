@@ -17,17 +17,18 @@ pub struct NodeIter<'t, Token, Value> {
 
 impl<'t, Token, Value> NodeIter<'t, Token, Value> {
     /// Convert nodes to a `(label, value)` pair, where the last node provides the value.
-    pub fn pair<L: TryFromTokens<Token>>(self) -> Result<(L, &'t Value), L::Error>
+    pub fn pair<L: TryFromTokens<Token>>(self) -> L::Zip<&'t Value>
     where
         Token: Clone,
     {
+        // Safe to unwrap here, since self.end should be a valid node.
         let value = self.trie.value(self.end).unwrap();
 
         let tokens = self.map(|n| n.token().clone());
 
-        let label = L::try_from_reverse_tokens(tokens)?;
+        let label = L::try_from_reverse_tokens(tokens);
 
-        Ok((label, value))
+        L::zip(label, value)
     }
 }
 

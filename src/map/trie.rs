@@ -169,7 +169,7 @@ impl<Token: Ord, Value> Trie<Token, Value> {
     /// ```rust
     /// use trie_rs::map::Trie;
     /// let trie = Trie::<u8, _>::from_iter([("a", 0), ("app", 1), ("apple", 2), ("better", 3), ("application", 4)]);
-    /// let results: Vec<(String, &u8)> = trie.iter().pairs().filter_map(Result::ok).collect();
+    /// let results: Vec<_> = trie.iter().pairs::<String>().filter_map(Result::ok).collect();
     /// assert_eq!(results, [("a".to_string(), &0u8), ("app".to_string(), &1u8), ("apple".to_string(), &2u8), ("application".to_string(), &4u8), ("better".to_string(), &3u8)]);
     /// ```
     pub fn iter(&self) -> PostfixIter<'_, Token, Value>
@@ -332,7 +332,7 @@ mod search_tests {
         let trie = build_trie();
         let v: Vec<(String, &u8)> = trie
             .starts_with("apple")
-            .pairs()
+            .pairs::<String>()
             .filter_map(Result::ok)
             .collect();
         assert_eq!(v, vec![("apple".to_string(), &2)]);
@@ -393,7 +393,11 @@ mod search_tests {
     #[test]
     fn insert_order_dependent() {
         let trie: Trie<u8, u8> = Trie::from_iter([("a", 0), ("app", 1), ("apple", 2)]);
-        let results: Vec<(String, &u8)> = trie.iter().pairs().filter_map(Result::ok).collect();
+        let results: Vec<(String, &u8)> = trie
+            .iter()
+            .pairs::<String>()
+            .filter_map(Result::ok)
+            .collect();
         assert_eq!(
             results,
             [
@@ -404,7 +408,11 @@ mod search_tests {
         );
 
         let trie: Trie<u8, u8> = Trie::from_iter([("a", 0), ("apple", 2), ("app", 1)]);
-        let results: Vec<(String, &u8)> = trie.iter().pairs().filter_map(Result::ok).collect();
+        let results: Vec<(String, &u8)> = trie
+            .iter()
+            .pairs::<String>()
+            .filter_map(Result::ok)
+            .collect();
         assert_eq!(
             results,
             [
@@ -518,7 +526,7 @@ mod search_tests {
                 fn $name() {
                     let (label, expected_match) = $value;
                     let trie = super::build_trie();
-                    let result: Option<String> = trie.path_of(label).and_then(|n| n.label().ok());
+                    let result: Option<String> = trie.path_of(label).and_then(|n| n.label::<String>().ok());
                     let expected_match = expected_match.map(str::to_string);
                     assert_eq!(result, expected_match);
                 }
@@ -550,7 +558,7 @@ mod search_tests {
                 fn $name() {
                     let (label, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results: Vec<(String, &u8)> = trie.starts_with(label).pairs().filter_map(Result::ok).collect();
+                    let results: Vec<(String, &u8)> = trie.starts_with(label).pairs::<String>().filter_map(Result::ok).collect();
                     let expected_results: Vec<(String, &u8)> = expected_results.iter().map(|s| (s.0.to_string(), &s.1)).collect();
                     assert_eq!(results, expected_results);
                 }
@@ -577,7 +585,7 @@ mod search_tests {
                 fn $name() {
                     let (label, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results: Vec<(String, &u8)> = trie.starts_with_pairs(label).collect();
+                    let results: Vec<(String, &u8)> = trie.starts_with_pairs::<String>(label).collect::<Result<_, _>>().unwrap();
                     let expected_results: Vec<(String, &u8)> = expected_results.iter().map(|s| (s.0.to_string(), &s.1)).collect();
                     assert_eq!(results, expected_results);
                 }
@@ -596,9 +604,7 @@ mod search_tests {
         }
     }
 
-    mod prefixes_of_tests {
-        use crate::iter::NodeIterExt;
-
+    mod prefixes_of_pairs_tests {
         macro_rules! parameterized_tests {
             ($($name:ident: $value:expr,)*) => {
             $(
@@ -606,7 +612,7 @@ mod search_tests {
                 fn $name() {
                     let (label, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results: Result<Vec<(String, &u8)>, _> = trie.prefixes_of(label).pairs().collect();
+                    let results: Result<Vec<(String, &u8)>, _> = trie.prefixes_of_pairs::<String>(label).collect();
                     let expected_results: Vec<(String, &u8)> = expected_results.iter().map(|s| (s.0.to_string(), &s.1)).collect();
                     assert_eq!(results, Ok(expected_results));
                 }
@@ -634,7 +640,7 @@ mod search_tests {
                 fn $name() {
                     let (label, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results: Vec<(String, &u8)> = trie.suffixes_of(label).pairs().filter_map(Result::ok).collect();
+                    let results: Vec<(String, &u8)> = trie.suffixes_of(label).pairs::<String>().filter_map(Result::ok).collect();
                     let expected_results: Vec<(String, &u8)> = expected_results.iter().map(|s| (s.0.to_string(), &s.1)).collect();
                     assert_eq!(results, expected_results);
                 }
@@ -662,7 +668,7 @@ mod search_tests {
                 fn $name() {
                     let (label, expected_results) = $value;
                     let trie = super::build_trie2();
-                    let results: Vec<(String, &u8)> = trie.suffixes_of(label).pairs().filter_map(Result::ok).collect();
+                    let results: Vec<(String, &u8)> = trie.suffixes_of(label).pairs::<String>().collect();
                     let expected_results: Vec<(String, &u8)> = expected_results.iter().map(|s| (s.0.to_string(), &s.1)).collect();
                     assert_eq!(results, expected_results);
                 }

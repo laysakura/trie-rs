@@ -1,8 +1,7 @@
-use super::{KeyIter, NodeIter, PairIter, TokenIter};
+use super::TokenIter;
 use crate::{
     map::{NodeMut, NodeRef},
     set::KeyRef,
-    try_from::TryFromTokens,
 };
 
 /// Extension trait for [NodeRef] iterators.
@@ -63,45 +62,5 @@ where
 {
     fn tokens(self) -> TokenIter<Token, Self> {
         TokenIter::new(self)
-    }
-}
-
-/// Extension trait for [NodeIter] iterators.
-pub trait NodeIterExt {
-    /// Convert node iterators to `(label, value)` pairs.
-    fn pairs<L>(self) -> PairIter<Self, L>
-    where
-        Self: Sized;
-}
-
-impl<'t, Token: 't, Value: 't, T> NodeIterExt for T
-where
-    T: Iterator<Item = NodeIter<'t, Token, Value>>,
-{
-    fn pairs<L>(self) -> PairIter<Self, L>
-    where
-        Self: Sized,
-    {
-        PairIter::new(self)
-    }
-}
-
-/// Extension trait for [KeyIter] iterators.
-pub trait KeyIterExt<Token> {
-    /// Convert key iterators to labels.
-    fn labels<L>(self) -> impl Iterator<Item = Result<L, L::Error>>
-    where
-        L: TryFromTokens<Token>;
-}
-
-impl<'t, Token: Clone + 't, T> KeyIterExt<Token> for T
-where
-    T: Iterator<Item = KeyIter<'t, Token>>,
-{
-    fn labels<L>(self) -> impl Iterator<Item = Result<L, L::Error>>
-    where
-        L: TryFromTokens<Token>,
-    {
-        self.map(|i| L::try_from_reverse_tokens(i.tokens()))
     }
 }

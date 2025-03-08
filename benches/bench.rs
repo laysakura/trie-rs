@@ -130,11 +130,11 @@ mod trie {
                         // when `setup` time is far longer than `routine` time.
                         // Tested function takes too short compared to build().
                         // So loop many times.
-                        let results_in_u8s: Vec<Vec<u8>> =
-                            trie.starts_with_labels("すし").collect();
+                        let results_in_u8s: Vec<_> =
+                            trie.starts_with_labels::<Vec<_>>("すし").collect();
                         for _ in 0..(times - 1) {
                             for entry in trie.starts_with_labels::<String>("すし") {
-                                black_box(entry);
+                                black_box(entry.unwrap());
                             }
                         }
 
@@ -171,7 +171,7 @@ mod trie {
                 b.iter_batched(
                     || &TRIE_EDICT,
                     |trie| {
-                        let results: Vec<Vec<u8>> = trie.starts_with_labels("す").collect();
+                        let results: Vec<_> = trie.starts_with_labels::<Vec<_>>("す").collect();
                         assert_eq!(results.len(), 4220);
                         let results_in_u8s = results.into_iter().take(100);
                         assert_eq!(results_in_u8s.len(), 100);
@@ -192,8 +192,8 @@ mod trie {
                 b.iter_batched(
                     || &TRIE_EDICT,
                     |trie| {
-                        let results_in_u8s: Vec<Vec<u8>> =
-                            trie.starts_with_labels("す").take(100).collect();
+                        let results_in_u8s: Vec<_> =
+                            trie.starts_with_labels::<Vec<_>>("す").take(100).collect();
                         assert_eq!(results_in_u8s.len(), 100);
                     },
                     BatchSize::SmallInput,
@@ -219,8 +219,10 @@ mod trie {
                         // when `setup` time is far longer than `routine` time.
                         // Tested function takes too short compared to build().
                         // So loop many times.
-                        let results_in_str: Vec<String> =
-                            trie.prefixes_of_labels("すしをにぎる").collect();
+                        let results_in_str: Vec<_> = trie
+                            .prefixes_of_labels::<String>("すしをにぎる")
+                            .filter_map(Result::ok)
+                            .collect();
                         for _ in 0..(times - 1) {
                             for entry in trie.prefixes_of_labels::<Vec<_>>("すしをにぎる") {
                                 black_box(entry);
