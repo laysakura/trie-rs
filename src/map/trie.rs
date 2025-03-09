@@ -660,6 +660,34 @@ mod search_tests {
         }
     }
 
+    mod suffixes_of_pairs_tests {
+        macro_rules! parameterized_tests {
+            ($($name:ident: $value:expr,)*) => {
+            $(
+                #[test]
+                fn $name() {
+                    let (label, expected_results) = $value;
+                    let trie = super::build_trie();
+                    let results: Vec<(String, &u8)> = trie.suffixes_of_pairs::<String>(label).filter_map(Result::ok).collect();
+                    let expected_results: Vec<(String, &u8)> = expected_results.iter().map(|s| (s.0.to_string(), &s.1)).collect();
+                    assert_eq!(results, expected_results);
+                }
+            )*
+            }
+        }
+
+        parameterized_tests! {
+            t1: ("a", vec![("pp", 1), ("pple", 2), ("pplication", 4)]),
+            t2: ("ap", vec![("p", 1), ("ple", 2), ("plication", 4)]),
+            t3: ("appl", vec![("e", 2), ("ication", 4)]),
+            t4: ("appler", Vec::<(&str, u8)>::new()),
+            t5: ("bette", vec![("r", 3)]),
+            t6: ("betterment", Vec::<(&str, u8)>::new()),
+            t7: ("c", Vec::<(&str, u8)>::new()),
+            t8: ("アップル🍎🍏", Vec::<(&str, u8)>::new()),
+        }
+    }
+
     mod postfix_search_char_tests {
         macro_rules! parameterized_tests {
             ($($name:ident: $value:expr,)*) => {

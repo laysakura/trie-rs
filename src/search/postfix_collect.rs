@@ -52,11 +52,17 @@ where
     pub(crate) fn suffixes_of(trie: &'a Trie<Token, Value>, start: LoudsNodeNum) -> Self {
         let mut queue: Vec<_> = trie.children_node_nums(start).map(|n| (0, n)).collect();
         queue.reverse();
+
+        let Some((_, first)) = queue.first() else {
+            return Self::empty(trie);
+        };
+        let first = trie.token(*first);
+
         Self {
             trie,
             queue,
-            buffer: Vec::new(),
-            start: start.0 as usize + 1,
+            buffer: vec![first],
+            start: 1,
             _collector: PhantomData,
         }
     }
