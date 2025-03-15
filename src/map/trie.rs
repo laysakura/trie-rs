@@ -1,109 +1,162 @@
 //! A trie map stores a value with each word or key.
-use super::Trie;
 use crate::inc_search::IncSearch;
-use crate::iter::{PostfixIter, PrefixIter, SearchIter};
-use crate::try_collect::{TryCollect, TryFromIterator};
-use louds_rs::{AncestorNodeIter, ChildNodeIter, LoudsNodeNum};
+use crate::label::{Label, LabelKind};
+use crate::search::{PostfixCollect, PostfixIter, PrefixCollect, PrefixIter};
+use crate::try_from::TryFromTokens;
+use louds_rs::{AncestorNodeIter, ChildNodeIter, Louds, LoudsNodeNum};
 use std::iter::FromIterator;
 
-impl<Label: Ord, Value> Trie<Label, Value> {
-    /// Return `Some(&Value)` if query is an exact match.
-    pub fn exact_match(&self, query: impl AsRef<[Label]>) -> Option<&Value> {
-        self.exact_match_node(query)
-            .and_then(move |x| self.value(x))
-    }
+use super::{NodeMut, NodeRef};
 
-    /// Return `Node` if query is an exact match.
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "mem_dbg", derive(mem_dbg::MemDbg, mem_dbg::MemSize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub(super) struct Node<Token, Value> {
+    pub(super) token: Token,
+    pub(super) value: Option<Value>,
+}
+
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "mem_dbg", derive(mem_dbg::MemDbg, mem_dbg::MemSize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+/// A trie for `Label`s (sequences of `Token`s); each sequence has an associated `Value`.
+pub struct Trie<Token, Value> {
+    pub(super) louds: Louds,
+
+    /// (LoudsNodeNum - 2) -> Node
+    pub(super) nodes: Box<[Node<Token, Value>]>,
+}
+
+impl<Token: Ord, Value> Trie<Token, Value> {
+    /// Return a node num for a label.
     #[inline]
-    fn exact_match_node(&self, query: impl AsRef<[Label]>) -> Option<LoudsNodeNum> {
-        let mut cur_node_num = LoudsNodeNum(1);
+    fn get_num(&self, label: impl Label<Token>) -> Option<LoudsNodeNum> {
+        let mut node_num = LoudsNodeNum(1);
+        let mut children_node_nums = Vec::new(); // reuse allocated space
 
-        for (i, chr) in query.as_ref().iter().enumerate() {
-            let children_node_nums: Vec<LoudsNodeNum> =
-                self.children_node_nums(cur_node_num).collect();
-            let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
-
+        for token in label.into_tokens() {
+            children_node_nums.clear();
+            children_node_nums.extend(self.children_node_nums(node_num));
+            let res = self.bin_search_by_children_labels(&token, &children_node_nums[..]);
             match res {
-                Ok(j) => {
-                    let child_node_num = children_node_nums[j];
-                    if i == query.as_ref().len() - 1 && self.is_terminal(child_node_num) {
-                        return Some(child_node_num);
-                    }
-                    cur_node_num = child_node_num;
-                }
+                Ok(j) => node_num = children_node_nums[j],
                 Err(_) => return None,
             }
         }
-        None
+
+        Some(node_num)
     }
 
-    /// Return `Some(&mut value)` if query is an exact match.
-    pub fn exact_match_mut(&mut self, query: impl AsRef<[Label]>) -> Option<&mut Value> {
-        self.exact_match_node(query)
-            .and_then(move |x| self.value_mut(x))
+    /// Get a node reference for a label.
+    pub fn get(&self, label: impl Label<Token>) -> Option<NodeRef<'_, Token, Value>> {
+        self.get_num(label).map(|node_num| NodeRef {
+            trie: self,
+            node_num,
+        })
+    }
+
+    /// Get a mutable node reference for a label.
+    pub fn get_mut(&mut self, label: impl Label<Token>) -> Option<NodeMut<'_, Token, Value>> {
+        self.get_num(label).map(|node_num| NodeMut {
+            trie: self,
+            node_num,
+        })
+    }
+
+    /// Get a value for a label.
+    pub fn get_value(&self, label: impl Label<Token>) -> Option<&Value> {
+        self.get_num(label)
+            .and_then(|node_num| self.value(node_num))
+    }
+
+    /// Get a mutable value for a label.
+    pub fn get_value_mut(&mut self, label: impl Label<Token>) -> Option<&mut Value> {
+        self.get_num(label)
+            .and_then(|node_num| self.value_mut(node_num))
     }
 
     /// Create an incremental search. Useful for interactive applications. See
     /// [crate::inc_search] for details.
-    pub fn inc_search(&self) -> IncSearch<'_, Label, Value> {
+    pub fn inc_search(&self) -> IncSearch<'_, Token, Value> {
         IncSearch::new(self)
     }
 
-    /// Return true if `query` is a prefix.
+    /// Return the common prefixes of `label`.
+    pub fn prefixes_of<L: Label<Token>>(
+        &self,
+        label: L,
+    ) -> PrefixIter<'_, Token, Value, L::IntoTokens> {
+        PrefixIter::new(self, label)
+    }
+
+    /// Return the common prefixes of `label` as `(label, value)` pairs.
+    pub fn prefixes_of_pairs<L>(
+        &self,
+        label: impl Label<Token>,
+    ) -> PrefixCollect<'_, Token, Value, L>
+    where
+        Token: Clone,
+        L: TryFromTokens<Token>,
+    {
+        PrefixCollect::new(self, label)
+    }
+
+    /// Returns the exactly matching suffixes that follow after this node.
     ///
-    /// Note: A prefix may be an exact match or not, and an exact match may be a
-    /// prefix or not.
-    pub fn is_prefix(&self, query: impl AsRef<[Label]>) -> bool {
-        let mut cur_node_num = LoudsNodeNum(1);
-
-        for chr in query.as_ref().iter() {
-            let children_node_nums: Vec<_> = self.children_node_nums(cur_node_num).collect();
-            let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
-            match res {
-                Ok(j) => cur_node_num = children_node_nums[j],
-                Err(_) => return false,
-            }
-        }
-        // Are there more nodes after our query?
-        self.has_children_node_nums(cur_node_num)
+    /// e.g. "app" → "le" node (as in "apple")
+    ///
+    /// Strips the label's node from the results; to include this node as a prefix, see [`Self::starts_with`].
+    pub fn suffixes_of(&self, label: impl Label<Token>) -> PostfixIter<'_, Token, Value>
+    where
+        Token: Clone,
+    {
+        self.get(label)
+            .map(|n| PostfixIter::suffixes_of(n.trie, n.node_num))
+            .unwrap_or_else(|| PostfixIter::empty(self))
     }
 
-    /// Return all entries and their values that match `query`.
-    pub fn predictive_search<C, M>(
+    /// Returns the exactly matching suffixes that follow after this node as `(label, value)` pairs.
+    ///
+    /// e.g. "app" → ("le", value) (as in "apple")
+    ///
+    /// Strips the label from the results; to include this node as a prefix, see [`Self::starts_with_pairs`].
+    pub fn suffixes_of_pairs<L>(
         &self,
-        query: impl AsRef<[Label]>,
-    ) -> SearchIter<'_, Label, Value, C, M>
+        label: impl Label<Token>,
+    ) -> PostfixCollect<'_, Token, Value, L>
     where
-        C: TryFromIterator<Label, M> + Clone,
-        Label: Clone,
+        Token: Clone,
+        L: TryFromTokens<Token>,
     {
-        SearchIter::new(self, query)
+        self.get(label)
+            .map(|n| PostfixCollect::suffixes_of(self, n.node_num))
+            .unwrap_or_else(|| PostfixCollect::empty(self))
     }
 
-    /// Return the postfixes and values of all entries that match `query`.
-    pub fn postfix_search<C, M>(
-        &self,
-        query: impl AsRef<[Label]>,
-    ) -> PostfixIter<'_, Label, Value, C, M>
+    /// Returns the exact match nodes that follow after this node.
+    ///
+    /// e.g. "app" → "apple" node
+    pub fn starts_with(&self, label: impl Label<Token>) -> PostfixIter<'_, Token, Value>
     where
-        C: TryFromIterator<Label, M>,
-        Label: Clone,
+        Token: Clone,
     {
-        let mut cur_node_num = LoudsNodeNum(1);
+        self.get(label)
+            .map(|n| n.starts_with())
+            .unwrap_or_else(|| PostfixIter::empty(self))
+    }
 
-        // Consumes query (prefix)
-        for chr in query.as_ref() {
-            let children_node_nums: Vec<_> = self.children_node_nums(cur_node_num).collect();
-            let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
-            match res {
-                Ok(i) => cur_node_num = children_node_nums[i],
-                Err(_) => {
-                    return PostfixIter::empty(self);
-                }
-            }
-        }
-
-        PostfixIter::new(self, cur_node_num)
+    /// Returns the exact match `(label, value)` pairs that follow after this node.
+    ///
+    /// e.g. "app" → ("apple", value)
+    pub fn starts_with_pairs<L>(
+        &self,
+        label: impl Label<Token>,
+    ) -> PostfixCollect<'_, Token, Value, L>
+    where
+        Token: Clone,
+        L: TryFromTokens<Token>,
+    {
+        PostfixCollect::starts_with(self, label)
     }
 
     /// Returns an iterator across all keys in the trie.
@@ -115,81 +168,66 @@ impl<Label: Ord, Value> Trie<Label, Value> {
     ///
     /// ```rust
     /// use trie_rs::map::Trie;
-    /// let trie = Trie::from_iter([("a", 0), ("app", 1), ("apple", 2), ("better", 3), ("application", 4)]);
-    /// let results: Vec<(String, &u8)> = trie.iter().collect();
+    /// let trie = Trie::<u8, _>::from_iter([("a", 0), ("app", 1), ("apple", 2), ("better", 3), ("application", 4)]);
+    /// let results: Vec<_> = trie.iter().pairs::<String>().filter_map(Result::ok).collect();
     /// assert_eq!(results, [("a".to_string(), &0u8), ("app".to_string(), &1u8), ("apple".to_string(), &2u8), ("application".to_string(), &4u8), ("better".to_string(), &3u8)]);
     /// ```
-    pub fn iter<C, M>(&self) -> PostfixIter<'_, Label, Value, C, M>
+    pub fn iter(&self) -> PostfixIter<'_, Token, Value>
     where
-        C: TryFromIterator<Label, M>,
-        Label: Clone,
+        Token: Clone,
     {
-        self.postfix_search([])
+        PostfixIter::suffixes_of(self, LoudsNodeNum(1))
     }
 
-    /// Return the common prefixes of `query`.
-    pub fn common_prefix_search<C, M>(
-        &self,
-        query: impl AsRef<[Label]>,
-    ) -> PrefixIter<'_, Label, Value, C, M>
-    where
-        C: TryFromIterator<Label, M>,
-        Label: Clone,
-    {
-        PrefixIter::new(self, query)
-    }
-
-    /// Return the longest shared prefix or terminal of `query`.
-    pub fn longest_prefix<C, M>(&self, query: impl AsRef<[Label]>) -> Option<C>
-    where
-        C: TryFromIterator<Label, M>,
-        Label: Clone,
-    {
+    /// Return the longest shared prefix or terminal of `label`.
+    pub fn path_of(&self, label: impl Label<Token>) -> Option<NodeRef<'_, Token, Value>> {
         let mut cur_node_num = LoudsNodeNum(1);
-        let mut buffer = Vec::new();
+        let mut children_node_nums = Vec::new(); // reuse allocated space
 
-        // Consumes query (prefix)
-        for chr in query.as_ref() {
-            let children_node_nums: Vec<_> = self.children_node_nums(cur_node_num).collect();
-            let res = self.bin_search_by_children_labels(chr, &children_node_nums[..]);
-            match res {
-                Ok(i) => {
-                    cur_node_num = children_node_nums[i];
-                    buffer.push(cur_node_num);
-                }
-                Err(_) => {
-                    return None;
-                }
-            }
+        // Consumes label (prefix)
+        for token in label.into_tokens() {
+            children_node_nums.clear();
+            children_node_nums.extend(self.children_node_nums(cur_node_num));
+
+            let i = self
+                .bin_search_by_children_labels(&token, &children_node_nums[..])
+                .ok()?;
+
+            cur_node_num = children_node_nums[i];
         }
 
         // Walk the trie as long as there is only one path and it isn't a terminal value.
-        while !self.is_terminal(cur_node_num) {
+        while !self.is_exact(cur_node_num) {
             let mut iter = self.children_node_nums(cur_node_num);
             let first = iter.next();
             let second = iter.next();
             match (first, second) {
                 (Some(child_node_num), None) => {
                     cur_node_num = child_node_num;
-                    buffer.push(child_node_num);
                 }
-                _ => break,
+                _ => return None,
             }
         }
-        if buffer.is_empty() {
-            None
-        } else {
-            Some(
-                buffer
-                    .into_iter()
-                    .map(|x| self.label(x).clone())
-                    .try_collect()
-                    .expect("Could not collect"),
-            )
-        }
+
+        let node_ref = NodeRef {
+            trie: &self,
+            node_num: cur_node_num,
+        };
+
+        Some(node_ref)
     }
 
-    pub(crate) fn has_children_node_nums(&self, node_num: LoudsNodeNum) -> bool {
+    pub(crate) fn bin_search_by_children_labels(
+        &self,
+        token: &Token,
+        children_node_nums: &[LoudsNodeNum],
+    ) -> Result<usize, usize> {
+        children_node_nums.binary_search_by(|child_node_num| self.token(*child_node_num).cmp(token))
+    }
+}
+
+impl<Token, Value> Trie<Token, Value> {
+    pub(crate) fn is_prefix(&self, node_num: LoudsNodeNum) -> bool {
         self.louds
             .parent_to_children_indices(node_num)
             .next()
@@ -200,21 +238,13 @@ impl<Label: Ord, Value> Trie<Label, Value> {
         self.louds.parent_to_children_nodes(node_num)
     }
 
-    pub(crate) fn bin_search_by_children_labels(
-        &self,
-        query: &Label,
-        children_node_nums: &[LoudsNodeNum],
-    ) -> Result<usize, usize> {
-        children_node_nums.binary_search_by(|child_node_num| self.label(*child_node_num).cmp(query))
+    pub(crate) fn token(&self, node_num: LoudsNodeNum) -> &Token {
+        &self.nodes[(node_num.0 - 2) as usize].token
     }
 
-    pub(crate) fn label(&self, node_num: LoudsNodeNum) -> &Label {
-        &self.trie_labels[(node_num.0 - 2) as usize].label
-    }
-
-    pub(crate) fn is_terminal(&self, node_num: LoudsNodeNum) -> bool {
+    pub(crate) fn is_exact(&self, node_num: LoudsNodeNum) -> bool {
         if node_num.0 >= 2 {
-            self.trie_labels[(node_num.0 - 2) as usize].value.is_some()
+            self.nodes[(node_num.0 - 2) as usize].value.is_some()
         } else {
             false
         }
@@ -222,34 +252,49 @@ impl<Label: Ord, Value> Trie<Label, Value> {
 
     pub(crate) fn value(&self, node_num: LoudsNodeNum) -> Option<&Value> {
         if node_num.0 >= 2 {
-            self.trie_labels[(node_num.0 - 2) as usize].value.as_ref()
+            self.nodes[(node_num.0 - 2) as usize].value.as_ref()
         } else {
             None
         }
     }
 
+    pub(crate) fn kind(&self, node_num: LoudsNodeNum) -> LabelKind {
+        match (self.is_prefix(node_num), self.is_exact(node_num)) {
+            (true, false) => LabelKind::Prefix,
+            (false, true) => LabelKind::Exact,
+            (true, true) => LabelKind::PrefixAndExact,
+            // SAFETY: Since we already have the node, it must at least be a prefix or exact match.
+            _ => unsafe { std::hint::unreachable_unchecked() },
+        }
+    }
+
     pub(crate) fn value_mut(&mut self, node_num: LoudsNodeNum) -> Option<&mut Value> {
-        self.trie_labels[(node_num.0 - 2) as usize].value.as_mut()
+        self.nodes[(node_num.0 - 2) as usize].value.as_mut()
     }
 
     pub(crate) fn child_to_ancestors(&self, node_num: LoudsNodeNum) -> AncestorNodeIter {
         self.louds.child_to_ancestors(node_num)
     }
+
+    pub(crate) fn child_to_parent(&self, node_num: LoudsNodeNum) -> LoudsNodeNum {
+        let index = self.louds.node_num_to_index(node_num);
+        self.louds.child_to_parent(index)
+    }
 }
 
-impl<Label, Value, C> FromIterator<(C, Value)> for Trie<Label, Value>
+impl<Token, Value, L> FromIterator<(L, Value)> for Trie<Token, Value>
 where
-    C: AsRef<[Label]>,
-    Label: Ord + Clone,
+    L: Label<Token>,
+    Token: Ord + Clone,
 {
     fn from_iter<T>(iter: T) -> Self
     where
         Self: Sized,
-        T: IntoIterator<Item = (C, Value)>,
+        T: IntoIterator<Item = (L, Value)>,
     {
         let mut builder = super::TrieBuilder::new();
         for (k, v) in iter {
-            builder.push(k, v)
+            builder.insert(k, v)
         }
         builder.build()
     }
@@ -261,31 +306,35 @@ mod search_tests {
     use std::iter::FromIterator;
 
     fn build_trie() -> Trie<u8, u8> {
-        let mut builder = TrieBuilder::new();
-        builder.push("a", 0);
-        builder.push("app", 1);
-        builder.push("apple", 2);
-        builder.push("better", 3);
-        builder.push("application", 4);
-        builder.push("アップル🍎", 5);
+        let mut builder: TrieBuilder<u8, u8> = TrieBuilder::new();
+        builder.insert("a", 0);
+        builder.insert("app", 1);
+        builder.insert("apple", 2);
+        builder.insert("better", 3);
+        builder.insert("application", 4);
+        builder.insert("アップル🍎", 5);
         builder.build()
     }
 
     fn build_trie2() -> Trie<char, u8> {
         let mut builder: TrieBuilder<char, u8> = TrieBuilder::new();
-        builder.insert("a".chars(), 0);
-        builder.insert("app".chars(), 1);
-        builder.insert("apple".chars(), 2);
-        builder.insert("better".chars(), 3);
-        builder.insert("application".chars(), 4);
-        builder.insert("アップル🍎".chars(), 5);
+        builder.insert("a", 0);
+        builder.insert("app", 1);
+        builder.insert("apple", 2);
+        builder.insert("better", 3);
+        builder.insert("application", 4);
+        builder.insert("アップル🍎", 5);
         builder.build()
     }
 
     #[test]
     fn sanity_check() {
         let trie = build_trie();
-        let v: Vec<(String, &u8)> = trie.predictive_search("apple").collect();
+        let v: Vec<(String, &u8)> = trie
+            .starts_with("apple")
+            .pairs::<String>()
+            .filter_map(Result::ok)
+            .collect();
         assert_eq!(v, vec![("apple".to_string(), &2)]);
     }
 
@@ -298,10 +347,10 @@ mod search_tests {
     #[test]
     fn value_mut() {
         let mut trie = build_trie();
-        assert_eq!(trie.exact_match("apple"), Some(&2));
-        let v = trie.exact_match_mut("apple").unwrap();
+        assert_eq!(trie.get_value("apple"), Some(&2));
+        let v = trie.get_value_mut("apple").unwrap();
         *v = 10;
-        assert_eq!(trie.exact_match("apple"), Some(&10));
+        assert_eq!(trie.get_value("apple"), Some(&10));
     }
 
     #[test]
@@ -313,7 +362,7 @@ mod search_tests {
             ("better", 3),
             ("application", 4),
         ]);
-        assert_eq!(trie.exact_match("application"), Some(&4));
+        assert_eq!(trie.get_value("application"), Some(&4));
     }
 
     #[test]
@@ -329,22 +378,26 @@ mod search_tests {
         ]
         .into_iter()
         .collect();
-        assert_eq!(trie.exact_match("application"), Some(&4));
+        assert_eq!(trie.get_value("application"), Some(&4));
     }
 
     #[test]
     fn use_empty_queries() {
         let trie = build_trie();
-        assert!(trie.exact_match("").is_none());
-        let _ = trie.predictive_search::<String, _>("").next();
-        let _ = trie.postfix_search::<String, _>("").next();
-        let _ = trie.common_prefix_search::<String, _>("").next();
+        assert!(trie.get_value("").is_none());
+        let _ = trie.starts_with("").next();
+        let _ = trie.suffixes_of("").next();
+        let _ = trie.prefixes_of("").next();
     }
 
     #[test]
     fn insert_order_dependent() {
-        let trie = Trie::from_iter([("a", 0), ("app", 1), ("apple", 2)]);
-        let results: Vec<(String, &u8)> = trie.iter().collect();
+        let trie: Trie<u8, u8> = Trie::from_iter([("a", 0), ("app", 1), ("apple", 2)]);
+        let results: Vec<(String, &u8)> = trie
+            .iter()
+            .pairs::<String>()
+            .filter_map(Result::ok)
+            .collect();
         assert_eq!(
             results,
             [
@@ -354,8 +407,12 @@ mod search_tests {
             ]
         );
 
-        let trie = Trie::from_iter([("a", 0), ("apple", 2), ("app", 1)]);
-        let results: Vec<(String, &u8)> = trie.iter().collect();
+        let trie: Trie<u8, u8> = Trie::from_iter([("a", 0), ("apple", 2), ("app", 1)]);
+        let results: Vec<(String, &u8)> = trie
+            .iter()
+            .pairs::<String>()
+            .filter_map(Result::ok)
+            .collect();
         assert_eq!(
             results,
             [
@@ -372,9 +429,9 @@ mod search_tests {
             $(
                 #[test]
                 fn $name() {
-                    let (query, expected_match) = $value;
+                    let (label, expected_match) = $value;
                     let trie = super::build_trie();
-                    let result = trie.exact_match(query);
+                    let result = trie.get_value(label);
                     assert_eq!(result, expected_match);
                 }
             )*
@@ -399,9 +456,9 @@ mod search_tests {
             $(
                 #[test]
                 fn $name() {
-                    let (query, expected_match) = $value;
+                    let (label, expected_match) = $value;
                     let trie = super::build_trie();
-                    let result = trie.is_prefix(query);
+                    let result = trie.get(label).filter(|n| n.is_prefix()).is_some();
                     assert_eq!(result, expected_match);
                 }
             )*
@@ -421,15 +478,55 @@ mod search_tests {
         }
     }
 
+    mod children_tests {
+        macro_rules! parameterized_tests {
+            ($($name:ident: $value:expr,)*) => {
+            $(
+                #[test]
+                fn $name() {
+                    let (label, expected_match) = $value;
+                    let trie = super::build_trie();
+                    let result = trie.get(label).map(|n| n.children().count());
+                    assert_eq!(result, expected_match);
+                }
+            )*
+            }
+        }
+
+        parameterized_tests! {
+            t1: ("a", Some(1)),
+            t2: ("app", Some(1)),
+            t3: ("apple", Some(0)),
+            t4: ("application", Some(0)),
+            t5: ("better", Some(0)),
+            t6: ("アップル🍎", Some(0)),
+            t7: ("appl", Some(2)),
+            t8: ("appler", None),
+            t9: ("アップル", Some(1)),
+        }
+
+        #[test]
+        fn t10() {
+            let trie = super::build_trie();
+            let result: Vec<_> = trie
+                .get("appl")
+                .unwrap()
+                .children()
+                .map(|n| *n.token())
+                .collect();
+            assert_eq!(result, vec![b'e', b'i']);
+        }
+    }
+
     mod longest_prefix_tests {
         macro_rules! parameterized_tests {
             ($($name:ident: $value:expr,)*) => {
             $(
                 #[test]
                 fn $name() {
-                    let (query, expected_match) = $value;
+                    let (label, expected_match) = $value;
                     let trie = super::build_trie();
-                    let result: Option<String> = trie.longest_prefix(query);
+                    let result: Option<String> = trie.path_of(label).and_then(|n| n.label::<String>().ok());
                     let expected_match = expected_match.map(str::to_string);
                     assert_eq!(result, expected_match);
                 }
@@ -441,7 +538,7 @@ mod search_tests {
             t1: ("a", Some("a")),
             t2: ("ap", Some("app")),
             t3: ("app", Some("app")),
-            t4: ("appl", Some("appl")),
+            t4: ("appl", None),
             t5: ("appli", Some("application")),
             t6: ("b", Some("better")),
             t7: ("アップル🍎", Some("アップル🍎")),
@@ -453,15 +550,15 @@ mod search_tests {
         }
     }
 
-    mod predictive_search_tests {
+    mod starts_with_tests {
         macro_rules! parameterized_tests {
             ($($name:ident: $value:expr,)*) => {
             $(
                 #[test]
                 fn $name() {
-                    let (query, expected_results) = $value;
+                    let (label, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results: Vec<(String, &u8)> = trie.predictive_search(query).collect();
+                    let results: Vec<(String, &u8)> = trie.starts_with(label).pairs::<String>().filter_map(Result::ok).collect();
                     let expected_results: Vec<(String, &u8)> = expected_results.iter().map(|s| (s.0.to_string(), &s.1)).collect();
                     assert_eq!(results, expected_results);
                 }
@@ -480,17 +577,44 @@ mod search_tests {
         }
     }
 
-    mod common_prefix_search_tests {
+    mod starts_with_pairs_tests {
         macro_rules! parameterized_tests {
             ($($name:ident: $value:expr,)*) => {
             $(
                 #[test]
                 fn $name() {
-                    let (query, expected_results) = $value;
+                    let (label, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results: Vec<(String, &u8)> = trie.common_prefix_search(query).collect();
+                    let results: Vec<(String, &u8)> = trie.starts_with_pairs::<String>(label).collect::<Result<_, _>>().unwrap();
                     let expected_results: Vec<(String, &u8)> = expected_results.iter().map(|s| (s.0.to_string(), &s.1)).collect();
                     assert_eq!(results, expected_results);
+                }
+            )*
+            }
+        }
+
+        parameterized_tests! {
+            t1: ("a", vec![("a", 0), ("app", 1), ("apple", 2), ("application", 4)]),
+            t2: ("app", vec![("app", 1), ("apple", 2), ("application", 4)]),
+            t3: ("appl", vec![("apple", 2), ("application", 4)]),
+            t4: ("apple", vec![("apple", 2)]),
+            t5: ("b", vec![("better", 3)]),
+            t6: ("c", Vec::<(&str, u8)>::new()),
+            t7: ("アップ", vec![("アップル🍎", 5)]),
+        }
+    }
+
+    mod prefixes_of_pairs_tests {
+        macro_rules! parameterized_tests {
+            ($($name:ident: $value:expr,)*) => {
+            $(
+                #[test]
+                fn $name() {
+                    let (label, expected_results) = $value;
+                    let trie = super::build_trie();
+                    let results: Result<Vec<(String, &u8)>, _> = trie.prefixes_of_pairs::<String>(label).collect();
+                    let expected_results: Vec<(String, &u8)> = expected_results.iter().map(|s| (s.0.to_string(), &s.1)).collect();
+                    assert_eq!(results, Ok(expected_results));
                 }
             )*
             }
@@ -508,15 +632,43 @@ mod search_tests {
         }
     }
 
-    mod postfix_search_tests {
+    mod suffixes_of_tests {
         macro_rules! parameterized_tests {
             ($($name:ident: $value:expr,)*) => {
             $(
                 #[test]
                 fn $name() {
-                    let (query, expected_results) = $value;
+                    let (label, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results: Vec<(String, &u8)> = trie.postfix_search(query).collect();
+                    let results: Vec<(String, &u8)> = trie.suffixes_of(label).pairs::<String>().filter_map(Result::ok).collect();
+                    let expected_results: Vec<(String, &u8)> = expected_results.iter().map(|s| (s.0.to_string(), &s.1)).collect();
+                    assert_eq!(results, expected_results);
+                }
+            )*
+            }
+        }
+
+        parameterized_tests! {
+            t1: ("a", vec![("pp", 1), ("pple", 2), ("pplication", 4)]),
+            t2: ("ap", vec![("p", 1), ("ple", 2), ("plication", 4)]),
+            t3: ("appl", vec![("e", 2), ("ication", 4)]),
+            t4: ("appler", Vec::<(&str, u8)>::new()),
+            t5: ("bette", vec![("r", 3)]),
+            t6: ("betterment", Vec::<(&str, u8)>::new()),
+            t7: ("c", Vec::<(&str, u8)>::new()),
+            t8: ("アップル🍎🍏", Vec::<(&str, u8)>::new()),
+        }
+    }
+
+    mod suffixes_of_pairs_tests {
+        macro_rules! parameterized_tests {
+            ($($name:ident: $value:expr,)*) => {
+            $(
+                #[test]
+                fn $name() {
+                    let (label, expected_results) = $value;
+                    let trie = super::build_trie();
+                    let results: Vec<(String, &u8)> = trie.suffixes_of_pairs::<String>(label).filter_map(Result::ok).collect();
                     let expected_results: Vec<(String, &u8)> = expected_results.iter().map(|s| (s.0.to_string(), &s.1)).collect();
                     assert_eq!(results, expected_results);
                 }
@@ -542,10 +694,9 @@ mod search_tests {
             $(
                 #[test]
                 fn $name() {
-                    let (query, expected_results) = $value;
+                    let (label, expected_results) = $value;
                     let trie = super::build_trie2();
-                    let chars: Vec<char> = query.chars().collect();
-                    let results: Vec<(String, &u8)> = trie.postfix_search(chars).collect();
+                    let results: Vec<(String, &u8)> = trie.suffixes_of(label).pairs::<String>().collect();
                     let expected_results: Vec<(String, &u8)> = expected_results.iter().map(|s| (s.0.to_string(), &s.1)).collect();
                     assert_eq!(results, expected_results);
                 }

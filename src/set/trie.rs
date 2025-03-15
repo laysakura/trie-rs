@@ -1,114 +1,176 @@
 use crate::inc_search::IncSearch;
-use crate::iter::{Keys, KeysExt, PostfixIter, PrefixIter, SearchIter};
+use crate::iter::{Keys, KeysExt, Labels};
+use crate::label::Label;
 use crate::map;
-use crate::try_collect::TryFromIterator;
+use crate::search::{PostfixCollect, PostfixIter, PrefixCollect, PrefixIter};
+use crate::try_from::TryFromTokens;
 use std::iter::FromIterator;
 
 #[cfg(feature = "mem_dbg")]
 use mem_dbg::MemDbg;
 
+use super::KeyRef;
+
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "mem_dbg", derive(mem_dbg::MemDbg, mem_dbg::MemSize))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// A trie for sequences of the type `Label`.
-pub struct Trie<Label>(pub map::Trie<Label, ()>);
+pub struct Trie<Token>(pub map::Trie<Token, ()>);
 
-impl<Label: Ord> Trie<Label> {
-    /// Return true if `query` is an exact match.
+impl<Token: Ord> Trie<Token> {
+    /// Get a key reference for a label.
+    pub fn get(&self, label: impl Label<Token>) -> Option<KeyRef<'_, Token>> {
+        self.0.get(label).map(KeyRef)
+    }
+
+    /// Return true if `label` is an exact match.
     ///
     /// # Arguments
-    /// * `query` - The query to search for.
+    /// * `label` - The label to search for.
     ///
     /// # Examples
     /// In the following example we illustrate how to query an exact match.
     ///
     /// ```rust
-    /// use trie_rs::Trie;
+    /// use trie_rs::set::Trie;
     ///
-    /// let trie = Trie::from_iter(["a", "app", "apple", "better", "application"]);
+    /// let trie = Trie::<u8>::from_iter(["a", "app", "apple", "better", "application"]);
     ///
-    /// assert!(trie.exact_match("application"));
-    /// assert!(trie.exact_match("app"));
-    /// assert!(!trie.exact_match("appla"));
+    /// assert!(trie.is_exact("application"));
+    /// assert!(trie.is_exact("app"));
+    /// assert!(!trie.is_exact("appla"));
     ///
     /// ```
-    pub fn exact_match(&self, query: impl AsRef<[Label]>) -> bool {
-        self.0.exact_match(query).is_some()
+    pub fn is_exact(&self, label: impl Label<Token>) -> bool {
+        self.0.get_value(label).is_some()
     }
 
-    /// Return the common prefixes of `query`.
+    /// Return true if `label` is a prefix.
+    ///
+    /// Note: A prefix may be an exact match or not, and an exact match may be a prefix or not.
+    pub fn is_prefix(&self, label: impl Label<Token>) -> bool {
+        self.0.get(label).map(|n| n.is_prefix()).unwrap_or_default()
+    }
+
+    /// Return the common prefixes of `label`.
     ///
     /// # Arguments
-    /// * `query` - The query to search for.
+    /// * `label` - The label to search for.
     ///
     /// # Examples
-    /// In the following example we illustrate how to query the common prefixes of a query string.
+    /// In the following example we illustrate how to query the common prefixes of a label.
     ///
     /// ```rust
-    /// use trie_rs::Trie;
+    /// use trie_rs::set::Trie;
     ///
-    /// let trie = Trie::from_iter(["a", "app", "apple", "better", "application"]);
+    /// let trie = Trie::<u8>::from_iter(["a", "app", "apple", "better", "application"]);
     ///
-    /// let results: Vec<String> = trie.common_prefix_search("application").collect();
+    /// let results: Vec<_> = trie.prefixes_of("application").labels::<String>().collect::<Result<_, _>>().unwrap();
     ///
     /// assert_eq!(results, vec!["a", "app", "application"]);
     ///
     /// ```
-    pub fn common_prefix_search<C, M>(
+    pub fn prefixes_of<L: Label<Token>>(
         &self,
-        query: impl AsRef<[Label]>,
-    ) -> Keys<PrefixIter<'_, Label, (), C, M>>
+        label: L,
+    ) -> Keys<PrefixIter<'_, Token, (), L::IntoTokens>> {
+        // TODO: We could return Keys iterators instead of collecting.
+        self.0.prefixes_of(label).keys()
+    }
+
+    /// TODO
+    pub fn prefixes_of_labels<L>(
+        &self,
+        label: impl Label<Token>,
+    ) -> Labels<PrefixCollect<'_, Token, (), L>, L, Token>
     where
-        C: TryFromIterator<Label, M>,
-        Label: Clone,
+        Token: Clone,
+        L: TryFromTokens<Token>,
     {
         // TODO: We could return Keys iterators instead of collecting.
-        self.0.common_prefix_search(query).keys()
+        Labels::new(self.0.prefixes_of_pairs(label))
     }
 
-    /// Return all entries that match `query`.
-    pub fn predictive_search<C, M>(
-        &self,
-        query: impl AsRef<[Label]>,
-    ) -> Keys<SearchIter<'_, Label, (), C, M>>
+    /// Return all entries that start with `label`.
+    pub fn starts_with(&self, label: impl Label<Token>) -> Keys<PostfixIter<'_, Token, ()>>
     where
-        C: TryFromIterator<Label, M> + Clone,
-        Label: Clone,
+        Token: Clone,
     {
-        self.0.predictive_search(query).keys()
+        self.0.starts_with(label).keys()
     }
 
-    /// Return the postfixes of all entries that match `query`.
+    /// Return all labels that start with `label`.
+    pub fn starts_with_labels<L>(
+        &self,
+        label: impl Label<Token>,
+    ) -> Labels<PostfixCollect<'_, Token, (), L>, L, Token>
+    where
+        Token: Clone,
+        L: TryFromTokens<Token>,
+    {
+        Labels::new(self.0.starts_with_pairs(label))
+    }
+
+    /// Return the suffixes of all entries that match `label`.
     ///
     /// # Arguments
-    /// * `query` - The query to search for.
+    /// * `label` - The label to search for.
     ///
     /// # Examples
-    /// In the following example we illustrate how to query the postfixes of a query string.
+    /// In the following example we illustrate how to query the suffixes of a label.
     ///
     /// ```rust
-    /// use trie_rs::Trie;
+    /// use trie_rs::set::Trie;
     ///
-    /// let trie = Trie::from_iter(["a", "app", "apple", "better", "application"]);
+    /// let trie = Trie::<u8>::from_iter(["a", "app", "apple", "better", "application"]);
     ///
-    /// let results: Vec<String> = trie.postfix_search("application").collect();
+    /// let results: Vec<_> = trie.suffixes_of("application").labels::<String>().collect::<Result<_, _>>().unwrap();
     ///
     /// assert!(results.is_empty());
     ///
-    /// let results: Vec<String> = trie.postfix_search("app").collect();
+    /// let results: Vec<_> = trie.suffixes_of("app").labels::<String>().collect::<Result<_, _>>().unwrap();
     ///
     /// assert_eq!(results, vec!["le", "lication"]);
     ///
     /// ```
-    pub fn postfix_search<C, M>(
-        &self,
-        query: impl AsRef<[Label]>,
-    ) -> Keys<PostfixIter<'_, Label, (), C, M>>
+    pub fn suffixes_of(&self, label: impl Label<Token>) -> Keys<PostfixIter<'_, Token, ()>>
     where
-        C: TryFromIterator<Label, M>,
-        Label: Clone,
+        Token: Clone,
     {
-        self.0.postfix_search(query).keys()
+        self.0.suffixes_of(label).keys()
+    }
+
+    /// Return the suffixes of all entries that match `label` as labels.
+    ///
+    /// # Arguments
+    /// * `label` - The label to search for.
+    ///
+    /// # Examples
+    /// In the following example we illustrate how to query the suffixes of a label.
+    ///
+    /// ```rust
+    /// use trie_rs::set::Trie;
+    ///
+    /// let trie = Trie::<u8>::from_iter(["a", "app", "apple", "better", "application"]);
+    ///
+    /// let results: Vec<_> = trie.suffixes_of("application").labels::<String>().collect::<Result<_, _>>().unwrap();
+    ///
+    /// assert!(results.is_empty());
+    ///
+    /// let results: Vec<_> = trie.suffixes_of("app").labels::<String>().collect::<Result<_, _>>().unwrap();
+    ///
+    /// assert_eq!(results, vec!["le", "lication"]);
+    ///
+    /// ```
+    pub fn suffixes_of_labels<L>(
+        &self,
+        label: impl Label<Token>,
+    ) -> Labels<PostfixCollect<'_, Token, (), L>, L, Token>
+    where
+        Token: Clone,
+        L: TryFromTokens<Token>,
+    {
+        Labels::new(self.0.suffixes_of_pairs(label))
     }
 
     /// Returns an iterator across all keys in the trie.
@@ -119,60 +181,48 @@ impl<Label: Ord> Trie<Label> {
     /// lexicographical order.
     ///
     /// ```rust
-    /// use trie_rs::Trie;
+    /// use trie_rs::set::Trie;
     ///
-    /// let trie = Trie::from_iter(["a", "app", "apple", "better", "application"]);
+    /// let trie = Trie::<u8>::from_iter(["a", "app", "apple", "better", "application"]);
     ///
-    /// let results: Vec<String> = trie.iter().collect();
+    /// let results: Vec<_> = trie.iter().labels::<String>().collect::<Result<_, _>>().unwrap();
     ///
     /// assert_eq!(results, vec!["a", "app", "apple", "application", "better"]);
     ///
     /// ```
-    pub fn iter<C, M>(&self) -> Keys<PostfixIter<'_, Label, (), C, M>>
+    pub fn iter(&self) -> Keys<PostfixIter<'_, Token, ()>>
     where
-        C: TryFromIterator<Label, M>,
-        Label: Clone,
+        Token: Clone,
     {
-        self.postfix_search([])
+        self.0.iter().keys()
     }
 
-    /// Create an incremental search. Useful for interactive applications. See
-    /// [crate::inc_search] for details.
-    pub fn inc_search(&self) -> IncSearch<'_, Label, ()> {
+    /// Create an incremental search.
+    /// Useful for interactive applications.
+    /// See [crate::inc_search] for details.
+    pub fn inc_search(&self) -> IncSearch<'_, Token, ()> {
         IncSearch::new(&self.0)
     }
 
-    /// Return true if `query` is a prefix.
-    ///
-    /// Note: A prefix may be an exact match or not, and an exact match may be a
-    /// prefix or not.
-    pub fn is_prefix(&self, query: impl AsRef<[Label]>) -> bool {
-        self.0.is_prefix(query)
-    }
-
-    /// Return the longest shared prefix of `query`.
-    pub fn longest_prefix<C, M>(&self, query: impl AsRef<[Label]>) -> Option<C>
-    where
-        C: TryFromIterator<Label, M>,
-        Label: Clone,
-    {
-        self.0.longest_prefix(query)
+    /// Return the longest shared prefix of `label`.
+    pub fn path_of(&self, label: impl Label<Token>) -> Option<KeyRef<'_, Token>> {
+        self.0.path_of(label).map(KeyRef)
     }
 }
 
-impl<Label, C> FromIterator<C> for Trie<Label>
+impl<Token, L> FromIterator<L> for Trie<Token>
 where
-    C: AsRef<[Label]>,
-    Label: Ord + Clone,
+    L: Label<Token>,
+    Token: Ord + Clone,
 {
     fn from_iter<T>(iter: T) -> Self
     where
         Self: Sized,
-        T: IntoIterator<Item = C>,
+        T: IntoIterator<Item = L>,
     {
         let mut builder = super::TrieBuilder::new();
         for k in iter {
-            builder.push(k)
+            builder.insert(k)
         }
         builder.build()
     }
@@ -180,31 +230,31 @@ where
 
 #[cfg(test)]
 mod search_tests {
-    use crate::{Trie, TrieBuilder};
+    use crate::set::{Trie, TrieBuilder};
     use std::iter::FromIterator;
 
     fn build_trie() -> Trie<u8> {
         let mut builder = TrieBuilder::new();
-        builder.push("a");
-        builder.push("app");
-        builder.push("apple");
-        builder.push("better");
-        builder.push("application");
-        builder.push("アップル🍎");
+        builder.insert("a");
+        builder.insert("app");
+        builder.insert("apple");
+        builder.insert("better");
+        builder.insert("application");
+        builder.insert("アップル🍎");
         builder.build()
     }
 
     #[test]
     fn trie_from_iter() {
         let trie = Trie::<u8>::from_iter(["a", "app", "apple", "better", "application"]);
-        assert!(trie.exact_match("application"));
+        assert!(trie.is_exact("application"));
     }
 
     #[test]
     fn collect_a_trie() {
         let trie: Trie<u8> =
             IntoIterator::into_iter(["a", "app", "apple", "better", "application"]).collect();
-        assert!(trie.exact_match("application"));
+        assert!(trie.is_exact("application"));
     }
 
     #[test]
@@ -218,7 +268,7 @@ mod search_tests {
     fn print_debug() {
         let trie: Trie<u8> = ["a"].into_iter().collect();
         assert_eq!(format!("{:?}", trie),
-"Trie(Trie { louds: Louds { lbs: Fid { byte_vec: [160], bit_len: 5, chunks: Chunks { chunks: [Chunk { value: 2, blocks: Blocks { blocks: [Block { value: 1, length: 1 }, Block { value: 1, length: 1 }, Block { value: 2, length: 1 }, Block { value: 2, length: 1 }], blocks_cnt: 4 } }, Chunk { value: 2, blocks: Blocks { blocks: [Block { value: 0, length: 1 }], blocks_cnt: 1 } }], chunks_cnt: 2 }, table: PopcountTable { bit_length: 1, table: [0, 1] } } }, trie_labels: [TrieLabel { label: 97, value: Some(()) }] })"
+"Trie(Trie { louds: Louds { lbs: Fid { byte_vec: [160], bit_len: 5, chunks: Chunks { chunks: [Chunk { value: 2, blocks: Blocks { blocks: [Block { value: 1, length: 1 }, Block { value: 1, length: 1 }, Block { value: 2, length: 1 }, Block { value: 2, length: 1 }], blocks_cnt: 4 } }, Chunk { value: 2, blocks: Blocks { blocks: [Block { value: 0, length: 1 }], blocks_cnt: 1 } }], chunks_cnt: 2 }, table: PopcountTable { bit_length: 1, table: [0, 1] } } }, nodes: [Node { token: 97, value: Some(()) }] })"
         );
     }
 
@@ -226,21 +276,21 @@ mod search_tests {
     #[test]
     fn print_debug_builder() {
 
-        let mut builder = TrieBuilder::new();
-        builder.push("a");
-        builder.push("app");
+        let mut builder: TrieBuilder<u8> = TrieBuilder::new();
+        builder.insert("a");
+        builder.insert("app");
         assert_eq!(format!("{:?}", builder),
-"TrieBuilder(TrieBuilder { naive_trie: Root(NaiveTrieRoot { children: [IntermOrLeaf(NaiveTrieIntermOrLeaf { children: [IntermOrLeaf(NaiveTrieIntermOrLeaf { children: [IntermOrLeaf(NaiveTrieIntermOrLeaf { children: [], label: 112, value: Some(()) })], label: 112, value: None })], label: 97, value: Some(()) })] }) })"
+"TrieBuilder(TrieBuilder { naive_trie: Root(NaiveTrieRoot { children: [IntermOrLeaf(NaiveTrieIntermOrLeaf { children: [IntermOrLeaf(NaiveTrieIntermOrLeaf { children: [IntermOrLeaf(NaiveTrieIntermOrLeaf { children: [], token: 112, value: Some(()) })], token: 112, value: None })], token: 97, value: Some(()) })] }) })"
         );
     }
 
     #[test]
     fn use_empty_queries() {
         let trie = build_trie();
-        assert!(!trie.exact_match(""));
-        let _ = trie.predictive_search::<String, _>("").next();
-        let _ = trie.postfix_search::<String, _>("").next();
-        let _ = trie.common_prefix_search::<String, _>("").next();
+        assert!(!trie.is_exact(""));
+        let _ = trie.starts_with("").next();
+        let _ = trie.suffixes_of("").next();
+        let _ = trie.prefixes_of("").next();
     }
 
     #[cfg(feature = "mem_dbg")]
@@ -293,9 +343,9 @@ mod search_tests {
             $(
                 #[test]
                 fn $name() {
-                    let (query, expected_match) = $value;
+                    let (label, expected_match) = $value;
                     let trie = super::build_trie();
-                    let result = trie.exact_match(query);
+                    let result = trie.is_exact(label);
                     assert_eq!(result, expected_match);
                 }
             )*
@@ -320,9 +370,9 @@ mod search_tests {
             $(
                 #[test]
                 fn $name() {
-                    let (query, expected_match) = $value;
+                    let (label, expected_match) = $value;
                     let trie = super::build_trie();
-                    let result = trie.is_prefix(query);
+                    let result = trie.is_prefix(label);
                     assert_eq!(result, expected_match);
                 }
             )*
@@ -351,9 +401,9 @@ mod search_tests {
             $(
                 #[test]
                 fn $name() {
-                    let (query, expected_results) = $value;
+                    let (label, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results: Vec<String> = trie.predictive_search(query).collect();
+                    let results: Vec<String> = trie.starts_with(label).labels::<String>().collect::<Result<_, _>>().unwrap();
                     assert_eq!(results, expected_results);
                 }
             )*
@@ -377,9 +427,9 @@ mod search_tests {
             $(
                 #[test]
                 fn $name() {
-                    let (query, expected_results) = $value;
+                    let (label, expected_results) = $value;
                     let trie = super::build_trie();
-                    let results: Vec<String> = trie.common_prefix_search(query).collect();
+                    let results: Vec<String> = trie.prefixes_of(label).labels::<String>().collect::<Result<_, _>>().unwrap();
                     assert_eq!(results, expected_results);
                 }
             )*
