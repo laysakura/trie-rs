@@ -49,18 +49,19 @@ impl<Label: Ord> Trie<Label> {
     ///
     /// let trie = Trie::from_iter(["a", "app", "apple", "better", "application"]);
     ///
-    /// let results: Vec<String> = trie.common_prefix_search("application").collect();
+    /// let results: Vec<String> = trie.common_prefix_search("application".bytes()).collect();
     ///
     /// assert_eq!(results, vec!["a", "app", "application"]);
     ///
     /// ```
-    pub fn common_prefix_search<C, M>(
+    pub fn common_prefix_search<C, M, I>(
         &self,
-        query: impl AsRef<[Label]>,
-    ) -> Keys<PrefixIter<'_, Label, (), C, M>>
+        query: I,
+    ) -> Keys<PrefixIter<'_, Label, I::IntoIter, (), C, M>>
     where
         C: TryFromIterator<Label, M>,
         Label: Clone,
+        I: IntoIterator<Item = Label>,
     {
         // TODO: We could return Keys iterators instead of collecting.
         self.0.common_prefix_search(query).keys()
@@ -146,7 +147,7 @@ impl<Label: Ord> Trie<Label> {
     ///
     /// Note: A prefix may be an exact match or not, and an exact match may be a
     /// prefix or not.
-    pub fn is_prefix(&self, query: impl AsRef<[Label]>) -> bool {
+    pub fn is_prefix(&self, query: impl IntoIterator<Item = Label>) -> bool {
         self.0.is_prefix(query)
     }
 
@@ -191,6 +192,17 @@ mod search_tests {
         builder.push("better");
         builder.push("application");
         builder.push("アップル🍎");
+        builder.build()
+    }
+
+    fn build_trie2() -> Trie<char> {
+        let mut builder = TrieBuilder::new();
+        builder.insert("a".chars());
+        builder.insert("app".chars());
+        builder.insert("apple".chars());
+        builder.insert("better".chars());
+        builder.insert("application".chars());
+        builder.insert("アップル🍎".chars());
         builder.build()
     }
 
@@ -240,7 +252,9 @@ mod search_tests {
         assert!(!trie.exact_match(""));
         let _ = trie.predictive_search::<String, _>("").next();
         let _ = trie.postfix_search::<String, _>("").next();
-        let _ = trie.common_prefix_search::<String, _>("").next();
+        let _ = trie
+            .common_prefix_search::<String, _, _>(&mut "".bytes())
+            .next();
     }
 
     #[cfg(feature = "mem_dbg")]
@@ -322,7 +336,7 @@ mod search_tests {
                 fn $name() {
                     let (query, expected_match) = $value;
                     let trie = super::build_trie();
-                    let result = trie.is_prefix(query);
+                    let result = trie.is_prefix(query.bytes());
                     assert_eq!(result, expected_match);
                 }
             )*
@@ -378,8 +392,8 @@ mod search_tests {
                 #[test]
                 fn $name() {
                     let (query, expected_results) = $value;
-                    let trie = super::build_trie();
-                    let results: Vec<String> = trie.common_prefix_search(query).collect();
+                    let trie = super::build_trie2();
+                    let results: Vec<String> = trie.common_prefix_search(&mut query.chars()).collect();
                     assert_eq!(results, expected_results);
                 }
             )*
