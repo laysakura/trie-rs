@@ -1,6 +1,6 @@
 [package]
 name = "trie-rs"
-version = "0.4.2"
+version = "0.4.3"
 authors = ["Sho Nakatani <lay.sakura@gmail.com>", "Shane Celis <shane.celis@gmail.com>"]
 description = "Memory efficient trie (prefix tree) and map library based on LOUDS"
 readme = "README.md"
@@ -12,8 +12,8 @@ categories = ["compression", "data-structures"]
 edition = "2021"
 
 [dependencies]
-louds-rs = "0.7"
-mem_dbg = { version = "0.1.4", optional = true }
+louds-rs = "0.7.1"
+mem_dbg = { version = "0.2.2", optional = true }
 serde = { version = "1.0", features = ["derive"], optional = true }
 
 [dev-dependencies]
