@@ -3,9 +3,12 @@
 #![doc = include_str!("../README.md")]
 
 pub mod inc_search;
-mod internal_data_structure;
+mod internal;
 pub mod iter;
+pub mod label;
 pub mod map;
-mod trie;
+pub mod search;
+pub mod set;
+pub mod trie_ref;
 pub mod try_collect;
-pub use trie::{Trie, TrieBuilder};
+pub mod try_from;

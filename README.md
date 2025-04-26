@@ -29,28 +29,35 @@ trie-rs = "0.4.2"
 ### Usage Overview
 ```rust
 use std::str;
-use trie_rs::TrieBuilder;
+use trie_rs::set::TrieBuilder;
 
-let mut builder = TrieBuilder::new();  // Inferred `TrieBuilder<u8>` automatically
-builder.push("すし");
-builder.push("すしや");
-builder.push("すしだね");
-builder.push("すしづめ");
-builder.push("すしめし");
-builder.push("すしをにぎる");
-builder.push("すし");  // Word `push`ed twice is just ignored.
-builder.push("🍣");
+let mut builder = TrieBuilder::<u8>::new();
+builder.insert("すし");
+builder.insert("すしや");
+builder.insert("すしだね");
+builder.insert("すしづめ");
+builder.insert("すしめし");
+builder.insert("すしをにぎる");
+builder.insert("すし");  // Word `push`ed twice is just ignored.
+builder.insert("🍣");
 
 let trie = builder.build();
 
-// exact_match(): Find a word exactly match to query.
-assert_eq!(trie.exact_match("すし"), true);
-assert_eq!(trie.exact_match("🍣"), true);
-assert_eq!(trie.exact_match("🍜"), false);
+// is_exact(): Find a node that exactly matches a label.
+assert_eq!(trie.is_exact("すし"), true);
+assert_eq!(trie.is_exact("🍣"), true);
+assert_eq!(trie.is_exact("🍜"), false);
 
-// predictive_search(): Find words which include `query` as their prefix.
-let results_in_u8s: Vec<Vec<u8>> = trie.predictive_search("すし").collect();
-let results_in_str: Vec<String> = trie.predictive_search("すし").collect();
+// start_with(): Find words which include the label as their prefix.
+let results_in_u8s: Vec<_> = trie
+    .starts_with("すし")
+    .labels::<Vec<_>>()
+    .collect();
+let results_in_str: Vec<_> = trie
+    .starts_with("すし")
+    .labels::<String>()
+    .filter_map(Result::ok)
+    .collect();
 assert_eq!(
     results_in_str,
     vec![
@@ -63,9 +70,16 @@ assert_eq!(
     ]  // Sorted by `Vec<u8>`'s order
 );
 
-// common_prefix_search(): Find words which is included in `query`'s prefix.
-let results_in_u8s: Vec<Vec<u8>> = trie.common_prefix_search("すしや").collect();
-let results_in_str: Vec<String> = trie.common_prefix_search("すしや").collect();
+// prefixes_of(): Find words that are included in a label's prefix.
+let results_in_u8s: Vec<_> = trie
+    .prefixes_of("すしや")
+    .labels::<Vec<_>>()
+    .collect();
+let results_in_str: Vec<_> = trie
+    .prefixes_of("すしや")
+    .labels::<String>()
+    .filter_map(Result::ok)
+    .collect();
 assert_eq!(
     results_in_str,
     vec![
@@ -79,37 +93,38 @@ assert_eq!(
 `TrieBuilder` is implemented using generic type like following:
 
 ```ignore
-impl<Label: Ord> TrieBuilder<Label> {
+impl<Token: Ord> TrieBuilder<Token> {
     ...
-    pub fn push<Arr: AsRef<[Label]>>(&mut self, word: Arr) where Label: Clone { ... }
+    pub fn insert(&mut self, label: impl Label<Token>) { ... }
     ...
 }
 ```
 
-In the above `Usage Overview` example, we used `Label=u8, Arr=&str`. If
-`Label` does not implement `Clone`, use
-[`insert()`][crate::trie::TrieBuilder::insert].
+In the above `Usage Overview` example, we used `Token=u8, Label=&str`.
 
-Here shows other `Label` and `Arr` type examples.
+Here are some other `Token` and `Label` type examples.
 
-#### `Label=&str, Arr=Vec<&str>`
-Say `Label` is English words and `Arr` is English phrases.
+#### `Token=&str, Label=Vec<&str>`
+Say `Token` is English words and `Label` is English phrases.
 
 ```rust
-use trie_rs::TrieBuilder;
+use trie_rs::set::TrieBuilder;
 
 let mut builder = TrieBuilder::new();
-builder.push(vec!["a", "woman"]);
-builder.push(vec!["a", "woman", "on", "the", "beach"]);
-builder.push(vec!["a", "woman", "on", "the", "run"]);
+builder.insert(vec!["a", "woman"]);
+builder.insert(vec!["a", "woman", "on", "the", "beach"]);
+builder.insert(vec!["a", "woman", "on", "the", "run"]);
 
 let trie = builder.build();
 
 assert_eq!(
-    trie.exact_match(vec!["a", "woman", "on", "the", "beach"]),
+    trie.is_exact(vec!["a", "woman", "on", "the", "beach"]),
     true
 );
-let r: Vec<Vec<&str>> = trie.predictive_search(vec!["a", "woman", "on"]).collect();
+
+let r: Vec<_> = trie.starts_with(vec!["a", "woman", "on"])
+    .labels::<Vec<_>>()
+    .collect();
 assert_eq!(
     r,
     vec![
@@ -117,7 +132,11 @@ assert_eq!(
         ["a", "woman", "on", "the", "run"],
     ],
 );
-let s: Vec<Vec<&str>> = trie.common_prefix_search(vec!["a", "woman", "on", "the", "beach"]).collect();
+
+let s: Vec<_> = trie
+    .prefixes_of(vec!["a", "woman", "on", "the", "beach"])
+    .labels::<Vec<_>>()
+    .collect();
 assert_eq!(
     s,
     vec![vec!["a", "woman"], vec!["a", "woman", "on", "the", "beach"]],
@@ -128,30 +147,33 @@ assert_eq!(
 Say `Label` is a digit in Pi (= 3.14...) and Arr is a window to separate pi's digit by 10.
 
 ```rust
-use trie_rs::TrieBuilder;
+use trie_rs::set::TrieBuilder;
 
 let mut builder = TrieBuilder::<u8>::new(); // Pi = 3.14...
 
-builder.push([1, 4, 1, 5, 9, 2, 6, 5, 3, 5]);
-builder.push([8, 9, 7, 9, 3, 2, 3, 8, 4, 6]);
-builder.push([2, 6, 4, 3, 3, 8, 3, 2, 7, 9]);
-builder.push([6, 9, 3, 9, 9, 3, 7, 5, 1, 0]);
-builder.push([5, 8, 2, 0, 9, 7, 4, 9, 4, 4]);
-builder.push([5, 9, 2, 3, 0, 7, 8, 1, 6, 4]);
-builder.push([0, 6, 2, 8, 6, 2, 0, 8, 9, 9]);
-builder.push([8, 6, 2, 8, 0, 3, 4, 8, 2, 5]);
-builder.push([3, 4, 2, 1, 1, 7, 0, 6, 7, 9]);
-builder.push([8, 2, 1, 4, 8, 0, 8, 6, 5, 1]);
-builder.push([3, 2, 8, 2, 3, 0, 6, 6, 4, 7]);
-builder.push([0, 9, 3, 8, 4, 4, 6, 0, 9, 5]);
-builder.push([5, 0, 5, 8, 2, 2, 3, 1, 7, 2]);
-builder.push([5, 3, 5, 9, 4, 0, 8, 1, 2, 8]);
+builder.insert([1, 4, 1, 5, 9, 2, 6, 5, 3, 5]);
+builder.insert([8, 9, 7, 9, 3, 2, 3, 8, 4, 6]);
+builder.insert([2, 6, 4, 3, 3, 8, 3, 2, 7, 9]);
+builder.insert([6, 9, 3, 9, 9, 3, 7, 5, 1, 0]);
+builder.insert([5, 8, 2, 0, 9, 7, 4, 9, 4, 4]);
+builder.insert([5, 9, 2, 3, 0, 7, 8, 1, 6, 4]);
+builder.insert([0, 6, 2, 8, 6, 2, 0, 8, 9, 9]);
+builder.insert([8, 6, 2, 8, 0, 3, 4, 8, 2, 5]);
+builder.insert([3, 4, 2, 1, 1, 7, 0, 6, 7, 9]);
+builder.insert([8, 2, 1, 4, 8, 0, 8, 6, 5, 1]);
+builder.insert([3, 2, 8, 2, 3, 0, 6, 6, 4, 7]);
+builder.insert([0, 9, 3, 8, 4, 4, 6, 0, 9, 5]);
+builder.insert([5, 0, 5, 8, 2, 2, 3, 1, 7, 2]);
+builder.insert([5, 3, 5, 9, 4, 0, 8, 1, 2, 8]);
 
 let trie = builder.build();
 
-assert_eq!(trie.exact_match([5, 3, 5, 9, 4, 0, 8, 1, 2, 8]), true);
+assert_eq!(trie.is_exact([5, 3, 5, 9, 4, 0, 8, 1, 2, 8]), true);
 
-let t: Vec<Vec<u8>> = trie.predictive_search([3]).collect();
+let t: Vec<_> = trie
+    .starts_with([3])
+    .labels::<Vec<_>>()
+    .collect();
 assert_eq!(
     t,
     vec![
@@ -159,7 +181,11 @@ assert_eq!(
         [3, 4, 2, 1, 1, 7, 0, 6, 7, 9],
     ],
 );
-let u: Vec<Vec<u8>> = trie.common_prefix_search([1, 4, 1, 5, 9, 2, 6, 5, 3, 5]).collect();
+
+let u: Vec<_> = trie
+    .prefixes_of([1, 4, 1, 5, 9, 2, 6, 5, 3, 5])
+    .labels::<Vec<_>>()
+    .collect();
 assert_eq!(
     u,
     vec![[1, 4, 1, 5, 9, 2, 6, 5, 3, 5]],
@@ -174,27 +200,27 @@ To store a value with each word, use `trie_rs::map::{Trie, TrieBuilder}`.
 use std::str;
 use trie_rs::map::TrieBuilder;
 
-let mut builder = TrieBuilder::new();  // Inferred `TrieBuilder<u8, u8>` automatically
-builder.push("すし", 0);
-builder.push("すしや", 1);
-builder.push("すしだね", 2);
-builder.push("すしづめ", 3);
-builder.push("すしめし", 4);
-builder.push("すしをにぎる", 5);
-builder.push("すし", 6);  // Word `push`ed twice uses last value.
-builder.push("🍣", 7);
+let mut builder = TrieBuilder::<u8, u8>::new();
+builder.insert("すし", 0);
+builder.insert("すしや", 1);
+builder.insert("すしだね", 2);
+builder.insert("すしづめ", 3);
+builder.insert("すしめし", 4);
+builder.insert("すしをにぎる", 5);
+builder.insert("すし", 6);  // Word `push`ed twice uses last value.
+builder.insert("🍣", 7);
 
 let mut trie = builder.build();
 
-// exact_match(): Find a word exactly match to query.
-assert_eq!(trie.exact_match("すし"), Some(&6));
-assert_eq!(trie.exact_match("🍣"), Some(&7));
-assert_eq!(trie.exact_match("🍜"), None);
+// get_value(): Find the value for an exact match.
+assert_eq!(trie.get_value("すし"), Some(&6));
+assert_eq!(trie.get_value("🍣"), Some(&7));
+assert_eq!(trie.get_value("🍜"), None);
 
 // Values can be modified.
-let v = trie.exact_match_mut("🍣").unwrap();
+let v = trie.get_value_mut("🍣").unwrap();
 *v = 8;
-assert_eq!(trie.exact_match("🍣"), Some(&8));
+assert_eq!(trie.get_value("🍣"), Some(&8));
 ```
 
 ### Incremental Search
@@ -204,36 +230,36 @@ best performance. See [IncSearch][crate::inc_search::IncSearch].
 
 ```rust
 use std::str;
-use trie_rs::{TrieBuilder, inc_search::Answer};
+use trie_rs::{set::TrieBuilder, label::LabelKind};
 
 let mut builder = TrieBuilder::new();  // Inferred `TrieBuilder<u8, u8>` automatically
-builder.push("ab");
-builder.push("すし");
-builder.push("すしや");
-builder.push("すしだね");
-builder.push("すしづめ");
-builder.push("すしめし");
-builder.push("すしをにぎる");
+builder.insert("ab");
+builder.insert("すし");
+builder.insert("すしや");
+builder.insert("すしだね");
+builder.insert("すしづめ");
+builder.insert("すしめし");
+builder.insert("すしをにぎる");
 let trie = builder.build();
 let mut search = trie.inc_search();
 
-// Query by the byte.
-assert_eq!(search.query(&b'a'), Some(Answer::Prefix));
-assert_eq!(search.query(&b'c'), None);
-assert_eq!(search.query(&b'b'), Some(Answer::Match));
+// Query by the byte with `.next()` or `.next_kind()`.
+assert_eq!(search.next_kind(&b'a'), Some(LabelKind::Prefix));
+assert_eq!(search.next_kind(&b'c'), None);
+assert_eq!(search.next_kind(&b'b'), Some(LabelKind::Exact));
 
 // Reset the query to go again.
 search.reset();
 
-// For unicode its easier to use .query_until().
-assert_eq!(search.query_until("す"), Ok(Answer::Prefix));
-assert_eq!(search.query_until("し"), Ok(Answer::PrefixAndMatch));
-assert_eq!(search.query_until("や"), Ok(Answer::Match));
-assert_eq!(search.query(&b'a'), None);
-assert_eq!(search.query_until("a"), Err(0));
+// For unicode its easier to use `.next_label()` or `.next_label_kind()`.
+assert_eq!(search.next_label_kind('す'), Ok(LabelKind::Prefix));
+assert_eq!(search.next_label_kind('し'), Ok(LabelKind::PrefixAndExact));
+assert_eq!(search.next_label_kind('や'), Ok(LabelKind::Exact));
+assert_eq!(search.next_kind(&b'a'), None);
+assert_eq!(search.next_label_kind('a'), Err(0));
 
 search.reset();
-assert_eq!(search.query_until("ab-NO-MATCH-"), Err(2)); // No match on byte at index 2.
+assert_eq!(search.next_label_kind("ab-NO-MATCH-"), Err(2)); // No match on byte at index 2.
 ```
 
 ## Features
@@ -242,7 +268,7 @@ assert_eq!(search.query_until("ab-NO-MATCH-"), Err(2)); // No match on byte at i
 - **Latest benchmark results are always accessible**: trie-rs is continuously benchmarked in GitHub Actions using [Criterion.rs](https://crates.io/crates/criterion). Graphical benchmark results are published [here](https://laysakura.github.io/trie-rs/criterion/report/).
 - `map::Trie` associates a `Value` with each entry.
 - `Value` does not require any traits.
-- `Label: Clone` not required to create `Trie<Label>` but useful for many reifying search operations like `predictive_search()`.
+- `Token: Clone` not required to create `Trie<Token>` but useful for many reifying search operations like `predictive_search()`.
 - Many search operations are implemented via iterators which are lazy, require less memory, and can be short circuited.
 - Incremental search available for "online" applications, i.e., searching one `Label` at a time.
 

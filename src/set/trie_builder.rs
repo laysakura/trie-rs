@@ -1,5 +1,5 @@
 use super::Trie;
-use crate::map;
+use crate::{label::Label, map};
 
 #[cfg(feature = "mem_dbg")]
 use mem_dbg::MemDbg;
@@ -8,34 +8,26 @@ use mem_dbg::MemDbg;
 #[cfg_attr(feature = "mem_dbg", derive(mem_dbg::MemDbg, mem_dbg::MemSize))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// A trie builder for [Trie].
-pub struct TrieBuilder<Label>(map::TrieBuilder<Label, ()>);
+pub struct TrieBuilder<Token>(map::TrieBuilder<Token, ()>);
 
-impl<Label: Ord> TrieBuilder<Label> {
+impl<Token: Ord> TrieBuilder<Token> {
     /// Return a [TrieBuilder].
     pub fn new() -> Self {
         Self(map::TrieBuilder::new())
     }
 
-    /// Add a cloneable entry.
-    pub fn push<Arr: AsRef<[Label]>>(&mut self, entry: Arr)
-    where
-        Label: Clone,
-    {
-        self.0.push(entry, ());
-    }
-
     /// Add an entry.
-    pub fn insert<Arr: IntoIterator<Item = Label>>(&mut self, entry: Arr) {
-        self.0.insert(entry, ());
+    pub fn insert(&mut self, label: impl Label<Token>) {
+        self.0.insert(label, ());
     }
 
     /// Build a [Trie].
-    pub fn build(self) -> Trie<Label> {
+    pub fn build(self) -> Trie<Token> {
         Trie(self.0.build())
     }
 }
 
-impl<Label: Ord> Default for TrieBuilder<Label> {
+impl<Token: Ord> Default for TrieBuilder<Token> {
     fn default() -> Self {
         Self::new()
     }

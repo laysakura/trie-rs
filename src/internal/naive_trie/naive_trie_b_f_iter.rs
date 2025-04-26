@@ -3,20 +3,20 @@ use std::collections::VecDeque;
 
 #[derive(Debug)]
 /// Iterates over NaiveTrie in Breadth-First manner.
-pub struct NaiveTrieBFIter<Label, Value> {
-    unvisited: VecDeque<NaiveTrie<Label, Value>>,
+pub struct NaiveTrieBFIter<Token, Value> {
+    unvisited: VecDeque<NaiveTrie<Token, Value>>,
 }
 
-impl<Label, Value> NaiveTrieBFIter<Label, Value> {
-    pub fn new(iter_start: NaiveTrie<Label, Value>) -> Self {
+impl<Token, Value> NaiveTrieBFIter<Token, Value> {
+    pub fn new(iter_start: NaiveTrie<Token, Value>) -> Self {
         let mut unvisited = VecDeque::new();
         unvisited.push_back(iter_start);
         Self { unvisited }
     }
 }
 
-impl<Label: Ord, Value> Iterator for NaiveTrieBFIter<Label, Value> {
-    type Item = NaiveTrie<Label, Value>;
+impl<Token: Ord, Value> Iterator for NaiveTrieBFIter<Token, Value> {
+    type Item = NaiveTrie<Token, Value>;
 
     /// Returns:
     ///
@@ -54,7 +54,7 @@ mod bf_iter_tests {
                 let (words, expected_nodes) = $value;
                 let mut trie = NaiveTrie::make_root();
                 for word in words {
-                    trie.push(word.bytes().into_iter(), ());
+                    trie.insert(word.bytes().into_iter(), ());
                 }
                 let nodes: Vec<NaiveTrie<u8>> = trie.into_iter().collect();
                 assert_eq!(nodes.len(), expected_nodes.len());
@@ -65,7 +65,7 @@ mod bf_iter_tests {
                     assert!(std::mem::discriminant(node) == std::mem::discriminant(expected_node));
 
                     if let NaiveTrie::IntermOrLeaf(n) = node {
-                        assert_eq!(n.label, *expected_node.label());
+                        assert_eq!(n.token, *expected_node.token());
                         assert_eq!(n.value.is_some(), expected_node.value().is_some());
                     }
                 }
