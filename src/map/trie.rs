@@ -255,6 +255,34 @@ where
     }
 }
 
+// Simple implementation of eq based on the ordering of the iterators.
+//
+// This is not the most efficient, as the label gets collected into a vector for each trie entry.
+// Better would be to compare the label while traversing LOUDS.
+impl<Label: Ord + Clone, Value: PartialEq> PartialEq for Trie<Label, Value> {
+    fn eq(&self, other: &Self) -> bool {
+        let mut iter_self = self.iter::<Vec<Label>, _>();
+        let mut iter_other = other.iter::<Vec<Label>, _>();
+
+        loop {
+            match (iter_self.next(), iter_other.next()) {
+                // If both iterators yield an element, these must be equal because the iterators are ordered.
+                (Some((label_self, value_self)), Some((label_other, value_other))) => {
+                    if label_self != label_other || value_self != value_other {
+                        return false;
+                    }
+                }
+                // If both iterators are exhausted, then all previous elements have been equal, and hence the whole tries are equal.
+                (None, None) => return true,
+                // If only one iterator is exhausted, then one trie contains more elements than the other, making the tries not equal.
+                _ => return false,
+            }
+        }
+    }
+}
+
+impl<Label: Ord + Clone, Value: Eq> Eq for Trie<Label, Value> {}
+
 #[cfg(test)]
 mod search_tests {
     use crate::map::{Trie, TrieBuilder};
@@ -563,5 +591,50 @@ mod search_tests {
             t7: ("c", Vec::<(&str, u8)>::new()),
             t8: ("アップル🍎🍏", Vec::<(&str, u8)>::new()),
         }
+    }
+}
+
+#[cfg(test)]
+mod eq_tests {
+    use crate::map::TrieBuilder;
+
+    #[test]
+    fn eq() {
+        let mut trie_builder = TrieBuilder::new();
+        trie_builder.insert("entry".bytes(), 3);
+        trie_builder.insert("entr".bytes(), 4);
+        trie_builder.insert("en".bytes(), 5);
+        trie_builder.insert("ntry".bytes(), 6);
+        let trie_a = trie_builder.build();
+
+        let mut trie_builder = TrieBuilder::new();
+        trie_builder.insert("ntry".bytes(), 6);
+        trie_builder.insert("entry".bytes(), 3);
+        trie_builder.insert("en".bytes(), 5);
+        trie_builder.insert("entr".bytes(), 4);
+        let trie_b = trie_builder.build();
+
+        let mut trie_builder = TrieBuilder::new();
+        trie_builder.insert("entry".bytes(), 3);
+        trie_builder.insert("entr".bytes(), 7);
+        trie_builder.insert("en".bytes(), 5);
+        trie_builder.insert("ntry".bytes(), 6);
+        let trie_c = trie_builder.build();
+
+        let mut trie_builder = TrieBuilder::new();
+        trie_builder.insert("entry".bytes(), 3);
+        trie_builder.insert("entr".bytes(), 4);
+        trie_builder.insert("ent".bytes(), 5);
+        trie_builder.insert("ntry".bytes(), 6);
+        let trie_d = trie_builder.build();
+
+        assert_eq!(trie_a, trie_a);
+        assert_eq!(trie_a, trie_b);
+        assert_eq!(trie_b, trie_a);
+        assert_eq!(trie_b, trie_b);
+
+        assert_ne!(trie_a, trie_c);
+        assert_ne!(trie_a, trie_d);
+        assert_ne!(trie_c, trie_d);
     }
 }

@@ -178,6 +178,14 @@ where
     }
 }
 
+impl<Label: Ord + Clone> PartialEq for Trie<Label> {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+
+impl<Label: Ord + Clone> Eq for Trie<Label> {}
+
 #[cfg(test)]
 mod search_tests {
     use crate::{Trie, TrieBuilder};
@@ -396,5 +404,41 @@ mod search_tests {
             t7: ("c", Vec::<&str>::new()),
             t8: ("アップル🍎🍏", vec!["アップル🍎"]),
         }
+    }
+}
+
+#[cfg(test)]
+mod eq_tests {
+    use crate::TrieBuilder;
+
+    #[test]
+    fn eq() {
+        let mut trie_builder = TrieBuilder::new();
+        trie_builder.insert("entry".bytes());
+        trie_builder.insert("entr".bytes());
+        trie_builder.insert("en".bytes());
+        trie_builder.insert("ntry".bytes());
+        let trie_a = trie_builder.build();
+
+        let mut trie_builder = TrieBuilder::new();
+        trie_builder.insert("ntry".bytes());
+        trie_builder.insert("entry".bytes());
+        trie_builder.insert("en".bytes());
+        trie_builder.insert("entr".bytes());
+        let trie_b = trie_builder.build();
+
+        let mut trie_builder = TrieBuilder::new();
+        trie_builder.insert("entry".bytes());
+        trie_builder.insert("entr".bytes());
+        trie_builder.insert("ent".bytes());
+        trie_builder.insert("ntry".bytes());
+        let trie_c = trie_builder.build();
+
+        assert_eq!(trie_a, trie_a);
+        assert_eq!(trie_a, trie_b);
+        assert_eq!(trie_b, trie_a);
+        assert_eq!(trie_b, trie_b);
+
+        assert_ne!(trie_a, trie_c);
     }
 }
